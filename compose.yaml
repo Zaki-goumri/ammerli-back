@@ -1,0 +1,41 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.${NODE_ENV:-dev}
+    ports:
+      - 3000:3000
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      #   - ./dist:/usr/src/app/dist
+      - .:/usr/src/app
+
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  db:
+    image: postgres
+    restart: always
+    user: postgres
+    env_file:
+      - .env
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    expose:
+      - 5432
+    healthcheck:
+      test: ['CMD', 'pg_isready']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+volumes:
+  db-data:
