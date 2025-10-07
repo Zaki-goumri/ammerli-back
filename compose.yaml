@@ -1,41 +1,90 @@
 services:
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080" 
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/traefik.yml:ro
+      - ./traefik/acme.json:/acme.json
+      - ./traefik/config.yml:/config.yml:ro
+    networks:
+      - proxy
+      - internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.entrypoints=web"
+
   server:
     build:
       context: .
       dockerfile: Dockerfile.${NODE_ENV:-dev}
-    ports:
-      - 3000:3000
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
-      #   - ./dist:/usr/src/app/dist
       - .:/usr/src/app
+    networks:
+      - proxy
+      - internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.server.rule=Host(`app.localhost`)"
+      - "traefik.http.routers.server.entrypoints=web"
+      - "traefik.http.services.server.loadbalancer.server.port=3000"
+      - "traefik.docker.network=proxy"
 
   redis:
     image: redis:latest
-    restart: always
+    container_name: redis
+    restart: unless-stopped
     ports:
-      - 6379:6379
+      - "6379:6379"  # Exposed for local Redis Insight
+    networks:
+      - internal
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 5s
       retries: 5
+
   db:
     image: postgres
-    restart: always
+    container_name: postgres
+    restart: unless-stopped
     user: postgres
     env_file:
       - .env
     volumes:
       - db-data:/var/lib/postgresql/data
-    expose:
-      - 5432
+    networks:
+      - internal
     healthcheck:
-      test: ['CMD', 'pg_isready']
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 10s
       timeout: 5s
       retries: 5
+    # No external ports exposed - accessible via internal network only
+
+networks:
+  proxy:
+    name: proxy
+    driver: bridge
+  internal:
+    name: internal
+    driver: bridge
+    internal: true  # This prevents external access
+
 volumes:
   db-data:
