@@ -1,11 +1,16 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Put, UseGuards } from '@nestjs/common';
 import { AuthenticationService } from './authentication.service';
 import { USER } from './decorators/user.decorartor';
 import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiBody,
+  ApiInternalServerErrorResponse,
   ApiOkResponse,
   ApiOperation,
   ApiResponse,
+  ApiTooManyRequestsResponse,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { AuthResponseDto } from './dtos/responses/auth-response.dto';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
@@ -13,10 +18,22 @@ import { User } from '../user/entities/user.entity';
 import { AuthDto } from './dtos/requests/auth.dto';
 import { OtpValidationDto } from './dtos/requests/otp-validation.dto';
 import { SendOtpResDto } from './dtos/responses/send-otp-response.dto';
+import { UserService } from '../user/user.service';
+import { UpdateUserDto } from '../user/dtos/update-user.dto';
+import { AccessTokenGuard } from './guards/access-token.guard';
 
 @Controller('authentication')
+@ApiBadRequestResponse({ description: 'Bad request' })
+@ApiUnauthorizedResponse({ description: 'Unauthorized' })
+@ApiTooManyRequestsResponse({
+  description: 'Too many requests (Rate limiting)',
+})
+@ApiInternalServerErrorResponse({ description: 'Internal server error' })
 export class AuthenticationController {
-  constructor(private readonly authenticationService: AuthenticationService) {}
+  constructor(
+    private readonly authenticationService: AuthenticationService,
+    private readonly userService: UserService,
+  ) {}
 
   @Post('otp/send')
   @ApiOperation({
@@ -33,7 +50,7 @@ export class AuthenticationController {
     description: 'Bad Request.error in sending',
   })
   async auth(@Body() dto: AuthDto): Promise<SendOtpResDto> {
-    return this.authenticationService.sendVerificationCode(dto.phone);
+    return this.authenticationService.sendVerificationCode(dto.phoneNumber);
   }
   @ApiOperation({
     summary: 'validate otp',
@@ -52,8 +69,28 @@ export class AuthenticationController {
   async validateOtp(@Body() dto: OtpValidationDto) {
     return this.authenticationService.validateOtp(dto);
   }
+
+  @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth()
+  @ApiBody({ type: UpdateUserDto })
+  @ApiOperation({
+    summary: 'Register user',
+    description: 'register user after otp validation if not registered',
+  })
+  @ApiOkResponse({
+    description: 'User successfully registered and updated.',
+  })
+  @Put('register')
+  async updateUserInfos(
+    @USER('id') userId: number,
+    @Body() dto: UpdateUserDto,
+  ) {
+    return this.userService.updateUserInfo(dto, userId);
+  }
+
   @UseGuards(RefreshTokenGuard)
   @Post('refresh')
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Refresh tokens',
     description:
@@ -69,41 +106,5 @@ export class AuthenticationController {
   })
   async refreshTokens(@USER() user: User) {
     return this.authenticationService.issueTokens(user);
-  }
-
-  @Post('forgot-password')
-  @ApiOperation({
-    summary: 'Forgot password',
-    description: 'Sends a password reset email to the user.',
-  })
-  @ApiOkResponse({
-    description: 'Returns a message indicating that the email has been sent.',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'User not found.',
-  })
-  async forgotPassword(@Body('phone') phone: string) {
-    return this.authenticationService.forgotPassword(phone);
-  }
-
-  @Post('reset-password')
-  @ApiOperation({
-    summary: 'Reset password',
-    description: "Resets the user's password with the provided token.",
-  })
-  @ApiOkResponse({
-    description:
-      'Returns a message indicating that the password has been reset.',
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid reset token.',
-  })
-  async resetPassword(
-    @Body('token') token: string,
-    @Body('password') password: string,
-  ) {
-    return this.authenticationService.resetPassword(token, password);
   }
 }

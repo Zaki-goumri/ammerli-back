@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -15,12 +15,14 @@ import { CommonModule } from './common/modules/common.module';
 import { CoreModule } from './core/core.module';
 import elasticSearchConfig from './config/elastic-search.config';
 import dbConfig from './config/db.config';
+import { LoggerMiddleware } from './monitoring/logger/logger.middleware';
+import { EntitiesModule } from './common/entities/entities.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true, // Makes the configuration available globally
-      validationSchema: null, // You can define a Joi schema here for validation if needed
+      isGlobal: true,
+      validationSchema: null,
       expandVariables: true,
       load: [redisConfig, authConfig, appConfig, elasticSearchConfig, dbConfig],
     }),
@@ -50,6 +52,7 @@ import dbConfig from './config/db.config';
     SecurityModule,
     CommonModule,
     CoreModule,
+    EntitiesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,22 +1,23 @@
+// src/config/db.config.ts
+import { defineConfig } from '@mikro-orm/postgresql';
 import { registerAs } from '@nestjs/config';
-import { DatabaseConfig } from './interfaces/database-config.interface';
 
-export default registerAs(
-  'database',
-  (): DatabaseConfig => ({
-    type: 'postgresql',
-    host: process.env.DB_HOST || 'db',
-    port: parseInt(process.env.DB_PORT!, 10) || 5432,
-    user: process.env.DB_USERNAME || 'postgres',
+export default registerAs('database', () =>
+  defineConfig({
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '5432'),
+    user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
-    dbName: process.env.DB_NAME || 'deven',
-    entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-    entitiesTs: [__dirname + '/../**/*.entity.ts'],
-    autoLoadEntities: true,
+    dbName: process.env.DB_NAME || '3ammerli',
+    entities: ['./dist/**/*.entity.js'],
+    entitiesTs: ['./src/**/*.entity.ts'],
     migrations: {
-      path: __dirname + '/migrations',
+      path: './dist/migrations',
+      pathTs: './src/migrations',
       tableName: 'mikro_orm_migrations',
     },
-    debug: process.env.NODE_ENV === 'dev' || true,
+    discovery: { warnWhenNoEntities: process.env.NODE_ENV !== 'dev' },
+    debug: process.env.NODE_ENV !== 'production',
+    allowGlobalContext: true,
   }),
 );

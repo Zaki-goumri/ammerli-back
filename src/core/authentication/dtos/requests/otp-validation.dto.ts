@@ -15,5 +15,5 @@ export class OtpValidationDto {
     description: 'The phone number of the user',
   })
   @IsMobilePhone('ar-DZ', {}, { message: 'Invalid phone number' })
-  phone: string;
+  phoneNumber: string;
 }

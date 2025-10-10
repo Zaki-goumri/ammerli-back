@@ -44,15 +44,18 @@ services:
       - "traefik.http.routers.server.entrypoints=web"
       - "traefik.http.services.server.loadbalancer.server.port=3000"
       - "traefik.docker.network=proxy"
+    env_file:
+      - .env
 
   redis:
     image: redis:latest
     container_name: redis
     restart: unless-stopped
     ports:
-      - "6379:6379"  # Exposed for local Redis Insight
+      - "6379:6379" 
     networks:
       - internal
+      - proxy 
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
@@ -63,6 +66,8 @@ services:
     image: postgres
     container_name: postgres
     restart: unless-stopped
+    ports:
+      - "5432:5432" 
     user: postgres
     env_file:
       - .env
@@ -75,7 +80,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    # No external ports exposed - accessible via internal network only
 
 networks:
   proxy:
@@ -84,7 +88,7 @@ networks:
   internal:
     name: internal
     driver: bridge
-    internal: true  # This prevents external access
+    internal: true 
 
 volumes:
   db-data:
