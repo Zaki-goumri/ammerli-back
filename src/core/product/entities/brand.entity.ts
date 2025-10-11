@@ -1,6 +1,6 @@
 import { Entity, Property } from '@mikro-orm/core';
 import { ApiProperty } from '@nestjs/swagger';
-import { BaseEntity } from 'src/common/entities/base.entity';
+import { BaseEntity } from '../../../common/entities/base.entity';
 
 @Entity({ tableName: 'brands' })
 export class Brand extends BaseEntity {

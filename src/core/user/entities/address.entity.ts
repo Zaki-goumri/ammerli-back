@@ -6,7 +6,7 @@ import {
 } from '@mikro-orm/core';
 import { AddressRepository } from '../repositories/adress.repository';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { BaseEntity } from 'src/common/entities/base.entity';
+import { BaseEntity } from '../../../common/entities/base.entity';
 
 @Entity({ repository: () => AddressRepository })
 export class Address extends BaseEntity {

@@ -1,6 +1,6 @@
 import { Entity, Property, ManyToOne } from '@mikro-orm/core';
 import { ApiProperty } from '@nestjs/swagger';
-import { BaseEntity } from 'src/common/entities/base.entity';
+import { BaseEntity } from '../../../common/entities/base.entity';
 import { User } from '../../user/entities/user.entity';
 import { Brand } from './brand.entity';
 import { Category } from './category.entity';
@@ -27,6 +27,20 @@ export class Product extends BaseEntity {
   })
   @Property()
   quantity: number;
+
+  @ApiProperty({
+    description: 'Id of the product in Chargili system',
+    example: 'prod_1MZbWDL6Y0qyl8',
+  })
+  @Property()
+  chargiliProductId: string;
+
+  @ApiProperty({
+    description: 'Id of the price in Chargili system',
+    example: 'price_1MZbX2L6Y0qyl8',
+  })
+  @Property()
+  chargiliPriceId: string;
 
   @ManyToOne(() => User)
   seller: User;

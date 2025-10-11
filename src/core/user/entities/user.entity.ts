@@ -1,6 +1,5 @@
 import {
   Entity,
-  PrimaryKey,
   Property,
   EntityRepositoryType,
   OneToOne,
@@ -18,7 +17,7 @@ import {
   UserRole,
   USER_ROLES,
 } from '../enums/user-role.enum';
-import { BaseEntity } from 'src/common/entities/base.entity';
+import { BaseEntity } from '../../../common/entities/base.entity';
 
 @Entity({ repository: () => UserRepository })
 export class User extends BaseEntity {
