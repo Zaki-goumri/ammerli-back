@@ -12,7 +12,7 @@ export class Product extends BaseEntity {
     example: 'https://example.com/product.jpg',
   })
   @Property()
-  pic: string;
+  picture: string;
 
   @ApiProperty({
     description: 'The price of the product',
