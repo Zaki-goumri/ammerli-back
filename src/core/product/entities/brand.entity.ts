@@ -1,13 +1,13 @@
-import { Entity, Property } from '@mikro-orm/core';
+import { Entity, Column } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseEntity } from '../../../common/entities/base.entity';
 
-@Entity({ tableName: 'brands' })
+@Entity('brands')
 export class Brand extends BaseEntity {
   @ApiProperty({
     description: 'The label of the brand',
     example: 'Coca-Cola',
   })
-  @Property()
+  @Column()
   label: string;
 }

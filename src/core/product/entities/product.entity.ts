@@ -1,24 +1,31 @@
-import { Entity, Property, ManyToOne, Index } from '@mikro-orm/core';
+import {
+  Entity,
+  Column,
+  ManyToOne,
+  OneToMany,
+  Index,
+} from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseEntity } from '../../../common/entities/base.entity';
 import { User } from '../../user/entities/user.entity';
 import { Brand } from './brand.entity';
 import { Category } from './category.entity';
+import { FavProduct } from './fav-product.entity';
 
-@Entity({ tableName: 'products' })
+@Entity('products')
 export class Product extends BaseEntity {
   @ApiProperty({
     description: 'The picture of the product',
     example: 'https://example.com/product.jpg',
   })
-  @Property()
+  @Column()
   picture: string;
 
   @ApiProperty({
     description: 'The name of the product',
     example: 'Sample Product',
   })
-  @Property()
+  @Column()
   @Index()
   name: string;
 
@@ -26,38 +33,38 @@ export class Product extends BaseEntity {
     description: 'The description of the product',
     example: 'This is a sample product description.',
   })
-  @Property({ nullable: true })
+  @Column({ nullable: true })
   description?: string;
 
   @ApiProperty({
     description: 'The price of the product',
     example: 100,
   })
-  @Property()
+  @Column('decimal')
   price: number;
 
   @ApiProperty({
     description: 'The quantity of the product',
     example: 10,
   })
-  @Property()
+  @Column()
   quantity: number;
 
   @ApiProperty({
     description: 'Id of the product in Chargili system',
     example: 'prod_1MZbWDL6Y0qyl8',
   })
-  @Property()
+  @Column()
   chargiliProductId: string;
 
   @ApiProperty({
     description: 'Id of the price in Chargili system',
     example: 'price_1MZbX2L6Y0qyl8',
   })
-  @Property()
+  @Column()
   chargiliPriceId: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, (user) => user.products)
   seller: User;
 
   @ManyToOne(() => Brand)
@@ -65,4 +72,7 @@ export class Product extends BaseEntity {
 
   @ManyToOne(() => Category)
   category: Category;
+
+  @OneToMany(() => FavProduct, (favProduct) => favProduct.product)
+  favoritedBy: FavProduct[];
 }

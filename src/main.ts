@@ -7,8 +7,8 @@ import { doubleCsrf, DoubleCsrfConfigOptions } from 'csrf-csrf';
 import { AppModule } from './app.module';
 import { LoggerInterceptor } from './monitoring/logger/logger.interceptor';
 import { ResponseFormatterInterceptor } from './common/interceptors/response-formatter.interceptor';
-import { HttpExceptionFilter } from './common/filter/httpException.filter';
 import { ExtendedRequest } from './core/authentication/types/extended-req.type';
+import { DatabaseExceptionFilter } from './common/filters/db.filter';
 async function bootstrap() {
   // the cors will be changed to the front end url  in production environnement
   const app = await NestFactory.create(AppModule, {
@@ -74,8 +74,7 @@ async function bootstrap() {
   );
 
   //FILTERS
-  // app.use(new HttpExceptionFilter());
-  // app.useGlobalFilters(new CustomWsExceptionFilter());
+  app.useGlobalFilters(new DatabaseExceptionFilter());
   //app.useGlobalFilters(new ElasticSearchExceptionFilter()); //TODO:figure out what error to catch
   //--
   app.enableShutdownHooks();

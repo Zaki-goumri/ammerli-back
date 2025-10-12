@@ -3,13 +3,12 @@ import { UserService } from './user.service';
 import { UserController } from './user.controller';
 import { User } from './entities/user.entity';
 import { Address } from './entities/address.entity';
-import { MikroOrmModule } from '@mikro-orm/nestjs';
-import { UserRepository } from './repositories/user.repository';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
-  imports: [MikroOrmModule.forFeature([User, Address])],
+  imports: [TypeOrmModule.forFeature([User, Address])],
   controllers: [UserController],
-  providers: [UserService, UserRepository],
+  providers: [UserService],
   exports: [UserService],
 })
 export class UserModule {}

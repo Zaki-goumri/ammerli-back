@@ -20,9 +20,9 @@ import {
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiBadRequestResponse,
+  ApiBody,
 } from '@nestjs/swagger';
 import { ProductService } from './product.service';
-import { ProductRepository } from './repositories/product.repository';
 import { ProductWithChargili } from './types/product-with-chargili.type';
 import { UpdateProductDto } from './dtos/product/update.dto';
 import { PaginatedResponse } from 'src/common/dtos/pagination.dto';
@@ -71,6 +71,7 @@ export class ProductController {
     description: 'Product successfully created',
   })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
+  @ApiBody({ type: ProductWithChargili })
   create(@Body() createProductDto: ProductWithChargili) {
     return this.productService.create(createProductDto);
   }

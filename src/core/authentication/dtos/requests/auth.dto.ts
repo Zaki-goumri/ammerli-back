@@ -3,7 +3,7 @@ import { IsMobilePhone } from 'class-validator';
 
 export class AuthDto {
   @ApiProperty({
-    example: '+1234567890',
+    example: '+213560620999',
     description: 'The phone number of the user',
   })
   @IsMobilePhone('ar-DZ', {}, { message: 'Invalid phone number' })

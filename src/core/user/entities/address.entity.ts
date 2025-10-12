@@ -1,35 +1,27 @@
-import {
-  Entity,
-  EntityRepositoryType,
-  PrimaryKey,
-  Property,
-} from '@mikro-orm/core';
-import { AddressRepository } from '../repositories/adress.repository';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Entity, Column } from 'typeorm';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { BaseEntity } from '../../../common/entities/base.entity';
 
-@Entity({ repository: () => AddressRepository })
+@Entity('addresses')
 export class Address extends BaseEntity {
-  [EntityRepositoryType]?: AddressRepository;
-
   @ApiPropertyOptional({
     description: 'Street name of the address',
     example: '123 Rue Didouche Mourad',
   })
-  @Property({ nullable: true })
+  @Column({ nullable: true })
   street?: string;
 
   @ApiPropertyOptional({
     description: 'City where the address is located',
     example: 'Algiers',
   })
-  @Property({ nullable: true })
+  @Column({ nullable: true })
   city?: string;
 
   @ApiPropertyOptional({
     description: 'District/Commune of the address',
     example: 'Bab El Oued',
   })
-  @Property({ nullable: true })
+  @Column({ nullable: true })
   district?: string;
 }

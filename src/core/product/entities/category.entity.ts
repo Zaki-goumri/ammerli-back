@@ -1,13 +1,13 @@
-import { Entity, Property } from '@mikro-orm/core';
+import { Entity, Column } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseEntity } from '../../../common/entities/base.entity';
 
-@Entity({ tableName: 'categories' })
+@Entity('categories')
 export class Category extends BaseEntity {
   @ApiProperty({
     description: 'The label of the category',
     example: 'Electronics',
   })
-  @Property()
+  @Column()
   label: string;
 }
