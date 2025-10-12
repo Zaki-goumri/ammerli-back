@@ -15,8 +15,6 @@ import { CommonModule } from './common/modules/common.module';
 import { CoreModule } from './core/core.module';
 import elasticSearchConfig from './config/elastic-search.config';
 import dbConfig from './config/db.config';
-import { LoggerMiddleware } from './monitoring/logger/logger.middleware';
-import { EntitiesModule } from './common/entities/entities.module';
 
 @Module({
   imports: [
@@ -52,7 +50,6 @@ import { EntitiesModule } from './common/entities/entities.module';
     SecurityModule,
     CommonModule,
     CoreModule,
-    EntitiesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

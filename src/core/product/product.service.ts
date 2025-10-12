@@ -3,15 +3,19 @@ import {
   PaginationQueryDto,
   PaginationResponseDto,
 } from 'src/common/dtos/pagination.dto';
-import { FilterQuery } from '@mikro-orm/core';
+import { ILike, Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
-import { ProductRepository } from './repositories/product.repository';
+import { InjectRepository } from '@nestjs/typeorm';
 import { UpdateProductDto } from './dtos/product/update.dto';
 import { ProductWithChargili } from './types/product-with-chargili.type';
+import { flip } from 'lodash';
 
 @Injectable()
 export class ProductService {
-  constructor(private readonly productRepo: ProductRepository) {}
+  constructor(
+    @InjectRepository(Product)
+    private readonly productRepo: Repository<Product>,
+  ) {}
 
   async findManyWithPagination(
     paginationQuery: PaginationQueryDto,
@@ -21,28 +25,35 @@ export class ProductService {
     const { page, limit } = paginationQuery;
     const offset = (page - 1) * limit;
 
-    const where: FilterQuery<Product> = {};
+    let where: any[] = [];
 
     if (categoryId) {
-      where.category = categoryId;
+      where = where.length
+        ? where.map((cond) => ({ ...cond, category: { id: categoryId } }))
+        : [{ category: { id: categoryId } }];
     }
 
     if (search) {
-      where.$or = [
-        { name: { $ilike: `%${search}%` } },
-        { description: { $ilike: `%${search}%` } },
-        { brand: { label: { $ilike: `%${search}%` } } },
-        { category: { label: { $ilike: `%${search}%` } } },
+      where = [
+        { name: ILike(`%${search}%`) },
+        { description: ILike(`%${search}%`) },
+        { brand: { label: ILike(`%${search}%`) } },
+        { category: { label: ILike(`%${search}%`) } },
       ];
     }
-
-    const [products, total] = await this.productRepo.findAndCount(where, {
-      populate: ['brand', 'category', 'seller'],
-      limit,
-      offset,
-      orderBy: { createdAt: 'DESC' },
+    //TODO: add buyers count
+    const [products, total] = await this.productRepo.findAndCount({
+      where: where.length > 0 ? where : undefined,
+      relations: ['brand'],
+      select: {
+        brand: { label: true, createdAt: false, updatedAt: false, id: false },
+        updatedAt: false,
+        description: false,
+      },
+      take: limit,
+      skip: offset,
+      order: { createdAt: 'DESC' },
     });
-
     return {
       data: products,
       meta: {
@@ -56,32 +67,30 @@ export class ProductService {
   }
 
   async findOne(id: number): Promise<Product> {
-    const product = await this.productRepo.findById(id);
-
+    const product = await this.productRepo.findOneBy({ id });
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
-
     return product;
   }
 
-  //TODO: add charglili integration and change the type of dto
   async create(dto: ProductWithChargili): Promise<Product> {
-    return this.productRepo.createProduct(dto);
+    const product = this.productRepo.create(dto);
+    return this.productRepo.save(product);
   }
 
   async update(id: number, dto: UpdateProductDto): Promise<void> {
-    const affectedRows = await this.productRepo.updateProduct(dto, id);
+    const result = await this.productRepo.update(id, dto);
 
-    if (affectedRows === 0) {
+    if (result.affected === 0) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
   }
 
   async remove(id: number): Promise<void> {
-    const affectedRows = await this.productRepo.deleteProduct(id);
+    const result = await this.productRepo.delete(id);
 
-    if (affectedRows === 0) {
+    if (result.affected === 0) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
   }

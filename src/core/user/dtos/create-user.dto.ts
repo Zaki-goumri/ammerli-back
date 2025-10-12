@@ -56,7 +56,7 @@ export class CreateUserDto {
 
   @ApiPropertyOptional({
     description: 'Role of the user',
-    example: 'superMarket',
+    example: USER_ROLES.SUPERMARKET,
     enum: USER_ROLE_VALUES,
   })
   @IsEnum(USER_ROLE_VALUES, {
