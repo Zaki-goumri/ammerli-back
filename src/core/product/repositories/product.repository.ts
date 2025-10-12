@@ -4,7 +4,6 @@ import { Brand } from '../entities/brand.entity';
 import { Category } from '../entities/category.entity';
 import { User } from 'src/core/user/entities/user.entity';
 import { ProductWithChargili } from '../types/product-with-chargili.type';
-import { UpdateProductDto } from '../dtos/product/update.dto';
 
 export class ProductRepository extends EntityRepository<Product> {
   async findById(id: number): Promise<Product | null> {
@@ -13,6 +12,8 @@ export class ProductRepository extends EntityRepository<Product> {
 
   async createProduct(dto: ProductWithChargili): Promise<Product> {
     const product = this.create({
+      name: dto.name,
+      description: dto.description,
       picture: dto.picture,
       price: dto.price,
       quantity: dto.quantity,
@@ -27,7 +28,7 @@ export class ProductRepository extends EntityRepository<Product> {
     return product;
   }
 
-  async updateProduct(productData: UpdateProductDto, id: number) {
+  async updateProduct(productData: Partial<Product>, id: number) {
     return this.nativeUpdate({ id }, productData);
   }
 

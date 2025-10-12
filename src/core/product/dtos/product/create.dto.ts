@@ -12,6 +12,22 @@ import { Type } from 'class-transformer';
 
 export class CreateProductDto {
   @ApiProperty({
+    description: 'Product name',
+    example: 'Sample Product',
+  })
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
+
+  @ApiPropertyOptional({
+    description: 'Product description',
+    example: 'This is a sample product description.',
+  })
+  @IsString()
+  @IsNotEmpty()
+  description?: string;
+
+  @ApiProperty({
     description: 'Product picture URL',
     example: 'https://example.com/images/product.jpg',
   })

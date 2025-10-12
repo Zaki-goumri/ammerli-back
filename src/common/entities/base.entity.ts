@@ -1,4 +1,5 @@
 import {
+  Index,
   BaseEntity as MikroBaseEntity,
   PrimaryKey,
   Property,
@@ -11,6 +12,7 @@ export abstract class BaseEntity extends MikroBaseEntity {
     example: 1,
   })
   @PrimaryKey({ type: 'number', autoincrement: true })
+  @Index()
   id: number;
   @ApiProperty({
     description: 'Timestamp when the entity was created',

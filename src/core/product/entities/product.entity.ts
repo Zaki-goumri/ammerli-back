@@ -1,4 +1,4 @@
-import { Entity, Property, ManyToOne } from '@mikro-orm/core';
+import { Entity, Property, ManyToOne, Index } from '@mikro-orm/core';
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseEntity } from '../../../common/entities/base.entity';
 import { User } from '../../user/entities/user.entity';
@@ -13,6 +13,21 @@ export class Product extends BaseEntity {
   })
   @Property()
   picture: string;
+
+  @ApiProperty({
+    description: 'The name of the product',
+    example: 'Sample Product',
+  })
+  @Property()
+  @Index()
+  name: string;
+
+  @ApiProperty({
+    description: 'The description of the product',
+    example: 'This is a sample product description.',
+  })
+  @Property({ nullable: true })
+  description?: string;
 
   @ApiProperty({
     description: 'The price of the product',
