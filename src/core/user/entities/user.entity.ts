@@ -7,7 +7,7 @@ import {
   USER_ROLE_VALUES,
   UserRole,
   USER_ROLES,
-} from '../enums/user-role.enum';
+} from 'src/common/enums/user-role.enum';
 import { BaseEntity } from '../../../common/entities/base.entity';
 
 @Entity('users')

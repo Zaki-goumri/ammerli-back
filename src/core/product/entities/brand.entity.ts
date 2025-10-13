@@ -8,6 +8,6 @@ export class Brand extends BaseEntity {
     description: 'The label of the brand',
     example: 'Coca-Cola',
   })
-  @Column()
+  @Column({ unique: true })
   label: string;
 }
