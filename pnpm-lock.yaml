@@ -12,8 +12,8 @@ importers:
         specifier: ^6.5.7
         version: 6.5.7
       '@mikro-orm/migrations':
-        specifier: ^6.5.7
-        version: 6.5.7(@mikro-orm/core@6.5.7)(@types/node@22.18.10)(pg@8.16.3)
+        specifier: ^6.5.8
+        version: 6.5.8(@mikro-orm/core@6.5.7)(@types/node@22.18.10)(pg@8.16.3)
       '@mikro-orm/nestjs':
         specifier: ^6.1.1
         version: 6.1.1(@mikro-orm/core@6.5.7)(@nestjs/common@11.1.6(class-transformer@0.5.1)(class-validator@0.14.2)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.6)
@@ -775,8 +775,24 @@ packages:
       mariadb:
         optional: true
 
-  '@mikro-orm/migrations@6.5.7':
-    resolution: {integrity: sha512-FpZBBmutKnhxQQf24gphEUliC/Ni7cln+1mkAgSEXC31q1r4v/Ftvx+XlXO1eJ1BeJoqZtkYkMuuY4ltfYRCuA==}
+  '@mikro-orm/knex@6.5.8':
+    resolution: {integrity: sha512-/+/jc5zlOgdRlq/SC5RHGdIgrJw7TsGSICumYq6+dauYq2ChMHw3rrN1mW7bKkS/A2oB8eabyNyUj2WKOC3PKA==}
+    engines: {node: '>= 18.12.0'}
+    peerDependencies:
+      '@mikro-orm/core': ^6.0.0
+      better-sqlite3: '*'
+      libsql: '*'
+      mariadb: '*'
+    peerDependenciesMeta:
+      better-sqlite3:
+        optional: true
+      libsql:
+        optional: true
+      mariadb:
+        optional: true
+
+  '@mikro-orm/migrations@6.5.8':
+    resolution: {integrity: sha512-KQu+dovQ0KMooGzoBb8FP8n32AvrdN5NB4pGFmT6AxNchSnRxeLDRSN2aHDHHMwu+Duy0HgXnMgQ540VZ0ioqQ==}
     engines: {node: '>= 18.12.0'}
     peerDependencies:
       '@mikro-orm/core': ^6.0.0
@@ -5023,10 +5039,25 @@ snapshots:
       - supports-color
       - tedious
 
-  '@mikro-orm/migrations@6.5.7(@mikro-orm/core@6.5.7)(@types/node@22.18.10)(pg@8.16.3)':
+  '@mikro-orm/knex@6.5.8(@mikro-orm/core@6.5.7)(pg@8.16.3)':
     dependencies:
       '@mikro-orm/core': 6.5.7
-      '@mikro-orm/knex': 6.5.7(@mikro-orm/core@6.5.7)(pg@8.16.3)
+      fs-extra: 11.3.2
+      knex: 3.1.0(pg@8.16.3)
+      sqlstring: 2.3.3
+    transitivePeerDependencies:
+      - mysql
+      - mysql2
+      - pg
+      - pg-native
+      - sqlite3
+      - supports-color
+      - tedious
+
+  '@mikro-orm/migrations@6.5.8(@mikro-orm/core@6.5.7)(@types/node@22.18.10)(pg@8.16.3)':
+    dependencies:
+      '@mikro-orm/core': 6.5.7
+      '@mikro-orm/knex': 6.5.8(@mikro-orm/core@6.5.7)(pg@8.16.3)
       fs-extra: 11.3.2
       umzug: 3.8.2(@types/node@22.18.10)
     transitivePeerDependencies:
