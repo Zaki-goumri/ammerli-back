@@ -11,6 +11,7 @@ import {
   ParseIntPipe,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -28,12 +29,16 @@ import { UpdateProductDto } from './dtos/product/update.dto';
 import { PaginatedResponse } from 'src/common/dtos/pagination.dto';
 import { Product } from './entities/product.entity';
 import { FilterProductDto } from './dtos/product/filter.dto';
+import { User } from '../user/entities/user.entity';
+import { USER } from '../authentication/decorators/user.decorartor';
+import { AccessTokenGuard } from '../authentication/guards/access-token.guard';
 
 @ApiTags('products')
 @Controller('products')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
+  @UseGuards(AccessTokenGuard)
   @Get()
   @ApiOperation({
     summary: 'Get all products with pagination, search, and filters',
@@ -42,12 +47,13 @@ export class ProductController {
     type: PaginatedResponse(Product),
     description: 'Returns paginated products',
   })
-  findAll(@Query() query: FilterProductDto) {
+  findAll(@Query() query: FilterProductDto, @USER('id') userId: number) {
     return this.productService.findManyWithPagination(
       {
         page: query.page || 1,
-        limit: query.limit || 20,
+        limit: query.limit || 10,
       },
+      userId,
       query.search,
       query.categoryId,
     );
