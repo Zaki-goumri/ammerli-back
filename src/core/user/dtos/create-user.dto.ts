@@ -11,7 +11,7 @@ import {
   USER_ROLE_VALUES,
   USER_ROLES,
   UserRole,
-} from '../enums/user-role.enum';
+} from 'src/common/enums/user-role.enum';
 import { CreateAddressDto } from './create-address.dto';
 import { Transform } from 'class-transformer';
 

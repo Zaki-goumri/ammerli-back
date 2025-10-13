@@ -8,6 +8,6 @@ export class Category extends BaseEntity {
     description: 'The label of the category',
     example: 'Electronics',
   })
-  @Column()
+  @Column({ unique: true })
   label: string;
 }
