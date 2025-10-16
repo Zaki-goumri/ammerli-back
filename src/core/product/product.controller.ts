@@ -29,7 +29,6 @@ import {
   PartialType,
 } from '@nestjs/swagger';
 import { ProductService } from './services/product.service';
-import { ProductWithChargili } from './types/product-with-chargili.type';
 import { UpdateProductDto } from './dtos/product/update.dto';
 import { PaginatedResponse } from 'src/common/dtos/pagination.dto';
 import { Product } from './entities/product.entity';
@@ -45,6 +44,7 @@ import { CategoryService } from './services/category.service';
 import { Category } from './entities/category.entity';
 import { CreateLabelDto } from './dtos/label.dto';
 import { Brand } from './entities/brand.entity';
+import { CreateProductDto } from './dtos/product/create.dto';
 
 @ApiTags('products')
 @ApiBearerAuth()
@@ -95,21 +95,24 @@ export class ProductController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(USER_ROLES.ADMIN, USER_ROLES.WHOLESALER)
+  @Roles(USER_ROLES.ADMIN, USER_ROLES.WHOLESELLER)
   @ApiOperation({ summary: 'Create a new product' })
   @ApiCreatedResponse({
     type: Product,
     description: 'Product successfully created',
   })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
-  @ApiBody({ type: ProductWithChargili })
-  create(@Body() createProductDto: ProductWithChargili) {
-    return this.productService.create(createProductDto);
+  @ApiBody({ type: CreateProductDto })
+  create(
+    @Body() createProductDto: CreateProductDto,
+    @USER('id') userId: number,
+  ) {
+    return this.productService.create(createProductDto, userId);
   }
 
   @Put(':id')
   @HttpCode(HttpStatus.OK)
-  @Roles(USER_ROLES.ADMIN, USER_ROLES.WHOLESALER)
+  @Roles(USER_ROLES.ADMIN, USER_ROLES.WHOLESELLER)
   @ApiOperation({ summary: 'Update a product' })
   @ApiOkResponse({
     description: 'Product successfully updated',
@@ -125,7 +128,7 @@ export class ProductController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(USER_ROLES.ADMIN, USER_ROLES.WHOLESALER)
+  @Roles(USER_ROLES.ADMIN, USER_ROLES.WHOLESELLER)
   @ApiOperation({ summary: 'Delete a product' })
   @ApiNoContentResponse({ description: 'Product successfully deleted' })
   @ApiNotFoundResponse({ description: 'Product not found' })
@@ -143,7 +146,7 @@ export class ProductController {
     type: PaginatedResponse(Product),
     description: 'Returns paginated wholeseller products',
   })
-  @Roles(USER_ROLES.WHOLESALER)
+  @Roles(USER_ROLES.WHOLESELLER)
   @Get('wholeseller/all')
   getWholesellerProducts(
     @Query() query: FilterProductDto,
@@ -182,7 +185,6 @@ export class ProductController {
     );
   }
 
-  // -------------------- CATEGORY CRUD --------------------
   @Get('categories')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get all categories' })
@@ -237,7 +239,6 @@ export class ProductController {
     return this.categoryService.remove(id);
   }
 
-  // -------------------- BRAND CRUD --------------------
   @Get('brands')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get all brands' })

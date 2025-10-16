@@ -4,6 +4,9 @@ import {
   ManyToOne,
   OneToMany,
   Index,
+  DeleteDateColumn,
+  Relation,
+  JoinColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseEntity } from '../../../common/entities/base.entity';
@@ -50,22 +53,16 @@ export class Product extends BaseEntity {
   @Column()
   quantity: number;
 
-  @ApiProperty({
-    description: 'Id of the product in Chargili system',
-    example: 'prod_1MZbWDL6Y0qyl8',
-  })
-  @Column()
-  chargiliProductId: string;
-
-  @ApiProperty({
-    description: 'Id of the price in Chargili system',
-    example: 'price_1MZbX2L6Y0qyl8',
-  })
-  @Column()
-  chargiliPriceId: string;
-
   @ManyToOne(() => User, (user) => user.products)
-  seller: User;
+  @JoinColumn({ name: 'sellerId' })
+  seller: Relation<User>;
+
+  @ApiProperty({
+    description: 'The ID of the seller (user) who owns this product',
+    example: 1,
+  })
+  @Column()
+  sellerId: number;
 
   @ManyToOne(() => Brand)
   brand: Brand;
@@ -75,4 +72,7 @@ export class Product extends BaseEntity {
 
   @OneToMany(() => FavProduct, (favProduct) => favProduct.product)
   favoritedBy: FavProduct[];
+
+  @DeleteDateColumn()
+  deletedAt?: Date;
 }

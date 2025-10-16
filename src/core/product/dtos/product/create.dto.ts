@@ -47,6 +47,7 @@ export class CreateProductDto {
   )
   @IsPositive({ message: 'Price must be a positive number' })
   @Type(() => Number)
+  @Min(50, { message: 'Price must be at least 50' })
   price!: number;
 
   @ApiProperty({
@@ -76,13 +77,4 @@ export class CreateProductDto {
   @IsPositive({ message: 'Category ID must be a positive number' })
   @Type(() => Number)
   categoryId!: number;
-
-  @ApiProperty({
-    description: 'Seller ID reference',
-    example: 42,
-  })
-  @IsInt({ message: 'Seller ID must be an integer' })
-  @IsPositive({ message: 'Seller ID must be a positive number' })
-  @Type(() => Number)
-  sellerId!: number;
 }

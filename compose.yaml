@@ -40,7 +40,8 @@ services:
       - internal
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.server.rule=Host(`app.localhost`)"
+    # TODO: remove HostRegexp for production 
+      - "traefik.http.routers.server.rule=Host(`app.localhost`) || HostRegexp(`{host:.+}`)"
       - "traefik.http.routers.server.entrypoints=web"
       - "traefik.http.services.server.loadbalancer.server.port=3000"
       - "traefik.docker.network=proxy"

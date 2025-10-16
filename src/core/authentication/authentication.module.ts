@@ -9,7 +9,6 @@ import { JwtModule } from '@nestjs/jwt';
 import { UserModule } from '../user/user.module';
 import { QueueModule } from 'src/infrastructure/queue/queue.module';
 import { PassportModule } from '@nestjs/passport';
-import authConfig from 'src/config/auth.config';
 
 @Module({
   imports: [UserModule, JwtModule, PassportModule, QueueModule],

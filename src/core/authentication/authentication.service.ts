@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  UnauthorizedException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { AuthResponseDto } from './dtos/responses/auth-response.dto';
 import { JwtService } from '@nestjs/jwt';
 import { RedisService } from 'nestjs-redis-client';
@@ -11,6 +6,7 @@ import authConfig from 'src/config/auth.config';
 import { UserService } from '../user/user.service';
 import { User } from '../user/entities/user.entity';
 import { OtpValidationDto } from './dtos/requests/otp-validation.dto';
+import { UpdateUserDto } from '../user/dtos/update-user.dto';
 
 /**
  * @class AuthenticationService
@@ -102,11 +98,12 @@ export class AuthenticationService {
    */
   async issueTokens(user: User): Promise<AuthResponseDto> {
     try {
-      const { id, phoneNumber } = user;
-      const accessTokenPayload = { id, phoneNumber };
+      const { id, phoneNumber, role } = user;
+      const accessTokenPayload = { id, phoneNumber, role };
       const refreshTokenPayload = {
         sub: id,
         phoneNumber,
+        role,
         type: 'refresh',
       };
 
@@ -163,5 +160,9 @@ export class AuthenticationService {
     //TODO: Send sms with OTP
     this.logger.log(`OTP for ${phoneNumber}: ${otp}`);
     return { message: `OTP sent to ${phoneNumber}` };
+  }
+
+  async registerUser(dto: UpdateUserDto, userId: number) {
+    return await this.userService.updateUserInfo(dto, userId);
   }
 }

@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -15,6 +15,7 @@ import { CommonModule } from './common/modules/common.module';
 import { CoreModule } from './core/core.module';
 import elasticSearchConfig from './config/elastic-search.config';
 import dbConfig from './config/db.config';
+import chargiliConfig from './config/chargili.config';
 
 @Module({
   imports: [
@@ -22,7 +23,14 @@ import dbConfig from './config/db.config';
       isGlobal: true,
       validationSchema: null,
       expandVariables: true,
-      load: [redisConfig, authConfig, appConfig, elasticSearchConfig, dbConfig],
+      load: [
+        redisConfig,
+        authConfig,
+        appConfig,
+        elasticSearchConfig,
+        dbConfig,
+        chargiliConfig,
+      ],
     }),
     BullModule.forRootAsync({
       useFactory: (configService: ConfigService) => {
