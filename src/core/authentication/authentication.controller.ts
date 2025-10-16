@@ -18,7 +18,6 @@ import { User } from '../user/entities/user.entity';
 import { AuthDto } from './dtos/requests/auth.dto';
 import { OtpValidationDto } from './dtos/requests/otp-validation.dto';
 import { SendOtpResDto } from './dtos/responses/send-otp-response.dto';
-import { UserService } from '../user/user.service';
 import { UpdateUserDto } from '../user/dtos/update-user.dto';
 import { AccessTokenGuard } from './guards/access-token.guard';
 
@@ -30,10 +29,7 @@ import { AccessTokenGuard } from './guards/access-token.guard';
 })
 @ApiInternalServerErrorResponse({ description: 'Internal server error' })
 export class AuthenticationController {
-  constructor(
-    private readonly authenticationService: AuthenticationService,
-    private readonly userService: UserService,
-  ) {}
+  constructor(private readonly authenticationService: AuthenticationService) {}
 
   @Post('otp/send')
   @ApiOperation({
@@ -85,7 +81,7 @@ export class AuthenticationController {
     @USER('id') userId: number,
     @Body() dto: UpdateUserDto,
   ) {
-    return this.userService.updateUserInfo(dto, userId);
+    return this.authenticationService.registerUser(dto, userId);
   }
 
   @UseGuards(RefreshTokenGuard)

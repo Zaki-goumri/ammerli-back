@@ -12,7 +12,7 @@ export default registerAs(
     database: process.env.DB_NAME || '3ammerli',
     entities: [__dirname + '/../**/*.entity{.ts,.js}'],
     migrations: [__dirname + '/../migrations/*{.ts,.js}'],
-    synchronize: process.env.NODE_ENV !== 'production', // DO NOT USE IN PRODUCTION
+    synchronize: process.env.NODE_ENV !== 'prod',
     logging: process.env.NODE_ENV !== 'production',
   }),
 );

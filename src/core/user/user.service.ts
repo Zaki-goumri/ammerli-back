@@ -28,17 +28,13 @@ export class UserService {
 
   async create(dto: CreateUserDto): Promise<User> {
     return this.entityManager.transaction(async (em) => {
-      this.logger.log('Creating user transactionally', dto);
-
       let address: Address | null = null;
       const addressDetailsProvided =
         dto.address && Object.keys(dto.address).length > 0;
-
       if (addressDetailsProvided) {
         const addressRepo = em.getRepository(Address);
         address = addressRepo.create({ ...dto.address });
         await addressRepo.save(address);
-        this.logger.log('Address entity persisted', { id: address.id });
       }
 
       const userRepo = em.getRepository(User);
@@ -51,12 +47,12 @@ export class UserService {
           `User with phone number ${dto.phoneNumber} already exists.`,
         );
       }
-
       const user = userRepo.create({
         ...dto,
         address: address || undefined,
       });
       await userRepo.save(user);
+
       this.logger.log('User entity persisted', { id: user.id });
       return user;
     });
@@ -126,6 +122,7 @@ export class UserService {
         },
       },
     });
+
     await this.redisService.set(
       UserService.getCacheKey(id, 'id'),
       user,
@@ -171,9 +168,16 @@ export class UserService {
   }
 
   async deleteUser(id: number): Promise<{ message: string }> {
-    const result = await this.userRepo.delete(id);
-    if (result.affected === 0) throw new NotFoundException('User not found');
+    const user = await this.userRepo
+      .createQueryBuilder()
+      .select(['id', 'chargiliCustomerId'])
+      .where('id = :id', { id })
+      .getOne();
+
+    await this.userRepo.softDelete(id);
+
     await this.redisService.del(UserService.getCacheKey(id, 'id'));
-    return { message: 'User deleted successfully' };
+
+    return { message: 'User deleted successfully (soft delete)' };
   }
 }

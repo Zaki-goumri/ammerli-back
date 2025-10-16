@@ -1,4 +1,11 @@
-import { Entity, Column, OneToOne, JoinColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  Column,
+  OneToOne,
+  JoinColumn,
+  OneToMany,
+  DeleteDateColumn,
+} from 'typeorm';
 import { FavProduct } from '../../product/entities/fav-product.entity';
 import { Product } from '../../product/entities/product.entity';
 import { Address } from './address.entity';
@@ -11,6 +18,7 @@ import {
 import { BaseEntity } from '../../../common/entities/base.entity';
 
 @Entity('users')
+//TODO: add chargili customer_id
 export class User extends BaseEntity {
   @ApiProperty({
     description: 'User phone number',
@@ -80,4 +88,7 @@ export class User extends BaseEntity {
   })
   @OneToMany(() => Product, (product) => product.seller)
   products: Product[];
+
+  @DeleteDateColumn()
+  deletedAt?: Date;
 }

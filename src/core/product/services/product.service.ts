@@ -1,16 +1,20 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   PaginationQueryDto,
   PaginationResponseDto,
 } from 'src/common/dtos/pagination.dto';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { Product } from '../entities/product.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UpdateProductDto } from '../dtos/product/update.dto';
-import { ProductWithChargili } from '../types/product-with-chargili.type';
 import { FavProduct } from '../entities/fav-product.entity';
 import { ProductResDto } from '../dtos/product/many-product.dto';
 import { FavProductDtoRes } from '../dtos/product/fav-product.dto';
+import { CreateProductDto } from '../dtos/product/create.dto';
 
 @Injectable()
 export class ProductService {
@@ -91,8 +95,11 @@ export class ProductService {
     return product;
   }
 
-  async create(dto: ProductWithChargili): Promise<Product> {
-    const product = this.productRepo.create(dto);
+  async create(dto: CreateProductDto, sellerId: number): Promise<Product> {
+    const product = this.productRepo.create({
+      ...dto,
+      sellerId,
+    });
     return this.productRepo.save(product);
   }
 
@@ -100,18 +107,16 @@ export class ProductService {
     id: number,
     dto: UpdateProductDto,
   ): Promise<{ message: string }> {
-    const result = await this.productRepo.update(id, dto);
-
-    if (result.affected === 0) {
+    const { affected } = await this.productRepo.update(id, dto);
+    if (affected === 0) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
     return { message: 'Product successfully updated' };
   }
 
   async remove(id: number): Promise<{ message: string }> {
-    const result = await this.productRepo.delete(id);
-
-    if (result.affected === 0) {
+    const { affected } = await this.productRepo.delete(id);
+    if (affected === 0) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
     return { message: 'Product successfully deleted' };
@@ -238,5 +243,45 @@ export class ProductService {
         hasNextPage: page * limit < total,
       },
     };
+  }
+
+  async validateAndReserveStock(
+    items: {
+      productId: number;
+      quantity: number;
+    }[],
+    em: EntityManager,
+  ): Promise<Product[]> {
+    const productIds = items.map((item) => item.productId);
+
+    const products = await em
+      .createQueryBuilder(Product, 'product')
+      .setLock('pessimistic_write')
+      .whereInIds(productIds)
+      .getMany();
+
+    if (products.length !== productIds.length) {
+      const foundIds = products.map((p) => p.id);
+      const missingIds = productIds.filter((id) => !foundIds.includes(id));
+      throw new NotFoundException(
+        `Products not found: ${missingIds.join(', ')}`,
+      );
+    }
+
+    const updates: Product[] = [];
+    for (const item of items) {
+      const product = products.find((p) => p.id === item.productId);
+      if (!product) continue;
+      if (product.quantity < item.quantity) {
+        throw new BadRequestException(
+          `Insufficient stock for "${product.name}". ` +
+            `Available: ${product.quantity}, Requested: ${item.quantity}`,
+        );
+      }
+      product.quantity -= item.quantity;
+      updates.push(product);
+    }
+    await em.save(updates);
+    return products;
   }
 }
