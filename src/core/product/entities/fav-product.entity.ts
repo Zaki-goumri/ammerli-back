@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, Relation } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
 import { User } from '../../user/entities/user.entity';
 import { Product } from './product.entity';
@@ -6,9 +6,9 @@ import { ApiProperty } from '@nestjs/swagger';
 
 @Entity('fav_products')
 export class FavProduct extends BaseEntity {
-  @ManyToOne(() => User, (user) => user.favoriteProducts)
+  @ManyToOne(() => User, { createForeignKeyConstraints: true })
   @JoinColumn({ name: 'userId' })
-  user: User;
+  user: Relation<User>;
 
   @ApiProperty({
     example: 5,
@@ -24,7 +24,7 @@ export class FavProduct extends BaseEntity {
   @Column()
   productId: number;
 
-  @ManyToOne(() => Product, (product) => product.favoritedBy)
+  @ManyToOne(() => Product, { createForeignKeyConstraints: true })
   @JoinColumn({ name: 'productId' })
-  product: Product;
+  product: Relation<Product>;
 }

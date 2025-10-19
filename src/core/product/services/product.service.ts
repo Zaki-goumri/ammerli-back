@@ -114,6 +114,7 @@ export class ProductService {
     return { message: 'Product successfully updated' };
   }
 
+  //TODO: check ownership
   async remove(id: number): Promise<{ message: string }> {
     const { affected } = await this.productRepo.delete(id);
     if (affected === 0) {

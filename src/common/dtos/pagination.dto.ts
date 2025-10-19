@@ -72,7 +72,6 @@ export class PaginationResponseDto<T> {
  * Factory function to create typed pagination response for Swagger
  */
 export function PaginatedResponse<T>(classRef: ClassType<T>) {
-  // Generate unique class name based on the type
   const className = `Paginated${classRef.name}Response`;
 
   @ApiExtraModels(classRef)

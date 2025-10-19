@@ -76,13 +76,6 @@ export class User extends BaseEntity {
   role?: UserRole;
 
   @ApiProperty({
-    description: 'List of favorite products',
-    type: () => [FavProduct],
-  })
-  @OneToMany(() => FavProduct, (favProduct) => favProduct.user)
-  favoriteProducts: FavProduct[];
-
-  @ApiProperty({
     description: 'List of products added by the user (if seller)',
     type: () => [Product],
   })

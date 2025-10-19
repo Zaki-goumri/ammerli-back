@@ -2,7 +2,6 @@ import {
   Entity,
   Column,
   ManyToOne,
-  OneToMany,
   Index,
   DeleteDateColumn,
   Relation,
@@ -13,7 +12,6 @@ import { BaseEntity } from '../../../common/entities/base.entity';
 import { User } from '../../user/entities/user.entity';
 import { Brand } from './brand.entity';
 import { Category } from './category.entity';
-import { FavProduct } from './fav-product.entity';
 
 @Entity('products')
 export class Product extends BaseEntity {
@@ -64,14 +62,27 @@ export class Product extends BaseEntity {
   @Column()
   sellerId: number;
 
-  @ManyToOne(() => Brand)
-  brand: Brand;
+  @ManyToOne(() => Brand, { createForeignKeyConstraints: true })
+  @JoinColumn({ name: 'brandId' })
+  brand: Relation<Brand>;
 
-  @ManyToOne(() => Category)
-  category: Category;
+  @ApiProperty({
+    description: 'Brand ID reference',
+    example: 1,
+  })
+  @Column()
+  brandId: number;
 
-  @OneToMany(() => FavProduct, (favProduct) => favProduct.product)
-  favoritedBy: FavProduct[];
+  @ManyToOne(() => Category, { createForeignKeyConstraints: true })
+  @JoinColumn({ name: 'categoryId' })
+  category: Relation<Category>;
+
+  @ApiProperty({
+    description: 'Category ID reference',
+    example: 5,
+  })
+  @Column()
+  categoryId: number;
 
   @DeleteDateColumn()
   deletedAt?: Date;

@@ -3,6 +3,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   BaseEntity as TypeOrmBaseEntity,
+  Index,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -12,6 +13,7 @@ export abstract class BaseEntity extends TypeOrmBaseEntity {
     example: 1,
   })
   @PrimaryGeneratedColumn('increment')
+  @Index()
   id: number;
 
   @ApiProperty({

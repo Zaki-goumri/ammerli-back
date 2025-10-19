@@ -63,7 +63,7 @@ export class ProductController {
     private readonly categoryService: CategoryService,
   ) {}
 
-  @Get()
+  @Get('/all')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get all products with pagination, search, and filters',
@@ -93,7 +93,7 @@ export class ProductController {
     return this.productService.findOne(id);
   }
 
-  @Post()
+  @Post('/create')
   @HttpCode(HttpStatus.CREATED)
   @Roles(USER_ROLES.ADMIN, USER_ROLES.WHOLESELLER)
   @ApiOperation({ summary: 'Create a new product' })
@@ -146,7 +146,7 @@ export class ProductController {
     type: PaginatedResponse(Product),
     description: 'Returns paginated wholeseller products',
   })
-  @Roles(USER_ROLES.WHOLESELLER)
+  @Roles(USER_ROLES.WHOLESELLER, USER_ROLES.ADMIN)
   @Get('wholeseller/all')
   getWholesellerProducts(
     @Query() query: FilterProductDto,
@@ -183,6 +183,21 @@ export class ProductController {
       search,
       categoryId,
     );
+  }
+
+  @Post(':id/toggle-favorite')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Toggle favorite status for a product' })
+  @ApiOkResponse({
+    description: 'Favorite status toggled successfully',
+    type: FavProductDtoRes,
+  })
+  @ApiNotFoundResponse({ description: 'Product not found' })
+  toggleFavorite(
+    @Param('id', ParseIntPipe) productId: number,
+    @USER('id') userId: number,
+  ) {
+    return this.productService.toggleFavorite(productId, userId);
   }
 
   @Get('categories')
@@ -291,20 +306,5 @@ export class ProductController {
   @ApiParam({ name: 'id', type: Number, description: 'Brand ID' })
   removeBrand(@Param('id', ParseIntPipe) id: number) {
     return this.brandService.remove(id);
-  }
-
-  @Post(':id/toggle-favorite')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Toggle favorite status for a product' })
-  @ApiOkResponse({
-    description: 'Favorite status toggled successfully',
-    type: FavProductDtoRes,
-  })
-  @ApiNotFoundResponse({ description: 'Product not found' })
-  toggleFavorite(
-    @Param('id', ParseIntPipe) productId: number,
-    @USER('id') userId: number,
-  ) {
-    return this.productService.toggleFavorite(productId, userId);
   }
 }
