@@ -14,5 +14,11 @@ export default registerAs(
     migrations: [__dirname + '/../migrations/*{.ts,.js}'],
     synchronize: process.env.NODE_ENV !== 'prod',
     logging: process.env.NODE_ENV !== 'production',
+    poolSize: 10,
+    extra: {
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    },
   }),
 );

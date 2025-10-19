@@ -1,5 +1,5 @@
 import { Type as ClassType } from '@nestjs/common';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiExtraModels, ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, Max, Min } from 'class-validator';
 
@@ -72,13 +72,21 @@ export class PaginationResponseDto<T> {
  * Factory function to create typed pagination response for Swagger
  */
 export function PaginatedResponse<T>(classRef: ClassType<T>) {
-  abstract class PaginatedResponseClass {
+  // Generate unique class name based on the type
+  const className = `Paginated${classRef.name}Response`;
+
+  @ApiExtraModels(classRef)
+  class PaginatedResponseClass {
     @ApiProperty({ type: [classRef] })
     data!: T[];
 
     @ApiProperty({ type: PaginationMetaDto })
     meta!: PaginationMetaDto;
   }
+
+  Object.defineProperty(PaginatedResponseClass, 'name', {
+    value: className,
+  });
 
   return PaginatedResponseClass;
 }
