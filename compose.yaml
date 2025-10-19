@@ -23,7 +23,50 @@ services:
       - "traefik.http.routers.traefik.service=api@internal"
       - "traefik.http.routers.traefik.entrypoints=web"
 
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio-data:/data 
+    command: server /data --console-address ":9001"
+    networks:
+      - proxy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      
+      # MinIO Console (Web UI) - FIXED
+      - "traefik.http.routers.minio-console.rule=Host(`minio.localhost`)"
+      - "traefik.http.routers.minio-console.entrypoints=web"
+      - "traefik.http.routers.minio-console.service=minio-console"
+      - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
+      - "traefik.http.services.minio-console.loadbalancer.passhostheader=true"
+      - "traefik.http.routers.minio-console.middlewares=minio-headers"
+      
+      # MinIO API
+      - "traefik.http.routers.minio-api.rule=Host(`storage.localhost`)"
+      - "traefik.http.routers.minio-api.entrypoints=web"
+      - "traefik.http.routers.minio-api.service=minio-api"
+      - "traefik.http.services.minio-api.loadbalancer.server.port=9000"
+      - "traefik.http.services.minio-api.loadbalancer.passhostheader=true"
+      
+      # Middlewares for MinIO
+      - "traefik.http.middlewares.minio-headers.headers.customrequestheaders.X-Forwarded-Proto=http"
+
   server:
+    container_name: server
     build:
       context: .
       dockerfile: Dockerfile.${NODE_ENV:-dev}
@@ -32,6 +75,8 @@ services:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     volumes:
       - .:/usr/src/app
@@ -65,7 +110,7 @@ services:
 
   db:
     image: postgres
-    container_name: postgres
+    container_name: db
     restart: unless-stopped
     ports:
       - "5432:5432" 
@@ -92,4 +137,7 @@ networks:
     internal: true 
 
 volumes:
+  minio-data:
+    driver: local
   db-data:
+    driver: local

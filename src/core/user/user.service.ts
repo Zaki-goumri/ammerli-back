@@ -66,6 +66,7 @@ export class UserService {
 
     const user = await this.userRepo.findOne({
       where: { phoneNumber },
+      withDeleted: false,
       relations: ['addresses'],
       select: {
         profilePic: true,
@@ -103,6 +104,7 @@ export class UserService {
 
     const user = await this.userRepo.findOne({
       where: { id },
+      withDeleted: false,
       relations: ['address'],
       select: {
         profilePic: true,
@@ -163,21 +165,15 @@ export class UserService {
   ): Promise<User | null> {
     return this.userRepo.findOne({
       where: { phoneNumber },
+      withDeleted: false,
       relations: ['address'],
     });
   }
 
+  //TODO: delete address too
   async deleteUser(id: number): Promise<{ message: string }> {
-    const user = await this.userRepo
-      .createQueryBuilder()
-      .select(['id', 'chargiliCustomerId'])
-      .where('id = :id', { id })
-      .getOne();
-
     await this.userRepo.softDelete(id);
-
     await this.redisService.del(UserService.getCacheKey(id, 'id'));
-
     return { message: 'User deleted successfully (soft delete)' };
   }
 }

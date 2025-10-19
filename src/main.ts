@@ -1,4 +1,4 @@
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { apiReference } from '@scalar/nestjs-api-reference';
@@ -18,6 +18,12 @@ async function bootstrap() {
       credentials: true,
     },
     logger: ['log', 'error', 'warn', 'debug', 'verbose'],
+  });
+
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1', // Optional: default version if none specified
+    prefix: 'api/v', // Optional: custom prefix (default is 'v')
   });
 
   //SECURITY

@@ -20,6 +20,7 @@ import { OtpValidationDto } from './dtos/requests/otp-validation.dto';
 import { SendOtpResDto } from './dtos/responses/send-otp-response.dto';
 import { UpdateUserDto } from '../user/dtos/update-user.dto';
 import { AccessTokenGuard } from './guards/access-token.guard';
+import { RegisterUserDto } from './dtos/requests/register-user.dto';
 
 @Controller('authentication')
 @ApiBadRequestResponse({ description: 'Bad request' })
@@ -79,7 +80,7 @@ export class AuthenticationController {
   @Put('register')
   async updateUserInfos(
     @USER('id') userId: number,
-    @Body() dto: UpdateUserDto,
+    @Body() dto: RegisterUserDto,
   ) {
     return this.authenticationService.registerUser(dto, userId);
   }

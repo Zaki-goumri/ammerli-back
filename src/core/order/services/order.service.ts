@@ -1,14 +1,21 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { EntityManager, In } from 'typeorm';
+import { EntityManager } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { OrderProduct } from './entities/product-order.entity';
-import { Order } from './entities/order.entity';
-import { CreateOrderDto } from './dtos/create-order.dto';
-import { ProductService } from '../product/services/product.service';
-import { Product } from '../product/entities/product.entity';
-import { Address } from '../user/entities/address.entity';
 import { ChargiliService } from 'src/core/chargili/chargili.service';
+import { OrderProduct } from '../entities/product-order.entity';
+import { Order } from '../entities/order.entity';
+import { ProductService } from 'src/core/product/services/product.service';
+import { Address } from 'src/core/user/entities/address.entity';
+import { ConfigService } from '@nestjs/config';
+import { CreateOrderDto } from '../dtos/create-order.dto';
+import { Product } from 'src/core/product/entities/product.entity';
+import { CheckoutService } from './checkout.service';
+import {
+  PaginationQueryDto,
+  PaginationResponseDto,
+} from 'src/common/dtos/pagination.dto';
+import { OrderStatus } from '../enums/delivery.enum';
 
 @Injectable()
 export class OrderService {
@@ -20,6 +27,8 @@ export class OrderService {
     private readonly orderProductRepo: Repository<OrderProduct>,
     private readonly productService: ProductService,
     private readonly chargilyService: ChargiliService,
+    private readonly configService: ConfigService,
+    private readonly CheckoutService: CheckoutService,
   ) {}
 
   async findProductsByOrder(orderId: number) {
@@ -33,17 +42,18 @@ export class OrderService {
     return this.orderProductRepo.count({ where: { order: { id: orderId } } });
   }
 
+  //TODO: verify if the buyer is the seller
   async createOrderProductWithPayement(
     dto: CreateOrderDto,
     buyerId: number,
     sellerId: number,
-  ): Promise<{ order: Order; checkoutUrl: string }> {
+  ): Promise<any> {
     const order = await this.entityManager.transaction(async (em) => {
       const products = await this.productService.validateAndReserveStock(
         dto.items,
         em,
       );
-      const { totalAmount, totalItems } = await this.calculateOrderTotals(
+      const { totalAmount } = await this.calculateOrderTotals(
         products,
         dto.items,
       );
@@ -63,7 +73,6 @@ export class OrderService {
         buyerId,
         sellerId,
         totalAmount,
-        status: 'PENDING',
         payementWay: dto.payementWay,
         addressId: address ? address.id : (dto.address as number),
       });
@@ -80,10 +89,12 @@ export class OrderService {
       await orderProductRepo.save(items);
       return order;
     });
-    const { checkout_url } = await this.createChargilyCheckout(
-      order.totalAmount,
-    );
-    return { order, checkoutUrl: checkout_url };
+    if (dto.payementWay === 'CASH') {
+      return { order, checkout: null };
+    }
+    const checkout = await this.createChargilyCheckout(order.totalAmount);
+    await this.CheckoutService.createCheckout(order.id, checkout.id);
+    return { order, checkout };
   }
 
   private async calculateOrderTotals(
@@ -91,7 +102,6 @@ export class OrderService {
     items: { productId: number; quantity: number }[],
   ) {
     let totalAmount = 0;
-    let totalItems = 0;
 
     const productMap = new Map(products.map((p) => [p.id, p]));
 
@@ -103,19 +113,73 @@ export class OrderService {
         );
       }
       totalAmount += product.price * item.quantity;
-      totalItems += item.quantity;
     }
-    return { totalAmount, totalItems };
+    return { totalAmount };
   }
-  private async createOrderRecord() {}
-  private async createOrderItems() {}
+
   private async createChargilyCheckout(totalAmount: number) {
+    const backendApiUrl = this.configService.get<string>('BACKEND_API_URL');
+    const backendBaseUrl = this.configService.get<string>('BACKEND_URL');
+
     const checkout = await this.chargilyService.createCheckout({
       amount: totalAmount,
       currency: 'dzd',
-      success_url: `https://9bd0d76ea3e5.ngrok-free.app/api-docs`,
-      webhook_endpoint: `https://9bd0d76ea3e5.ngrok-free.app/order/webhook/chargili`,
+      //NOTE: Update URLs to actual frontend pages in production
+      success_url: `${backendBaseUrl}/api-docs`,
+      webhook_endpoint: `${backendApiUrl}/order/webhook/chargili`,
+      failure_url: `${backendBaseUrl}/api-docs`,
     });
     return checkout;
+  }
+
+  async getOrderById(orderId: number): Promise<Order | null> {
+    return this.orderRepo.findOne({ where: { id: orderId } });
+  }
+
+  async getAllOrders(
+    paginationQuery: PaginationQueryDto,
+    userId: number,
+  ): Promise<
+    PaginationResponseDto<{
+      id: number;
+      totalAmount: number;
+      productCount: number;
+      status: string;
+    }>
+  > {
+    const { limit, page } = paginationQuery;
+    const queryBuilder = this.orderRepo
+      .createQueryBuilder('order')
+      .where('order.buyerId=:userId', { userId })
+      .leftJoin('order_products', 'op', 'op.orderId=order.id')
+      .select([
+        'order.id AS id',
+        'order.totalAmount AS totalAmount',
+        'order.status AS status',
+        'COUNT(op.id) AS productCount',
+      ])
+      .groupBy('order.id')
+      .orderBy('order.createdAt', 'DESC')
+      .take(limit)
+      .skip((page - 1) * limit);
+
+    const [data, total] = await Promise.all([
+      queryBuilder.getRawMany(),
+      this.orderRepo.count(),
+    ]);
+    return {
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+      },
+      data,
+    };
+  }
+
+  async updateOrderStatus(orderId: number, status: OrderStatus): Promise<void> {
+    await this.orderRepo.update({ id: orderId }, { status });
   }
 }

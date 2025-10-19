@@ -284,4 +284,19 @@ export class ProductService {
     await em.save(updates);
     return products;
   }
+
+  async toggleFavorite(
+    userId: number,
+    productId: number,
+  ): Promise<{ isLoved: boolean }> {
+    const existing = await this.favProductRepo.findOneBy({ userId, productId });
+    if (existing) {
+      await this.favProductRepo.delete({ userId, productId });
+      return { isLoved: false };
+    } else {
+      const favProduct = this.favProductRepo.create({ userId, productId });
+      await this.favProductRepo.save(favProduct);
+      return { isLoved: true };
+    }
+  }
 }

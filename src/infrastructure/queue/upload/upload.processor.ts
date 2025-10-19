@@ -4,13 +4,13 @@ import { UPLOAD_JOBS } from 'src/common/constants/jobs';
 import { QUEUE_NAME } from 'src/common/constants/queues';
 import { UploadJobDto } from './dto/upload-job.dto';
 import { Inject } from '@nestjs/common';
-import { CloudinaryService } from 'src/infrastructure/object-storage/object-storage.service';
+import { ObjectStorageMethods } from 'src/infrastructure/object-storage/object-storage.interface';
 
 @Processor(QUEUE_NAME.UPLOAD)
 export class UploadProcessor extends WorkerHost {
   constructor(
     @Inject('ObjectStorage')
-    private readonly objectStorageService: CloudinaryService,
+    private readonly objectStorageService: ObjectStorageMethods,
   ) {
     super();
   }

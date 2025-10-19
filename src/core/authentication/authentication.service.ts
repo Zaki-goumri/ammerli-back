@@ -7,6 +7,8 @@ import { UserService } from '../user/user.service';
 import { User } from '../user/entities/user.entity';
 import { OtpValidationDto } from './dtos/requests/otp-validation.dto';
 import { UpdateUserDto } from '../user/dtos/update-user.dto';
+import { thru } from 'lodash';
+import { RegisterUserDto } from './dtos/requests/register-user.dto';
 
 /**
  * @class AuthenticationService
@@ -55,7 +57,7 @@ export class AuthenticationService {
     if (!cachedOtp || cachedOtp !== otp) {
       throw new UnauthorizedException('Invalid or expired OTP');
     }
-    await this.redisService.del(AuthenticationService.getCacheKey(phoneNumber));
+    //await this.redisService.del(AuthenticationService.getCacheKey(phoneNumber));
 
     const user =
       await this.userService.findByPhoneNumberWithoutException(phoneNumber);
@@ -78,8 +80,7 @@ export class AuthenticationService {
    */
   private validateFields(user: User): boolean {
     if (!user) return false;
-    const nullableKeys = ['profilePic'];
-
+    const nullableKeys = ['profilePic', 'deletedAt', 'updatedAt', 'createdAt'];
     for (const [key, value] of Object.entries(user)) {
       if (nullableKeys.includes(key)) continue;
       if (value === null || value === undefined) {
@@ -162,7 +163,7 @@ export class AuthenticationService {
     return { message: `OTP sent to ${phoneNumber}` };
   }
 
-  async registerUser(dto: UpdateUserDto, userId: number) {
+  async registerUser(dto: RegisterUserDto, userId: number) {
     return await this.userService.updateUserInfo(dto, userId);
   }
 }

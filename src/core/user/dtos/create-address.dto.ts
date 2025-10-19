@@ -8,7 +8,7 @@ export class CreateAddressDto {
   })
   @IsString()
   @IsOptional()
-  street?: string;
+  street: string;
 
   @ApiPropertyOptional({
     description: 'City name',
@@ -16,7 +16,7 @@ export class CreateAddressDto {
   })
   @IsString()
   @IsOptional()
-  city?: string;
+  city: string;
 
   @ApiPropertyOptional({
     description: 'District/Commune',
@@ -24,5 +24,5 @@ export class CreateAddressDto {
   })
   @IsString()
   @IsOptional()
-  district?: string;
+  district: string;
 }

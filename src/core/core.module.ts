@@ -4,6 +4,7 @@ import { AuthenticationModule } from './authentication/authentication.module';
 import { ProductModule } from './product/product.module';
 import { OrderModule } from './order/order.module';
 import { ChargiliModule } from './chargili/chargili.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import chargiliConfig from 'src/config/chargili.config';
 
 @Module({
@@ -13,6 +14,8 @@ import chargiliConfig from 'src/config/chargili.config';
     ProductModule,
     OrderModule,
     ChargiliModule.registerAsync(chargiliConfig.asProvider()),
+    NotificationsModule,
   ],
+  providers: [],
 })
 export class CoreModule {}

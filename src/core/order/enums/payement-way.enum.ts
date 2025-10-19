@@ -1,6 +1,7 @@
 export const PAYEMENT_WAY = {
-  CREDIT_CARD: 'CREDIT_CARD',
   CASH: 'CASH',
+  EDAHABIA: 'EDAHABIA',
+  CIB: 'CIB',
 } as const;
 
 export const PAYMENT_WAY_VALUES = Object.values(PAYEMENT_WAY);

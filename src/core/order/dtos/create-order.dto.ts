@@ -38,7 +38,7 @@ export class CreateOrderDto {
 
   @ApiProperty({
     description: 'payement way ID',
-    example: PAYEMENT_WAY.CREDIT_CARD,
+    example: PAYEMENT_WAY.CIB,
     enum: PAYMENT_WAY_VALUES,
   })
   @IsEnum(PAYMENT_WAY_VALUES)
@@ -51,3 +51,4 @@ export class CreateOrderDto {
   @IsNotEmpty()
   address: CreateAddressDto | number;
 }
+

@@ -3,10 +3,10 @@ import { ApiProperty } from '@nestjs/swagger';
 import { BaseEntity } from 'src/common/entities/base.entity';
 import { Order } from './order.entity';
 import {
-  CHECKOUT_STATUS,
-  CheckoutStatus,
-  CHECKOUT_STATUS_VALUES,
-} from '../enums/checkout-status.enum';
+  PAYMENT_WAY_VALUES,
+  PAYEMENT_WAY,
+  PaymentWay,
+} from '../enums/payement-way.enum';
 
 @Entity({ name: 'checkouts' })
 export class Checkout extends BaseEntity {
@@ -14,7 +14,7 @@ export class Checkout extends BaseEntity {
   @Column()
   orderId: number;
 
-  @ManyToOne(() => Order, { onDelete: 'NO ACTION' })
+  @ManyToOne(() => Order, { onDelete: 'NO ACTION', nullable: true })
   @JoinColumn({ name: 'orderId' })
   order: Order;
 
@@ -22,33 +22,47 @@ export class Checkout extends BaseEntity {
     example: 'chk_9c7aefeb4b',
     description: 'Chargili checkout ID returned from Chargili API',
   })
-  @Column()
+  @Column({ unique: true })
   chargiliCheckoutId: string;
 
   @ApiProperty({
-    example: 'inv_a87f9e5d4b',
-    description: 'Chargili invoice ID (available after payment)',
-    nullable: true,
+    description: 'Current status of the checkout session',
+    example: true,
   })
-  @Column({ nullable: true })
-  chargiliInvoiceId?: string;
+  @Column({ type: 'boolean', default: false })
+  isPaid: boolean;
 
   @ApiProperty({
-    enum: CHECKOUT_STATUS,
-    example: CHECKOUT_STATUS.PENDING,
+    enum: PAYMENT_WAY_VALUES,
+    example: PAYEMENT_WAY.CIB,
     description: 'Current status of the checkout session',
   })
   @Column({
     type: 'enum',
-    enum: CHECKOUT_STATUS_VALUES,
-    default: CHECKOUT_STATUS.PENDING,
+    enum: PAYMENT_WAY_VALUES,
+    default: PAYEMENT_WAY.CASH,
   })
-  status: CheckoutStatus;
+  paymentWay?: PaymentWay;
 
   @ApiProperty({
-    example: 'https://pay.chargily.net/checkout/xyz',
-    description: 'Redirect URL for the user to complete payment',
+    example: '2.50',
+    description: 'fees of the checkout session',
   })
-  @Column()
-  checkoutUrl: string;
+  @Column('decimal', { precision: 10, scale: 2, nullable: true })
+  fees?: number;
+
+  @ApiProperty({
+    example: '2024-06-01T12:34:56Z',
+    description: 'Timestamp when the payment was completed',
+    nullable: true,
+  })
+  @Column({ type: 'timestamp', nullable: true })
+  paidAt?: Date;
+
+  @ApiProperty({
+    example: 'abcdef1234567890',
+    description: 'Signature for verifying the checkout data',
+  })
+  @Column({ unique: true, nullable: true })
+  signature?: string;
 }

@@ -292,4 +292,19 @@ export class ProductController {
   removeBrand(@Param('id', ParseIntPipe) id: number) {
     return this.brandService.remove(id);
   }
+
+  @Post(':id/toggle-favorite')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Toggle favorite status for a product' })
+  @ApiOkResponse({
+    description: 'Favorite status toggled successfully',
+    type: FavProductDtoRes,
+  })
+  @ApiNotFoundResponse({ description: 'Product not found' })
+  toggleFavorite(
+    @Param('id', ParseIntPipe) productId: number,
+    @USER('id') userId: number,
+  ) {
+    return this.productService.toggleFavorite(productId, userId);
+  }
 }

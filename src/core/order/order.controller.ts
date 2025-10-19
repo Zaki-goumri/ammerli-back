@@ -8,15 +8,33 @@ import {
   Headers,
   Logger,
   Get,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
-import { OrderService } from './order.service';
+import { OrderService } from './services/order.service';
 import { CreateOrderDto } from './dtos/create-order.dto';
 import { Request, Response } from 'express';
-import { ApiBody, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiExcludeEndpoint,
+  ApiOperation,
+  ApiQuery,
+} from '@nestjs/swagger';
+import { CheckoutService } from './services/checkout.service';
+import { PaymentWay } from './enums/payement-way.enum';
+import { CheckoutDataDto } from '../chargili/dtos/chargili-webhook.dto';
+import { extractCheckoutIdFromUrl } from './utils/extract-checkout-id.utils';
+import { AccessTokenGuard } from '../authentication/guards/access-token.guard';
+import { PaginationQueryDto } from 'src/common/dtos/pagination.dto';
+import { USER } from '../authentication/decorators/user.decorartor';
 
 @Controller('order')
 export class OrderController {
-  constructor(private readonly orderService: OrderService) {}
+  constructor(
+    private readonly orderService: OrderService,
+    private readonly checkoutService: CheckoutService,
+  ) {}
   logger = new Logger(OrderController.name);
 
   @ApiOperation({ summary: 'Create a new order with payment processing' })
@@ -34,33 +52,35 @@ export class OrderController {
     );
   }
 
+  @ApiExcludeEndpoint()
   @Post('webhook/chargili')
   @HttpCode(200)
   async handleChargiliWebhook(
-    @Body() body: any,
+    @Body('data') data: CheckoutDataDto,
     @Headers() headers: Record<string, string>,
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    this.logger.log('🔔 Chargili Webhook Received');
-    this.logger.log('Headers:', headers);
-    this.logger.log('Body:', body);
-
+    const checkoutId = extractCheckoutIdFromUrl(data.checkout_url);
+    if (checkoutId && data.status === 'paid') {
+      await this.checkoutService.updateCheckoutStatus(
+        checkoutId,
+        data.payment_method?.toUpperCase() as PaymentWay,
+        data.fees,
+        headers.authorization,
+      );
+    }
     res.send({ received: true });
   }
 
-  @Get('success')
-  @HttpCode(200)
-  async handleChargiliSuccess(
-    @Body() body: any,
-    @Headers() headers: Record<string, string>,
-    @Req() req: Request,
-    @Res() res: Response,
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all orders for the authenticated user' })
+  @UseGuards(AccessTokenGuard)
+  @Get('/all')
+  getAllOrders(
+    @Query() { page, limit }: PaginationQueryDto,
+    @USER('id') userId: number,
   ) {
-    this.logger.log('🔔 Chargili Webhook Received');
-    this.logger.log('Headers:', headers);
-    this.logger.log('Body:', body);
-
-    res.send({ received: true });
+    return this.orderService.getAllOrders({ page, limit }, userId);
   }
 }
