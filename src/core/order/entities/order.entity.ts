@@ -16,14 +16,6 @@ export class Order extends BaseEntity {
   @JoinColumn({ name: 'buyerId' })
   buyer: User;
 
-  @ApiProperty({ example: 9, description: 'Seller user ID' })
-  @Column()
-  sellerId: number;
-
-  @ManyToOne(() => User, { onDelete: 'NO ACTION' })
-  @JoinColumn({ name: 'sellerId' })
-  seller: User;
-
   @ApiProperty({
     enum: PAYEMENT_WAY,
     example: PAYEMENT_WAY.CIB,

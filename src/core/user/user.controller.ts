@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, Get, Put, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Put,
+  Patch,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -9,11 +21,15 @@ import {
   ApiTags,
   ApiOkResponse,
   ApiBody,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { USER } from '../authentication/decorators/user.decorartor';
 import { AccessTokenGuard } from '../authentication/guards/access-token.guard';
 import { UpdateUserDto } from './dtos/update-user.dto';
+import { ref } from 'process';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 
 @ApiTags('User')
 @ApiBearerAuth()
@@ -52,5 +68,35 @@ export class UserController {
   @ApiOkResponse({ description: 'User deleted successfully' })
   deleteUser(@USER('id') userId: number): Promise<{ message: string }> {
     return this.userService.deleteUser(userId);
+  }
+
+  @Patch('/me/picture')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Upload and set new profile picture' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        picture: {
+          type: 'string',
+          format: 'binary',
+          description: 'New profile picture file (max 2MB).',
+        },
+      },
+      required: ['picture'],
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('picture', {
+      storage: memoryStorage(),
+      limits: { fileSize: 2 * 1024 * 1024 * 5 }, // 2MB
+    }),
+  )
+  async updateProfilePicture(
+    @USER('id') userId: number,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.userService.updateUserProfilePic(userId, file);
   }
 }

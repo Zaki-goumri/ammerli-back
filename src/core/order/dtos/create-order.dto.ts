@@ -1,11 +1,19 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsEnum, IsNotEmpty, IsNumber } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  ValidateNested,
+} from 'class-validator';
 import {
   PAYEMENT_WAY,
   PAYMENT_WAY_VALUES,
   PaymentWay,
 } from '../enums/payement-way.enum';
 import { CreateAddressDto } from 'src/core/user/dtos/create-address.dto';
+import { Type } from 'class-transformer';
 
 export class OrderItemDto {
   @ApiProperty({
@@ -48,7 +56,8 @@ export class CreateOrderDto {
   @ApiProperty({
     description: 'address for delivery',
   })
-  @IsNotEmpty()
-  address: CreateAddressDto | number;
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CreateAddressDto)
+  address: CreateAddressDto;
 }
-

@@ -16,6 +16,7 @@ import { CoreModule } from './core/core.module';
 import elasticSearchConfig from './config/elastic-search.config';
 import dbConfig from './config/db.config';
 import chargiliConfig from './config/chargili.config';
+import minioConfig from './config/minio.config';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import chargiliConfig from './config/chargili.config';
       validationSchema: null,
       expandVariables: true,
       load: [
+        minioConfig,
         redisConfig,
         authConfig,
         appConfig,

@@ -15,6 +15,12 @@ import { FavProduct } from '../entities/fav-product.entity';
 import { ProductResDto } from '../dtos/product/many-product.dto';
 import { FavProductDtoRes } from '../dtos/product/fav-product.dto';
 import { CreateProductDto } from '../dtos/product/create.dto';
+import { UploadingOptions } from 'src/infrastructure/object-storage/types/upload-options.interface';
+import { InjectQueue } from '@nestjs/bullmq';
+import { QUEUE_NAME } from 'src/common/constants/queues';
+import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
+import { UPLOAD_JOBS } from 'src/common/constants/jobs';
+import { Queue } from 'bullmq';
 
 @Injectable()
 export class ProductService {
@@ -23,6 +29,9 @@ export class ProductService {
     private readonly productRepo: Repository<Product>,
     @InjectRepository(FavProduct)
     private readonly favProductRepo: Repository<FavProduct>,
+    @InjectQueue(QUEUE_NAME.UPLOAD)
+    private readonly uploadQueue: Queue,
+    private readonly objectService: ObjectService,
   ) {}
 
   //TODO: calculate buyer
@@ -95,12 +104,35 @@ export class ProductService {
     return product;
   }
 
-  async create(dto: CreateProductDto, sellerId: number): Promise<Product> {
-    const product = this.productRepo.create({
+  async initiateQueuedCreation() {}
+
+  async create(
+    dto: CreateProductDto,
+    sellerId: number,
+    file: Express.Multer.File,
+    uploadOptions: UploadingOptions,
+  ): Promise<Product> {
+    const objectName = this.objectService.generateUniqueObjectName(
+      file.originalname,
+    );
+
+    const presignedUrl = this.objectService.getFileUrl(objectName);
+
+    const preliminaryProduct = this.productRepo.create({
       ...dto,
       sellerId,
+      picture: presignedUrl,
     });
-    return this.productRepo.save(product);
+    const newProduct = await this.productRepo.save(preliminaryProduct);
+    const productId = newProduct.id;
+
+    await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
+      file,
+      options: { ...uploadOptions, objectName },
+      metadata: { productId },
+    });
+
+    return newProduct;
   }
 
   async update(

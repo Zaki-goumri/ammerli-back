@@ -164,6 +164,8 @@ export class AuthenticationService {
   }
 
   async registerUser(dto: RegisterUserDto, userId: number) {
-    return await this.userService.updateUserInfo(dto, userId);
+    const user = await this.userService.updateUserInfo(dto, userId);
+    const tokens = await this.issueTokens(user);
+    return { ...tokens, isRegistered: true };
   }
 }

@@ -19,7 +19,6 @@ import {
   ApiBody,
   ApiExcludeEndpoint,
   ApiOperation,
-  ApiQuery,
 } from '@nestjs/swagger';
 import { CheckoutService } from './services/checkout.service';
 import { PaymentWay } from './enums/payement-way.enum';
@@ -36,20 +35,13 @@ export class OrderController {
     private readonly checkoutService: CheckoutService,
   ) {}
   logger = new Logger(OrderController.name);
-
+  @ApiBearerAuth()
+  @UseGuards(AccessTokenGuard)
   @ApiOperation({ summary: 'Create a new order with payment processing' })
   @ApiBody({ type: CreateOrderDto, description: 'Order creation payload' })
   @Post()
-  async createOrder(
-    @Body() dto: CreateOrderDto,
-    buyerId: number = 1,
-    sellerId: number = 1,
-  ) {
-    return this.orderService.createOrderProductWithPayement(
-      dto,
-      buyerId,
-      sellerId,
-    );
+  async createOrder(@Body() dto: CreateOrderDto, @USER('id') buyerId: number) {
+    return this.orderService.createOrderProductWithPayement(dto, buyerId);
   }
 
   @ApiExcludeEndpoint()

@@ -10,4 +10,11 @@ export class Category extends BaseEntity {
   })
   @Column({ unique: true })
   label: string;
+
+  @ApiProperty({
+    description: 'The picture URL of the category',
+    example: 'https://example.com/category-picture.jpg',
+  })
+  @Column()
+  pictureUrl: string;
 }

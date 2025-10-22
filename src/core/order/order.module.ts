@@ -10,11 +10,13 @@ import chargiliConfig from 'src/config/chargili.config';
 import { ChargilyWebhookMiddleware } from '../chargili/middlewares/signature-verification.middleware';
 import { OrderService } from './services/order.service';
 import { CheckoutService } from './services/checkout.service';
+import { UserModule } from '../user/user.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Order, OrderProduct, Checkout]),
     ProductModule,
     ChargiliModule.registerAsync(chargiliConfig.asProvider()),
+    UserModule,
   ],
   controllers: [OrderController],
   providers: [OrderService, CheckoutService],

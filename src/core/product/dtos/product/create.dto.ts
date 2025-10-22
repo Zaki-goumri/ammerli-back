@@ -5,7 +5,6 @@ import {
   IsPositive,
   IsInt,
   Min,
-  IsUrl,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -26,15 +25,6 @@ export class CreateProductDto {
   @IsString()
   @IsNotEmpty()
   description?: string;
-
-  @ApiProperty({
-    description: 'Product picture URL',
-    example: 'https://example.com/images/product.jpg',
-  })
-  @IsString()
-  @IsNotEmpty()
-  @IsUrl({}, { message: 'Picture must be a valid URL' })
-  picture!: string;
 
   @ApiProperty({
     description: 'Product price in currency unit',

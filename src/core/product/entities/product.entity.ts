@@ -19,8 +19,8 @@ export class Product extends BaseEntity {
     description: 'The picture of the product',
     example: 'https://example.com/product.jpg',
   })
-  @Column()
-  picture: string;
+  @Column({ nullable: true })
+  picture?: string;
 
   @ApiProperty({
     description: 'The name of the product',

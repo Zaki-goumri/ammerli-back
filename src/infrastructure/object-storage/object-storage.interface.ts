@@ -1,6 +1,6 @@
 import { UploadingOptions } from './types/upload-options.interface';
 
-export interface ObjectStorageMethods {
+export interface ObjectStorageService {
   uploadFile(
     file: Express.Multer.File,
     options?: UploadingOptions,

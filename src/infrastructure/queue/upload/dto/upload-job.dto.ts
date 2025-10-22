@@ -2,5 +2,6 @@ import { UploadingOptions } from 'src/infrastructure/object-storage/types/upload
 
 export class UploadJobDto {
   file: Express.Multer.File;
-  options: UploadingOptions;
+  options?: UploadingOptions;
+  metadata?: Record<string, any>;
 }

@@ -7,7 +7,7 @@ export class OtpValidationDto {
     description: 'The OTP code sent to the user',
   })
   @IsString({ message: 'OTP code must be a string' })
-  @Length(4, 4, { message: 'OTP code must be exactly 6 characters long' })
+  @Length(4, 4, { message: 'OTP code must be exactly 4 characters long' })
   otp: string;
 
   @ApiProperty({

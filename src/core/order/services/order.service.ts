@@ -16,6 +16,7 @@ import {
   PaginationResponseDto,
 } from 'src/common/dtos/pagination.dto';
 import { OrderStatus } from '../enums/delivery.enum';
+import { UserService } from 'src/core/user/user.service';
 
 @Injectable()
 export class OrderService {
@@ -29,6 +30,7 @@ export class OrderService {
     private readonly chargilyService: ChargiliService,
     private readonly configService: ConfigService,
     private readonly CheckoutService: CheckoutService,
+    private readonly userService: UserService,
   ) {}
 
   async findProductsByOrder(orderId: number) {
@@ -42,11 +44,9 @@ export class OrderService {
     return this.orderProductRepo.count({ where: { order: { id: orderId } } });
   }
 
-  //TODO: verify if the buyer is the seller
   async createOrderProductWithPayement(
     dto: CreateOrderDto,
     buyerId: number,
-    sellerId: number,
   ): Promise<any> {
     const order = await this.entityManager.transaction(async (em) => {
       const products = await this.productService.validateAndReserveStock(
@@ -57,24 +57,22 @@ export class OrderService {
         products,
         dto.items,
       );
-      let address: Address | null = null;
+      let addressId: number | null = null;
       if (typeof dto.address === 'object') {
-        const addressDetailsProvided =
-          dto.address && Object.keys(dto.address).length > 0;
-        if (addressDetailsProvided) {
-          const addressRepo = em.getRepository(Address);
-          address = addressRepo.create({ ...dto.address });
-          await addressRepo.save(address);
-        }
+        const addressRepo = em.getRepository(Address);
+        const newAddress = addressRepo.create({ ...dto.address });
+        await addressRepo.save(newAddress);
+        addressId = newAddress.id;
+      } else {
+        addressId = await this.userService.getDefaultAddress(buyerId, em);
       }
 
       const orderRepo = em.getRepository(Order);
       const order = orderRepo.create({
         buyerId,
-        sellerId,
         totalAmount,
         payementWay: dto.payementWay,
-        addressId: address ? address.id : (dto.address as number),
+        addressId,
       });
       await orderRepo.save(order);
 

@@ -11,6 +11,8 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -27,6 +29,9 @@ import {
   ApiTooManyRequestsResponse,
   ApiInternalServerErrorResponse,
   PartialType,
+  ApiConsumes,
+  getSchemaPath,
+  ApiExtraModels,
 } from '@nestjs/swagger';
 import { ProductService } from './services/product.service';
 import { UpdateProductDto } from './dtos/product/update.dto';
@@ -45,6 +50,9 @@ import { Category } from './entities/category.entity';
 import { CreateLabelDto } from './dtos/label.dto';
 import { Brand } from './entities/brand.entity';
 import { CreateProductDto } from './dtos/product/create.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { UploadingOptions } from 'src/infrastructure/object-storage/types/upload-options.interface';
 
 @ApiTags('products')
 @ApiBearerAuth()
@@ -95,19 +103,82 @@ export class ProductController {
 
   @Post('/create')
   @HttpCode(HttpStatus.CREATED)
-  @Roles(USER_ROLES.ADMIN, USER_ROLES.WHOLESELLER)
-  @ApiOperation({ summary: 'Create a new product' })
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Create a new product with picture upload' })
   @ApiCreatedResponse({
     type: Product,
     description: 'Product successfully created',
   })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
-  @ApiBody({ type: CreateProductDto })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        picture: {
+          type: 'string',
+          format: 'binary',
+          description: 'The product image file.',
+        },
+        name: {
+          description: 'Product name.',
+          example: 'Sample Product',
+        },
+        description: {
+          description: 'Product description.',
+          example: 'This is a sample product description.',
+        },
+        price: {
+          format: 'int32',
+          description: 'Product price must be higher than 50.',
+          example: 100,
+        },
+        quantity: {
+          format: 'int32',
+          description: 'Available quantity.',
+          example: 50,
+        },
+        brandId: {
+          format: 'int32',
+          description: 'Brand ID.',
+          example: 1,
+        },
+        categoryId: {
+          format: 'int32',
+          description: 'Category ID.',
+          example: 1,
+        },
+      },
+      required: [
+        'picture',
+        'name',
+        'price',
+        'quantity',
+        'brandId',
+        'categoryId',
+      ],
+    },
+  })
+  @ApiExtraModels(CreateProductDto)
+  @UseInterceptors(
+    FileInterceptor('picture', {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
   create(
     @Body() createProductDto: CreateProductDto,
     @USER('id') userId: number,
+    @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.productService.create(createProductDto, userId);
+    const uploadOptions = {
+      pathPrefix: `products/${userId}/`,
+    } as UploadingOptions;
+    return this.productService.create(
+      createProductDto,
+      userId,
+      file,
+      uploadOptions,
+    );
   }
 
   @Put(':id')
@@ -222,8 +293,17 @@ export class ProductController {
   @ApiBody({
     type: CreateLabelDto,
   })
-  createCategory(@Body('label') label: string) {
-    return this.categoryService.create(label);
+  @UseInterceptors(
+    FileInterceptor('picture', {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  createCategory(
+    @Body('label') label: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.categoryService.create(label, file);
   }
 
   @Put('categories/:id')

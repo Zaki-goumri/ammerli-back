@@ -31,7 +31,7 @@ import { RegisterUserDto } from './dtos/requests/register-user.dto';
 @ApiInternalServerErrorResponse({ description: 'Internal server error' })
 export class AuthenticationController {
   constructor(private readonly authenticationService: AuthenticationService) {}
-
+  //TODO: add rate limiting
   @Post('otp/send')
   @ApiOperation({
     summary: 'send OTP',

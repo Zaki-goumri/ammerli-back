@@ -6,6 +6,11 @@ import { CreateUserDto } from './dtos/create-user.dto';
 import { Address } from './entities/address.entity';
 import { RedisService } from 'nestjs-redis-client';
 import { UpdateUserDto } from './dtos/update-user.dto';
+import { InjectQueue } from '@nestjs/bullmq';
+import { QUEUE_NAME } from 'src/common/constants/queues';
+import { Queue } from 'bullmq';
+import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
+import { UPLOAD_JOBS } from 'src/common/constants/jobs';
 
 @Injectable()
 export class UserService {
@@ -14,6 +19,9 @@ export class UserService {
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     private readonly redisService: RedisService,
+    @InjectQueue(QUEUE_NAME.UPLOAD)
+    private readonly uploadQueue: Queue,
+    private readonly objectService: ObjectService,
   ) {}
 
   private readonly logger = new Logger(UserService.name);
@@ -175,5 +183,32 @@ export class UserService {
     await this.userRepo.softDelete(id);
     await this.redisService.del(UserService.getCacheKey(id, 'id'));
     return { message: 'User deleted successfully (soft delete)' };
+  }
+
+  async getDefaultAddress(userId: number, em?: EntityManager): Promise<number> {
+    const userRepository = em ? em.getRepository(User) : this.userRepo;
+    const user = await userRepository.findOne({
+      where: { id: userId },
+      relations: ['address'],
+    });
+    const id = user?.address?.id;
+    if (!id) {
+      throw new NotFoundException('Default address not found for user');
+    }
+    return id;
+  }
+  async updateUserProfilePic(userId: number, profilePic: Express.Multer.File) {
+    const objectName = this.objectService.generateUniqueObjectName(
+      profilePic.originalname,
+    );
+    const presignedUrl = this.objectService.getFileUrl(objectName);
+    await this.userRepo.update(userId, { profilePic: presignedUrl });
+
+    await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
+      file: profilePic,
+      options: { objectName },
+      metadata: { userId },
+    });
+    return { profilePic: presignedUrl };
   }
 }
