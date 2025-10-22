@@ -7,6 +7,9 @@ import { QUEUE_NAME } from 'src/common/constants/queues';
 import { Queue } from 'bullmq';
 import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
 import { UPLOAD_JOBS } from 'src/common/constants/jobs';
+import { OnEvent } from '@nestjs/event-emitter';
+import { FinalizePayloadDto } from 'src/infrastructure/queue/upload/dto/finalize-payload.dto';
+import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class CategoryService {
@@ -18,6 +21,8 @@ export class CategoryService {
     private readonly objectStorageService: ObjectService,
   ) {}
 
+  logger = new Logger(CategoryService.name);
+
   async getAll(): Promise<Category[]> {
     return this.categoryRepo.find();
   }
@@ -27,12 +32,15 @@ export class CategoryService {
       picutre.originalname,
     );
     const pictureUrl = this.objectStorageService.getFileUrl(objectName);
+    const category = this.categoryRepo.create({ label, pictureUrl });
+    const newCategory = await this.categoryRepo.save(category);
+
     await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
       file: picutre,
       options: { objectName },
+      metadata: { targetId: newCategory.id, targetType: 'category_picture' },
     });
-    const category = this.categoryRepo.create({ label, pictureUrl });
-    return this.categoryRepo.save(category);
+    return newCategory;
   }
 
   async update(id: number, label: string): Promise<Category> {
@@ -47,5 +55,21 @@ export class CategoryService {
     const result = await this.categoryRepo.delete(id);
     if (result.affected === 0)
       throw new NotFoundException('Category not found');
+  }
+  //TODO: use one method to update
+  private async clearPictureUrl(id: number): Promise<Category> {
+    const category = await this.categoryRepo.findOne({ where: { id } });
+    if (!category) throw new NotFoundException('Category not found');
+
+    category.pictureUrl = '';
+    return this.categoryRepo.save(category);
+  }
+  //TODO: add notification
+  @OnEvent('file.failed.category_picture', { async: true })
+  async handlePictureUpload(payload: FinalizePayloadDto): Promise<void> {
+    this.logger.log(
+      `Handling failed upload for category picture, target ID: ${payload.targetId}`,
+    );
+    await this.clearPictureUrl(payload.targetId);
   }
 }

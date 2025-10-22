@@ -5,9 +5,12 @@ import { QUEUE_NAME } from 'src/common/constants/queues';
 import redisConfig from 'src/config/redis.config';
 import { UploadProcessor } from './upload/upload.processor';
 import { ObjectStorageModule } from '../object-storage/object-storage.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
+    ObjectStorageModule,
+    EventEmitterModule,
     BullModule.forRootAsync({
       useFactory: (configService: ConfigType<typeof redisConfig>) => {
         const redisHost = configService.host;
@@ -30,7 +33,6 @@ import { ObjectStorageModule } from '../object-storage/object-storage.module';
         name: queueName,
       })),
     ),
-    ObjectStorageModule,
   ],
   providers: [UploadProcessor],
   exports: [BullModule],

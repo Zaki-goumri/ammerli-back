@@ -16,6 +16,8 @@ import { QUEUE_NAME } from 'src/common/constants/queues';
 import { Queue } from 'bullmq';
 import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
 import { UPLOAD_JOBS } from 'src/common/constants/jobs';
+import { OnEvent } from '@nestjs/event-emitter';
+import { FinalizePayloadDto } from 'src/infrastructure/queue/upload/dto/finalize-payload.dto';
 
 @Injectable()
 export class UserService {
@@ -156,9 +158,9 @@ export class UserService {
         relations: ['address'],
       });
 
-      if (user.updatedAt === user.createdAt) {
-        throw new BadRequestException('User already registered');
-      }
+      // if (user.updatedAt === user.createdAt) {
+      //   throw new BadRequestException('User already registered');
+      // }
 
       userRepo.merge(user, dto);
 
@@ -249,8 +251,21 @@ export class UserService {
     await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
       file: profilePic,
       options: { objectName },
-      metadata: { userId },
+      metadata: { targetId: userId, targetType: 'user_picture' },
     });
     return { profilePic: presignedUrl };
+  }
+
+  private async setProfilePicUrlNull(userId: number) {
+    await this.userRepo.update(userId, { profilePic: undefined });
+    await this.redisService.del(UserService.getCacheKey(userId, 'id'));
+  }
+
+  @OnEvent('file.failed.user_picture', { async: true })
+  async finalizeUser(payload: FinalizePayloadDto) {
+    this.logger.log(
+      `Finalizing user profile pic upload for user ID: ${payload.targetId}`,
+    );
+    await this.setProfilePicUrlNull(payload.targetId);
   }
 }

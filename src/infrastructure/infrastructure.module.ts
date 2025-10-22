@@ -7,9 +7,11 @@ import redisConfig from 'src/config/redis.config';
 import { BullModule } from '@nestjs/bullmq';
 import { QUEUE_NAME } from 'src/common/constants/queues';
 import { ObjectStorageModule } from './object-storage/object-storage.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
+    EventEmitterModule.forRoot(),
     DbModule,
     ObjectStorageModule,
     QueueModule,

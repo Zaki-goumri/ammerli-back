@@ -1,13 +1,14 @@
 import { BaseEntity } from 'src/common/entities/base.entity';
-import { Column, Index, JoinColumn, ManyToOne, Relation } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne, Relation } from 'typeorm';
 import { Product } from './product.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
-@Index('IDX_UNIQUE_MAIN_PICTURE', ['productId', 'isMain'], {
+@Entity('product_pictures')
+@Index(['productId', 'isMain'], {
   unique: true,
   where: '"isMain" = TRUE',
 })
-export class ProductPictutre extends BaseEntity {
+export class ProductPicture extends BaseEntity {
   @ManyToOne(() => Product, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'productId' })
   product: Relation<Product>;

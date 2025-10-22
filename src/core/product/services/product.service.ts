@@ -337,7 +337,10 @@ export class ProductService {
       return this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
         file,
         options: { ...uploadOptions, objectName },
-        metadata: { productId },
+        metadata: {
+          targetId: productId,
+          targetType: 'product_picture',
+        },
       });
     });
     await Promise.all(queuePromises);
