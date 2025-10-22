@@ -27,7 +27,6 @@ import { UserService } from './user.service';
 import { USER } from '../authentication/decorators/user.decorartor';
 import { AccessTokenGuard } from '../authentication/guards/access-token.guard';
 import { UpdateUserDto } from './dtos/update-user.dto';
-import { ref } from 'process';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 

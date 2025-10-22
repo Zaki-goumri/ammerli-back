@@ -6,8 +6,6 @@ import authConfig from 'src/config/auth.config';
 import { UserService } from '../user/user.service';
 import { User } from '../user/entities/user.entity';
 import { OtpValidationDto } from './dtos/requests/otp-validation.dto';
-import { UpdateUserDto } from '../user/dtos/update-user.dto';
-import { thru } from 'lodash';
 import { RegisterUserDto } from './dtos/requests/register-user.dto';
 
 /**
@@ -57,14 +55,13 @@ export class AuthenticationService {
     if (!cachedOtp || cachedOtp !== otp) {
       throw new UnauthorizedException('Invalid or expired OTP');
     }
-    //await this.redisService.del(AuthenticationService.getCacheKey(phoneNumber));
-
+    await this.redisService.del(AuthenticationService.getCacheKey(phoneNumber));
     const user =
       await this.userService.findByPhoneNumberWithoutException(phoneNumber);
     if (!user) {
       const newUser = await this.userService.create({ phoneNumber });
-      const tokens = await this.issueTokens(newUser);
-      return { ...tokens, isRegistered: false };
+      const accessToken = await this.issueAccessToken(newUser);
+      return { accessToken, user: newUser, isRegistered: false };
     }
 
     const isRegistered = this.validateFields(user);
@@ -132,6 +129,16 @@ export class AuthenticationService {
     }
   }
 
+  private async issueAccessToken(user: User): Promise<string> {
+    const { id, phoneNumber } = user;
+    const accessTokenPayload = { id, phoneNumber };
+    const jwtConfig = authConfig().jwt;
+    const accessToken = await this.jwtService.signAsync(accessTokenPayload, {
+      expiresIn: jwtConfig.accessTokenExpiresIn,
+      secret: jwtConfig.accessTokenSecret,
+    });
+    return accessToken;
+  }
   /**
    * @method generateAndSetOtp
    * @description Generates a random OTP and stores it in Redis.
@@ -164,7 +171,7 @@ export class AuthenticationService {
   }
 
   async registerUser(dto: RegisterUserDto, userId: number) {
-    const user = await this.userService.updateUserInfo(dto, userId);
+    const user = await this.userService.registgerUserInfo(dto, userId);
     const tokens = await this.issueTokens(user);
     return { ...tokens, isRegistered: true };
   }

@@ -109,29 +109,21 @@ export class ProductService {
   async create(
     dto: CreateProductDto,
     sellerId: number,
-    file: Express.Multer.File,
+    files: Array<Express.Multer.File>,
     uploadOptions: UploadingOptions,
   ): Promise<Product> {
-    const objectName = this.objectService.generateUniqueObjectName(
-      file.originalname,
-    );
-
-    const presignedUrl = this.objectService.getFileUrl(objectName);
-
     const preliminaryProduct = this.productRepo.create({
       ...dto,
       sellerId,
-      picture: presignedUrl,
     });
     const newProduct = await this.productRepo.save(preliminaryProduct);
     const productId = newProduct.id;
-
-    await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
-      file,
-      options: { ...uploadOptions, objectName },
-      metadata: { productId },
+    this.addFilesToQueue(files, uploadOptions, productId).catch((error) => {
+      console.error(
+        `Failed to add files to queue for product ${productId}:`,
+        error,
+      );
     });
-
     return newProduct;
   }
 
@@ -331,5 +323,23 @@ export class ProductService {
       await this.favProductRepo.save(favProduct);
       return { isLoved: true };
     }
+  }
+
+  async addFilesToQueue(
+    files: Array<Express.Multer.File>,
+    uploadOptions: UploadingOptions,
+    productId: number,
+  ) {
+    const queuePromises = files.map((file) => {
+      const objectName = this.objectService.generateUniqueObjectName(
+        file.originalname,
+      );
+      return this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
+        file,
+        options: { ...uploadOptions, objectName },
+        metadata: { productId },
+      });
+    });
+    await Promise.all(queuePromises);
   }
 }

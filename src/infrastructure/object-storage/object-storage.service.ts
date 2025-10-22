@@ -119,16 +119,11 @@ export class ObjectService implements ObjectStorageService {
     return `${protocol}://${publicHost}/${this.bucketName}/${fileName}`;
   }
 
-  // async getPresignedUploadUrl(
-  //   objectName: string,
-  //   expirySeconds: number = 60 * 5,
-  // ): Promise<string> {
-  //   this.logger.log(`Generating presigned PUT URL for object: ${objectName}`);
-  //   const bucketName = this.bucketName;
-  //   return await this.minioClient.presignedPutObject(
-  //     bucketName,
-  //     objectName,
-  //     expirySeconds,
-  //   );
-  // }
+  async uploadBulkFiles(
+    files: Array<Express.Multer.File>,
+    options?: UploadingOptions,
+  ): Promise<Array<{ message: string; fileUrl: string }>> {
+    const uploadPromises = files.map((file) => this.uploadFile(file, options));
+    return Promise.all(uploadPromises);
+  }
 }

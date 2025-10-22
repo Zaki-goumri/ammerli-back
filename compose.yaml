@@ -55,7 +55,7 @@ services:
       - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
       - "traefik.http.services.minio-console.loadbalancer.passhostheader=true"
       - "traefik.http.routers.minio-console.middlewares=minio-headers"
-      -  "traefik.http.routers.minio-api.priority=2000"
+      - "traefik.http.routers.minio-api.priority=2000"
       
       # MinIO API
       - "traefik.http.routers.minio-api.rule=Host(`storage.localhost`)"

@@ -20,4 +20,5 @@ export const MAIL_JOBS = {
 export const UPLOAD_JOBS = {
   UPLOAD_FILE: 'upload-file',
   DELETE_FILE: 'delete-file',
+  UPLOAD_MULTIPLE_FILES: 'upload-multiple-files',
 };

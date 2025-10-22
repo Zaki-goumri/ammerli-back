@@ -11,7 +11,7 @@ export class AuthResponseDto {
     description: 'The refresh token for the user',
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
   })
-  refreshToken: string;
+  refreshToken?: string;
   @ApiProperty({
     description: 'The user object containing user details',
     type: () => User,

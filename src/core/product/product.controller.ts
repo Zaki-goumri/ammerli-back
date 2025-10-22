@@ -13,6 +13,7 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  UploadedFiles,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -30,7 +31,6 @@ import {
   ApiInternalServerErrorResponse,
   PartialType,
   ApiConsumes,
-  getSchemaPath,
   ApiExtraModels,
 } from '@nestjs/swagger';
 import { ProductService } from './services/product.service';
@@ -50,7 +50,7 @@ import { Category } from './entities/category.entity';
 import { CreateLabelDto } from './dtos/label.dto';
 import { Brand } from './entities/brand.entity';
 import { CreateProductDto } from './dtos/product/create.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { UploadingOptions } from 'src/infrastructure/object-storage/types/upload-options.interface';
 
@@ -114,10 +114,13 @@ export class ProductController {
     schema: {
       type: 'object',
       properties: {
-        picture: {
-          type: 'string',
-          format: 'binary',
-          description: 'The product image file.',
+        pictures: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+          description: 'Product image files (max 3).',
         },
         name: {
           description: 'Product name.',
@@ -160,15 +163,17 @@ export class ProductController {
   })
   @ApiExtraModels(CreateProductDto)
   @UseInterceptors(
-    FileInterceptor('picture', {
+    FilesInterceptor('pictures', 3, {
       storage: memoryStorage(),
-      limits: { fileSize: 5 * 1024 * 1024 },
+      limits: {
+        fileSize: 10 * 1024 * 1024, // Per-file size limit (5MB)
+      },
     }),
   )
   create(
     @Body() createProductDto: CreateProductDto,
     @USER('id') userId: number,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFiles() files: Array<Express.Multer.File>,
   ) {
     const uploadOptions = {
       pathPrefix: `products/${userId}/`,
@@ -176,7 +181,7 @@ export class ProductController {
     return this.productService.create(
       createProductDto,
       userId,
-      file,
+      files,
       uploadOptions,
     );
   }

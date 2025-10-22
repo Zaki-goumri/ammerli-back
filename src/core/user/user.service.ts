@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Logger,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, EntityManager } from 'typeorm';
 import { User } from './entities/user.entity';
@@ -147,8 +152,45 @@ export class UserService {
       const addressRepo = em.getRepository(Address);
       const user = await userRepo.findOneOrFail({
         where: { id },
+        withDeleted: false,
         relations: ['address'],
       });
+
+      if (user.updatedAt === user.createdAt) {
+        throw new BadRequestException('User already registered');
+      }
+
+      userRepo.merge(user, dto);
+
+      if (dto.address && Object.keys(dto.address).length > 0) {
+        if (user.address) {
+          addressRepo.merge(user.address, dto.address);
+          await addressRepo.save(user.address);
+        } else {
+          const newAddress = addressRepo.create(dto.address);
+          user.address = newAddress;
+          await addressRepo.save(newAddress);
+        }
+      }
+      await userRepo.save(user);
+      await this.redisService.del(UserService.getCacheKey(id, 'id'));
+      return user;
+    });
+  }
+
+  async registgerUserInfo(dto: UpdateUserDto, id: number): Promise<User> {
+    return this.entityManager.transaction(async (em) => {
+      const userRepo = em.getRepository(User);
+      const addressRepo = em.getRepository(Address);
+      const user = await userRepo.findOneOrFail({
+        where: { id },
+        withDeleted: false,
+        relations: ['address'],
+      });
+
+      if (user.updatedAt !== user.createdAt) {
+        throw new BadRequestException('User already registered');
+      }
 
       userRepo.merge(user, dto);
 
