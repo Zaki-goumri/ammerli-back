@@ -1,10 +1,17 @@
 import { BaseEntity } from 'src/common/entities/base.entity';
-import { Column, Entity, Index, JoinColumn, ManyToOne, Relation } from 'typeorm';
+import {
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  Relation,
+} from 'typeorm';
 import { Product } from './product.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
 @Entity('product_pictures')
-@Index(['productId', 'isMain'], {
+@Index(['productId', 'isMain', 'url'], {
   unique: true,
   where: '"isMain" = TRUE',
 })

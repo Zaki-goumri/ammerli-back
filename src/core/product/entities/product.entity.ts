@@ -6,22 +6,19 @@ import {
   DeleteDateColumn,
   Relation,
   JoinColumn,
+  OneToOne,
+  OneToMany,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseEntity } from '../../../common/entities/base.entity';
 import { User } from '../../user/entities/user.entity';
 import { Brand } from './brand.entity';
 import { Category } from './category.entity';
+import { ProductPicture } from './product-picture.entity';
+import { FavProduct } from './fav-product.entity';
 
 @Entity('products')
 export class Product extends BaseEntity {
-  @ApiProperty({
-    description: 'The picture of the product',
-    example: 'https://example.com/product.jpg',
-  })
-  @Column({ nullable: true })
-  picture?: string;
-
   @ApiProperty({
     description: 'The name of the product',
     example: 'Sample Product',
@@ -83,6 +80,20 @@ export class Product extends BaseEntity {
   })
   @Column()
   categoryId: number;
+
+  @ApiProperty({
+    description: 'images of the product',
+    example: ['https://example.com/product1.jpg'],
+  })
+  @Column({ default: true })
+  isActive: boolean;
+  @OneToMany(() => ProductPicture, (picture) => picture.product, {
+    cascade: true,
+  })
+  pictures: Relation<ProductPicture[]>;
+
+  @OneToMany(() => FavProduct, (favProduct) => favProduct.product)
+  favoritedBy: Relation<FavProduct[]>;
 
   @DeleteDateColumn()
   deletedAt?: Date;

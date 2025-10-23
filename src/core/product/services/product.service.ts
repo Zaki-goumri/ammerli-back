@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -24,6 +25,7 @@ import { Queue } from 'bullmq';
 
 @Injectable()
 export class ProductService {
+  logger = new Logger(ProductService.name);
   constructor(
     @InjectRepository(Product)
     private readonly productRepo: Repository<Product>,
@@ -48,20 +50,39 @@ export class ProductService {
       .createQueryBuilder('product')
       .leftJoin('product.brand', 'brand')
       .leftJoin('product.category', 'category')
-      .leftJoin('product.favoritedBy', 'fav', 'fav.userId = :userId', {
-        userId,
-      })
+      .leftJoin(
+        'product.favoritedBy',
+        'fav_products',
+        'fav_products.userId = :userId',
+        {
+          userId,
+        },
+      )
+      .leftJoin('product.pictures', 'mainPicture', 'mainPicture.isMain = TRUE')
+      .leftJoin('order_products', 'op', 'op.productId = product.id')
+      .leftJoin('op.order', 'order', 'order.id = op.orderId')
+      .leftJoin(
+        'checkouts',
+        'checkout',
+        'checkout."orderId" = order.id AND checkout.isPaid = TRUE',
+      )
       .select([
-        'product.id',
-        'product.name',
-        'product.price',
-        'product.picture',
-        'brand.label',
-        'product.createdAt',
-        'CASE WHEN fav.id IS NOT NULL THEN true ELSE false END AS "isLoved"',
+        'product.id AS id',
+        'product.name AS name',
+        'mainPicture.url AS picture',
+        'product.price AS price',
+        'brand.label AS brand',
+        'category.label AS category',
+        'product.createdAt AS createdAt',
+        'COUNT(DISTINCT "order"."buyerId") AS "buyerCount"',
+        'CASE WHEN fav_products.id IS NOT NULL THEN true ELSE false END AS "isLoved"',
       ])
-      .skip(offset)
-      .take(limit)
+      .groupBy('product.id')
+      .addGroupBy('brand')
+      .addGroupBy('category')
+      .addGroupBy('picture')
+      .addGroupBy('product.createdAt')
+      .addGroupBy('fav_products.id')
       .orderBy('product.createdAt', 'DESC');
 
     if (categoryId) {
@@ -73,15 +94,23 @@ export class ProductService {
         { search: `%${search}%` },
       );
     }
-    const [products, total] = await queryBuilder.getManyAndCount();
+    const totalQueryBuilder = queryBuilder.clone();
+    const total = await totalQueryBuilder.getCount();
+    const productsRaw = await queryBuilder
+      .skip(offset)
+      .take(limit)
+      .getRawMany();
+    console.log(productsRaw);
 
-    const formatted = products.map((p) => ({
-      id: p.id,
-      name: p.name,
-      price: p.price,
-      brand: p.brand.label,
-      category: p.category.label,
-      isLoved: p['isLoved'] === true || p['isLoved'] === 'true',
+    const formatted = productsRaw.map((p) => ({
+      id: p?.id,
+      name: p?.name,
+      price: parseInt(p?.price || '0', 10),
+      brand: p?.brand,
+      category: p?.category,
+      picture: p?.picture,
+      isLoved: p?.isLoved,
+      buyerCount: parseInt(p?.buyerCount || '0', 10),
     }));
 
     return {
@@ -97,7 +126,10 @@ export class ProductService {
   }
 
   async findOne(id: number): Promise<Product> {
-    const product = await this.productRepo.findOneBy({ id });
+    const product = await this.productRepo.findOne({
+      where: { id },
+      relations: ['pictures'],
+    });
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
@@ -162,18 +194,18 @@ export class ProductService {
       .leftJoin('product.brand', 'brand')
       .leftJoin('product.category', 'category')
       .leftJoin('product.seller', 'seller')
+      .leftJoin('product.pictures', 'mainPicture', 'mainPicture.isMain = TRUE')
       .where('seller.id = :sellerId', { sellerId })
       .select([
-        'product.id',
-        'product.name',
-        'product.price',
-        'product.picture',
-        'brand.label',
-        'category.label',
-        'product.createdAt',
+        'product.id AS id',
+        'product.name AS name',
+        'product.price AS price',
+        'mainPicture.url AS picture',
+        'brand.label AS brand',
+        'category.label AS category',
+        'product.createdAt AS createdAt',
+        'product.quantity AS quantity',
       ])
-      .skip(offset)
-      .take(limit)
       .orderBy('product.createdAt', 'DESC');
 
     if (categoryId) {
@@ -185,14 +217,24 @@ export class ProductService {
         { search: `%${search}%` },
       );
     }
-    const [products, total] = await queryBuilder.getManyAndCount();
-    const formatted = products.map((p) => ({
-      id: p.id,
-      name: p.name,
-      price: p.price,
-      brand: p.brand.label,
-      picture: p.picture,
-      category: p.category.label,
+    const totalQueryBuilder = queryBuilder.clone();
+    const total = await totalQueryBuilder.getCount();
+
+    const productsRaw = await queryBuilder
+      .skip(offset)
+      .take(limit)
+      .getRawMany();
+
+    console.log(productsRaw);
+
+    const formatted = productsRaw.map((p) => ({
+      id: p?.id,
+      name: p?.name,
+      price: p?.price,
+      brand: p?.brand,
+      picture: p?.picture,
+      category: p?.category,
+      quantity: p?.quantity,
     }));
 
     return {
@@ -221,19 +263,17 @@ export class ProductService {
       .leftJoin('favProduct.product', 'product')
       .leftJoin('product.brand', 'brand')
       .leftJoin('product.category', 'category')
+      .leftJoin('product.pictures', 'mainPicture', 'mainPicture.isMain = TRUE')
       .where('favProduct.userId = :userId', { userId })
       .select([
-        'favProduct.id',
-        'product.id',
-        'product.name',
-        'product.price',
-        'product.picture',
-        'brand.label',
-        'category.label',
-        'product.createdAt',
+        'product.id AS id',
+        'product.name AS name',
+        'product.price AS price',
+        'mainPicture.url AS picture',
+        'brand.label AS brand',
+        'category.label AS category',
+        'product.createdAt AS createdAt',
       ])
-      .skip(offset)
-      .take(limit)
       .orderBy('product.createdAt', 'DESC');
 
     if (categoryId) {
@@ -246,16 +286,22 @@ export class ProductService {
       );
     }
 
-    const [products, total] = await queryBuilder.getManyAndCount();
+    const totalQueryBuilder = queryBuilder.clone();
+    const total = await totalQueryBuilder.getCount();
 
-    const formatted = products.map((p) => ({
-      id: p.id,
-      productId: p.product.id,
-      name: p.product.name,
-      price: p.product.price,
-      brand: p.product.brand.label,
-      picturj: p.product.picture,
-      category: p.product.category.label,
+    const productsRaw = await queryBuilder
+      .skip(offset)
+      .take(limit)
+      .getRawMany();
+
+    const formatted = productsRaw.map((p) => ({
+      id: p?.id,
+      productId: p?.id,
+      name: p?.name,
+      price: p?.price,
+      brand: p?.brand,
+      picture: p?.picture,
+      category: p?.label,
     }));
 
     return {

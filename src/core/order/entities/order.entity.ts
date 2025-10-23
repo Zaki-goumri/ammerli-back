@@ -1,10 +1,18 @@
-import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
+  Relation,
+} from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from 'src/core/user/entities/user.entity';
 import { Address } from 'src/core/user/entities/address.entity';
 import { BaseEntity } from 'src/common/entities/base.entity';
 import { PAYEMENT_WAY, PaymentWay } from '../enums/payement-way.enum';
 import { ORDER_STATUS, OrderStatus } from '../enums/delivery.enum';
+import { Checkout } from './checkout.entity';
 
 @Entity({ name: 'orders' })
 export class Order extends BaseEntity {
@@ -56,4 +64,7 @@ export class Order extends BaseEntity {
   @ApiProperty({ example: 150.75, description: 'Total amount of the order' })
   @Column('decimal', { precision: 10, scale: 2 })
   totalAmount: number;
+
+  @OneToMany(() => Checkout, (checkout) => checkout.order)
+  checkouts: Relation<Checkout[]>;
 }

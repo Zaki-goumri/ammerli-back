@@ -91,6 +91,7 @@ services:
       - "traefik.http.routers.server.rule=Host(`app.localhost`) || HostRegexp(`{host:.+}`)"
       - "traefik.http.routers.server.entrypoints=web"
       - "traefik.http.services.server.loadbalancer.server.port=3000"
+      - "traefik.http.routers.minio-api.priority=2000"
       - "traefik.docker.network=proxy"
     env_file:
       - .env

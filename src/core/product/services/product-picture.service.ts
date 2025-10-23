@@ -14,7 +14,7 @@ export class ProductPictureService {
   ) {}
 
   Logger = new Logger(ProductPictureService.name);
-
+  //TODO: handle upload status
   @OnEvent('file.uploaded.product_picture', { async: true })
   async create(payload: FinalizePayloadDto): Promise<ProductPicture> {
     this.Logger.log(

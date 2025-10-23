@@ -273,7 +273,7 @@ export class ProductController {
     @Param('id', ParseIntPipe) productId: number,
     @USER('id') userId: number,
   ) {
-    return this.productService.toggleFavorite(productId, userId);
+    return this.productService.toggleFavorite(userId, productId);
   }
 
   @Get('categories')
@@ -291,6 +291,25 @@ export class ProductController {
   @HttpCode(HttpStatus.CREATED)
   @Roles(USER_ROLES.ADMIN)
   @ApiOperation({ summary: 'Create a new category' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        label: {
+          type: 'string',
+          description: 'Category label',
+          example: 'Electronics',
+        },
+        picture: {
+          type: 'string',
+          format: 'binary',
+          description: 'Category picture file',
+        },
+      },
+      required: ['label'],
+    },
+  })
   @ApiCreatedResponse({
     description: 'Category successfully created',
     type: Category,
