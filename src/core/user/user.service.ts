@@ -158,10 +158,6 @@ export class UserService {
         relations: ['address'],
       });
 
-      // if (user.updatedAt === user.createdAt) {
-      //   throw new BadRequestException('User already registered');
-      // }
-
       userRepo.merge(user, dto);
 
       if (dto.address && Object.keys(dto.address).length > 0) {
@@ -180,6 +176,7 @@ export class UserService {
     });
   }
 
+  //TODO: handle registration
   async registgerUserInfo(dto: UpdateUserDto, id: number): Promise<User> {
     return this.entityManager.transaction(async (em) => {
       const userRepo = em.getRepository(User);
@@ -190,9 +187,9 @@ export class UserService {
         relations: ['address'],
       });
 
-      if (user.updatedAt !== user.createdAt) {
-        throw new BadRequestException('User already registered');
-      }
+      // if (user.updatedAt !== user.createdAt) {
+      //   throw new BadRequestException('User already registered');
+      // }
 
       userRepo.merge(user, dto);
 
