@@ -47,12 +47,13 @@ import { RoleGuard } from '../authentication/guards/role.guard';
 import { BrandService } from './services/brand.service';
 import { CategoryService } from './services/category.service';
 import { Category } from './entities/category.entity';
-import { CreateLabelDto } from './dtos/label.dto';
 import { Brand } from './entities/brand.entity';
 import { CreateProductDto } from './dtos/product/create.dto';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { UploadingOptions } from 'src/infrastructure/object-storage/types/upload-options.interface';
+import { CreateCategoryDto } from './dtos/category/create-category.dto';
+import { CreateBrandDto } from './dtos/brand/brand.dto';
 
 @ApiTags('products')
 @ApiBearerAuth()
@@ -276,7 +277,7 @@ export class ProductController {
     return this.productService.toggleFavorite(userId, productId);
   }
 
-  @Get('categories')
+  @Get('main-categories')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get all categories' })
   @ApiOkResponse({
@@ -285,6 +286,17 @@ export class ProductController {
   })
   getAllCategories() {
     return this.categoryService.getAll();
+  }
+
+  @Get('categories/:id/children')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get all children categories' })
+  @ApiOkResponse({
+    description: 'Returns all categories',
+    type: [Category],
+  })
+  getChildrenCategories(@Param('id', ParseIntPipe) id: number) {
+    return this.categoryService.getChildrenCaregories(id);
   }
 
   @Post('categories')
@@ -315,7 +327,7 @@ export class ProductController {
     type: Category,
   })
   @ApiBody({
-    type: CreateLabelDto,
+    type: CreateCategoryDto,
   })
   @UseInterceptors(
     FileInterceptor('picture', {
@@ -324,27 +336,47 @@ export class ProductController {
     }),
   )
   createCategory(
-    @Body('label') label: string,
+    @Body() dto: CreateCategoryDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.categoryService.create(label, file);
+    return this.categoryService.create(dto, file);
   }
 
   @Put('categories/:id')
   @HttpCode(HttpStatus.OK)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        label: {
+          type: 'string',
+          description: 'Category label',
+          example: 'Electronics',
+        },
+        picture: {
+          type: 'string',
+          format: 'binary',
+          description: 'Category picture file',
+        },
+      },
+      required: ['label'],
+    },
+  })
   @Roles(USER_ROLES.ADMIN)
   @ApiOperation({ summary: 'Update an existing category' })
   @ApiOkResponse({ description: 'Category successfully updated' })
   @ApiNotFoundResponse({ description: 'Category not found' })
   @ApiParam({ name: 'id', type: Number, description: 'Category ID' })
   @ApiBody({
-    type: PartialType(CreateLabelDto),
+    type: PartialType(CreateCategoryDto),
   })
   updateCategory(
     @Param('id', ParseIntPipe) id: number,
-    @Body('label') label: string,
+    @Body() dto: Partial<CreateCategoryDto>,
+    @UploadedFile() file?: Express.Multer.File,
   ) {
-    return this.categoryService.update(id, label);
+    return this.categoryService.update(id, dto, file);
   }
 
   @Delete('categories/:id')
@@ -378,7 +410,7 @@ export class ProductController {
     type: Brand,
   })
   @ApiBody({
-    type: CreateLabelDto,
+    type: CreateBrandDto,
   })
   createBrand(@Body('label') label: string) {
     return this.brandService.create(label);
@@ -392,7 +424,7 @@ export class ProductController {
   @ApiNotFoundResponse({ description: 'Brand not found' })
   @ApiParam({ name: 'id', type: Number, description: 'Brand ID' })
   @ApiBody({
-    type: PartialType(CreateLabelDto),
+    type: PartialType(CreateBrandDto),
   })
   updateBrand(
     @Param('id', ParseIntPipe) id: number,

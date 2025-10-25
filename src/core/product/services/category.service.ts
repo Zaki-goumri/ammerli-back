@@ -10,6 +10,7 @@ import { UPLOAD_JOBS } from 'src/common/constants/jobs';
 import { OnEvent } from '@nestjs/event-emitter';
 import { FinalizePayloadDto } from 'src/infrastructure/queue/upload/dto/finalize-payload.dto';
 import { Logger } from '@nestjs/common';
+import { CreateCategoryDto } from '../dtos/category/create-category.dto';
 
 @Injectable()
 export class CategoryService {
@@ -24,15 +25,22 @@ export class CategoryService {
   logger = new Logger(CategoryService.name);
 
   async getAll(): Promise<Category[]> {
-    return this.categoryRepo.find();
+    return this.categoryRepo.find({ where: { parentCategoryId: null } });
   }
 
-  async create(label: string, picutre: Express.Multer.File): Promise<Category> {
+  async getChildrenCaregories(parentId: number): Promise<Category[]> {
+    return this.categoryRepo.find({ where: { parentCategoryId: parentId } });
+  }
+
+  async create(
+    dto: CreateCategoryDto,
+    picutre: Express.Multer.File,
+  ): Promise<Category> {
     const objectName = this.objectStorageService.generateUniqueObjectName(
       picutre.originalname,
     );
     const pictureUrl = this.objectStorageService.getFileUrl(objectName);
-    const category = this.categoryRepo.create({ label, pictureUrl });
+    const category = this.categoryRepo.create({ ...dto, pictureUrl });
     const newCategory = await this.categoryRepo.save(category);
 
     await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
@@ -43,14 +51,32 @@ export class CategoryService {
     return newCategory;
   }
 
-  async update(id: number, label: string): Promise<Category> {
-    const category = await this.categoryRepo.findOne({ where: { id } });
-    if (!category) throw new NotFoundException('Category not found');
+  async update(
+    id: number,
+    dto: Partial<CreateCategoryDto>,
+    newPicture?: Express.Multer.File,
+  ): Promise<{ message: string }> {
+    let pictureUrl: string | undefined;
+    if (newPicture) {
+      const objectName = this.objectStorageService.generateUniqueObjectName(
+        newPicture.originalname,
+      );
+      pictureUrl = this.objectStorageService.getFileUrl(objectName);
 
-    category.label = label;
-    return this.categoryRepo.save(category);
+      await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
+        file: newPicture,
+        options: { objectName },
+        metadata: { targetId: id, targetType: 'category_picture' },
+      });
+    }
+    await this.categoryRepo.update(id, {
+      ...dto,
+      pictureUrl,
+    });
+    return { message: 'Category updated successfully' };
   }
 
+  //TODO: delete picutue
   async remove(id: number): Promise<void> {
     const result = await this.categoryRepo.delete(id);
     if (result.affected === 0)
@@ -58,11 +84,7 @@ export class CategoryService {
   }
   //TODO: use one method to update
   private async clearPictureUrl(id: number): Promise<Category> {
-    const category = await this.categoryRepo.findOne({ where: { id } });
-    if (!category) throw new NotFoundException('Category not found');
-
-    category.pictureUrl = '';
-    return this.categoryRepo.save(category);
+    await this.categoryRepo.update(id, { pictureUrl: undefined });
   }
   //TODO: add notification
   @OnEvent('file.failed.category_picture', { async: true })

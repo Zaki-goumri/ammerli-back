@@ -1,4 +1,4 @@
-import { Entity, Column } from 'typeorm';
+import { Entity, Column, ManyToOne, Relation } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseEntity } from '../../../common/entities/base.entity';
 
@@ -17,4 +17,10 @@ export class Category extends BaseEntity {
   })
   @Column()
   pictureUrl: string;
+
+  @Column({ nullable: true })
+  parentCategoryId?: number;
+
+  @ManyToOne(() => Category, (category) => category.id, { nullable: true })
+  parentCategory?: Relation<Category>;
 }
