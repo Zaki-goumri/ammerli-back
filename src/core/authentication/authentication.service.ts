@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { AuthResponseDto } from './dtos/responses/auth-response.dto';
 import { JwtService } from '@nestjs/jwt';
 import { RedisService } from 'nestjs-redis-client';
@@ -12,6 +7,9 @@ import { UserService } from '../user/user.service';
 import { User } from '../user/entities/user.entity';
 import { OtpValidationDto } from './dtos/requests/otp-validation.dto';
 import { RegisterUserDto } from './dtos/requests/register-user.dto';
+import { AuthResDto } from './dtos/response/refresh-token.dto';
+import { UserDto } from '../user/dtos/response/user.dto';
+import { ValidateOtpDto } from './dtos/response/validate-otp.dto';
 
 /**
  * @class AuthenticationService
@@ -50,9 +48,7 @@ export class AuthenticationService {
    * @returns {Promise<AuthResponseDto & { isRegistered: boolean }>} An object containing authentication tokens and a flag indicating if the user is registered.
    * @throws {UnauthorizedException} If the OTP is invalid or expired.
    */
-  async validateOtp(
-    dto: OtpValidationDto,
-  ): Promise<AuthResponseDto & { isRegistered: boolean }> {
+  async validateOtp(dto: OtpValidationDto): Promise<ValidateOtpDto> {
     const { phoneNumber, otp } = dto;
     const cachedOtp = await this.redisService.get<string>(
       AuthenticationService.getCacheKey(phoneNumber),
@@ -79,10 +75,10 @@ export class AuthenticationService {
    * @method issueTokens
    * @description Issues new access and refresh tokens for a user.
    * @param {User} user - The user to issue tokens for.
-   * @returns {Promise<AuthResponseDto>} An object containing the new tokens and user information.
+   * @returns {Promise<AuthResDto>} An object containing the new tokens and user information.
    * @throws {Error} If token issuance fails.
    */
-  async issueTokens(user: User): Promise<AuthResponseDto> {
+  async issueTokens(user: User): Promise<AuthResDto> {
     try {
       const { id, phoneNumber, role, isRegistered } = user;
       const accessTokenPayload = {
@@ -114,7 +110,8 @@ export class AuthenticationService {
       return {
         accessToken,
         refreshToken,
-        user: user,
+        //TODO: map user to UserDto properly
+        user: user as UserDto,
       };
     } catch (error) {
       this.logger.error('Error issuing tokens', error);

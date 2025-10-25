@@ -1,5 +1,4 @@
 import { Entity, Column, OneToMany, DeleteDateColumn, Index } from 'typeorm';
-import { FavProduct } from '../../product/entities/fav-product.entity';
 import { Product } from '../../product/entities/product.entity';
 import { Address } from './address.entity';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';

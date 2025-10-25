@@ -4,8 +4,8 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { RefreshTokenPayload } from '../interfaces/refresh-token.dto';
 import { UserService } from 'src/core/user/user.service';
-import { User } from 'src/core/user/entities/user.entity';
 import authConfig from 'src/config/auth.config';
+import { GetMeDto } from 'src/core/user/dtos/response/get-me.dto';
 
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(
@@ -23,7 +23,7 @@ export class RefreshTokenStrategy extends PassportStrategy(
     });
   }
 
-  async validate(payload: RefreshTokenPayload): Promise<User | null> {
+  async validate(payload: RefreshTokenPayload): Promise<GetMeDto | null> {
     return this.userService.findById(payload.id);
   }
 }

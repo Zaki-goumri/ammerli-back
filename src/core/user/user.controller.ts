@@ -32,6 +32,11 @@ import { UpdateUserDto } from './dtos/update-user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { CreateAddressDto } from './dtos/create-address.dto';
+import { GetMeDto } from './dtos/response/get-me.dto';
+import { UserDto } from './dtos/response/user.dto';
+import { MessageDto } from './dtos/response/message.dto';
+import { ProfilePictureDto } from './dtos/response/profile-picture.dto';
+import { AddressDto } from './dtos/response/address.dto';
 
 @ApiTags('User')
 @ApiBearerAuth()
@@ -50,8 +55,9 @@ export class UserController {
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiOkResponse({
     description: 'Successfully fetched user profile',
+    type: GetMeDto,
   })
-  getMe(@USER('id') userId: number) {
+  getMe(@USER('id') userId: number): Promise<GetMeDto> {
     return this.userService.findById(userId);
   }
 
@@ -59,16 +65,23 @@ export class UserController {
   @ApiOperation({ summary: 'Update current user profile' })
   @ApiOkResponse({
     description: 'User profile updated successfully',
+    type: UserDto,
   })
   @ApiBody({ type: UpdateUserDto })
-  updateUserInfos(@USER('id') userId: number, @Body() userDto: UpdateUserDto) {
+  updateUserInfos(
+    @USER('id') userId: number,
+    @Body() userDto: UpdateUserDto,
+  ): Promise<UserDto> {
     return this.userService.updateUser(userId, userDto);
   }
 
   @Delete('/me')
   @ApiOperation({ summary: 'Delete current user account' })
-  @ApiOkResponse({ description: 'User deleted successfully' })
-  deleteUser(@USER('id') userId: number): Promise<{ message: string }> {
+  @ApiOkResponse({
+    description: 'User deleted successfully',
+    type: MessageDto,
+  })
+  deleteUser(@USER('id') userId: number): Promise<MessageDto> {
     return this.userService.deleteUser(userId);
   }
 
@@ -89,6 +102,10 @@ export class UserController {
       required: ['picture'],
     },
   })
+  @ApiOkResponse({
+    description: 'Profile picture updated successfully',
+    type: ProfilePictureDto,
+  })
   @UseInterceptors(
     FileInterceptor('picture', {
       storage: memoryStorage(),
@@ -98,7 +115,7 @@ export class UserController {
   async updateProfilePicture(
     @USER('id') userId: number,
     @UploadedFile() file: Express.Multer.File,
-  ) {
+  ): Promise<ProfilePictureDto> {
     return this.userService.updateUserProfilePic(userId, file);
   }
 
@@ -106,11 +123,12 @@ export class UserController {
   @ApiOperation({ summary: 'Create a new address for the current user' })
   @ApiOkResponse({
     description: 'Address created successfully',
+    type: AddressDto,
   })
   createAddress(
     @USER('id') userId: number,
     @Body() createAddressDto: CreateAddressDto,
-  ) {
+  ): Promise<AddressDto> {
     return this.userService.createAddress(userId, createAddressDto);
   }
 
@@ -118,8 +136,9 @@ export class UserController {
   @ApiOperation({ summary: 'Get all addresses for the current user' })
   @ApiOkResponse({
     description: 'Successfully fetched user addresses',
+    type: [AddressDto],
   })
-  getAddresses(@USER('id') userId: number) {
+  getAddresses(@USER('id') userId: number): Promise<AddressDto[]> {
     return this.userService.getAddresses(userId);
   }
 
@@ -127,12 +146,13 @@ export class UserController {
   @ApiOperation({ summary: 'Update an address for the current user' })
   @ApiOkResponse({
     description: 'Address updated successfully',
+    type: AddressDto,
   })
   updateAddress(
     @USER('id') userId: number,
     @Param('id') addressId: number,
     @Body() updateAddressDto: CreateAddressDto,
-  ) {
+  ): Promise<AddressDto> {
     return this.userService.updateAddress(userId, addressId, updateAddressDto);
   }
 
@@ -140,8 +160,12 @@ export class UserController {
   @ApiOperation({ summary: 'Delete an address for the current user' })
   @ApiOkResponse({
     description: 'Address deleted successfully',
+    type: MessageDto,
   })
-  deleteAddress(@USER('id') userId: number, @Param('id') addressId: number) {
+  deleteAddress(
+    @USER('id') userId: number,
+    @Param('id') addressId: number,
+  ): Promise<MessageDto> {
     return this.userService.deleteAddress(userId, addressId);
   }
 }

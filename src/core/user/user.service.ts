@@ -20,6 +20,9 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { FinalizePayloadDto } from 'src/infrastructure/queue/upload/dto/finalize-payload.dto';
 import { CreateAddressDto } from './dtos/create-address.dto';
 import { RegisterUserDto } from '../authentication/dtos/requests/register-user.dto';
+import { GetMeDto } from './dtos/response/get-me.dto';
+import { UserDto } from './dtos/response/user.dto';
+import { AddressDto } from './dtos/response/address.dto';
 
 @Injectable()
 export class UserService {
@@ -108,8 +111,8 @@ export class UserService {
     return user;
   }
 
-  async findById(id: number): Promise<User> {
-    const cachedUser = await this.redisService.get<User>(
+  async findById(id: number): Promise<GetMeDto> {
+    const cachedUser = await this.redisService.get<GetMeDto>(
       UserService.getCacheKey(id, 'id'),
     );
     if (cachedUser) return cachedUser;
@@ -143,8 +146,7 @@ export class UserService {
       user,
       this.CACHE_TTL,
     );
-    console.log('Fetched user from DB:', user);
-    return user;
+    return user as GetMeDto;
   }
 
   async registerUserInfo(dto: RegisterUserDto, id: number): Promise<User> {
@@ -164,19 +166,28 @@ export class UserService {
     });
   }
 
-  async updateUser(id: number, dto: UpdateUserDto): Promise<User> {
+  async updateUser(id: number, dto: UpdateUserDto): Promise<UserDto> {
     return this.entityManager.transaction(async (em) => {
       const userRepo = em.getRepository(User);
       const user = await userRepo.findOneOrFail({
         where: { id },
         withDeleted: false,
+        select: {
+          id: true,
+          name: true,
+          phoneNumber: true,
+          profilePic: true,
+          supermarketName: true,
+          isRegistered: false,
+          updatedAt: false,
+          addresses: { id: true, street: true, district: true, city: true },
+        },
+        relations: ['addresses'],
       });
-
       userRepo.merge(user, dto);
-
       await this.userRepo.save(user);
       await this.redisService.del(UserService.getCacheKey(id, 'id'));
-      return user;
+      return user as UserDto;
     });
   }
 
@@ -228,41 +239,45 @@ export class UserService {
     userId: number,
     createAddressDto: CreateAddressDto,
     emGlobal?: EntityManager,
-  ) {
+  ): Promise<AddressDto> {
     return this.entityManager.transaction(async (emLocal) => {
       const em = emGlobal || emLocal;
       const addressRepo = em.getRepository(Address);
       const address = addressRepo.create({ ...createAddressDto, userId });
-      return addressRepo.save(address);
+      const created = await addressRepo.save(address);
+      const { id, street, district, city } = created;
+      return { id, street, district, city } as AddressDto;
     });
   }
 
-  async getAddresses(userId: number) {
-    return this.addressRepo.find({
+  async getAddresses(userId: number): Promise<AddressDto[]> {
+    const addresses = await this.addressRepo.find({
       where: { userId },
       select: {
         id: true,
         street: true,
         district: true,
         city: true,
-        createdAt: false,
+        createdAt: true,
         updatedAt: false,
       },
       order: { createdAt: 'DESC' },
     });
+    return addresses as AddressDto[];
   }
 
   async updateAddress(
     userId: number,
     addressId: number,
     updateAddressDto: CreateAddressDto,
-  ) {
+  ): Promise<AddressDto> {
     const address = await this.addressRepo.findOneOrFail({
       where: { id: addressId, userId },
     });
     this.addressRepo.merge(address, updateAddressDto);
-    await this.addressRepo.save(address);
-    return address;
+    const updatedAdress = await this.addressRepo.save(address);
+    const { id, street, district, city } = updatedAdress;
+    return { id, street, district, city, userId } as AddressDto;
   }
 
   async deleteAddress(userId: number, addressId: number) {

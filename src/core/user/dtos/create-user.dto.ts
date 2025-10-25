@@ -4,7 +4,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUrl,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
@@ -50,6 +49,10 @@ export class CreateUserDto {
     example: USER_ROLES.SUPERMARKET,
     enum: USER_ROLE_VALUES,
   })
+  /*
+   * User role, defaults to SUPERMARKET if not provided
+   * it's kept in the dto for futre use cases
+   * */
   @IsEnum(USER_ROLE_VALUES, {
     message: 'role must be either admin or superMarket, wholeseller',
   })

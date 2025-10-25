@@ -12,15 +12,16 @@ import {
   ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { AuthResponseDto } from './dtos/responses/auth-response.dto';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { User } from '../user/entities/user.entity';
 import { AuthDto } from './dtos/requests/auth.dto';
 import { OtpValidationDto } from './dtos/requests/otp-validation.dto';
-import { SendOtpResDto } from './dtos/responses/send-otp-response.dto';
 import { AccessTokenGuard } from './guards/access-token.guard';
 import { RegisterUserDto } from './dtos/requests/register-user.dto';
 import { SkipRegistrationCheck } from './decorators/skip-registration-check.decorator';
+import { SendOtpDto } from './dtos/response/send-otp.dto';
+import { ValidateOtpDto } from './dtos/response/validate-otp.dto';
+import { AuthResDto } from './dtos/response/refresh-token.dto';
 
 @Controller('authentication')
 @ApiBadRequestResponse({ description: 'Bad request' })
@@ -40,13 +41,13 @@ export class AuthenticationController {
   @ApiBody({ type: () => AuthDto })
   @ApiOkResponse({
     description: 'return a message it is send',
-    type: () => SendOtpResDto,
+    type: () => SendOtpDto,
   })
   @ApiResponse({
     status: 400,
     description: 'Bad Request.error in sending',
   })
-  async auth(@Body() dto: AuthDto): Promise<SendOtpResDto> {
+  async auth(@Body() dto: AuthDto): Promise<SendOtpDto> {
     return this.authenticationService.sendVerificationCode(dto.phoneNumber);
   }
   @ApiOperation({
@@ -55,7 +56,7 @@ export class AuthenticationController {
   })
   @ApiOkResponse({
     description: 'Returns user if it is registered esle register him',
-    type: () => AuthResponseDto,
+    type: () => ValidateOtpDto,
   })
   @ApiResponse({
     status: 400,
@@ -63,7 +64,7 @@ export class AuthenticationController {
       'Bad Request. The request body is invalid or missing required fields.',
   })
   @Post('otp/validate')
-  async validateOtp(@Body() dto: OtpValidationDto) {
+  async validateOtp(@Body() dto: OtpValidationDto): Promise<ValidateOtpDto> {
     return this.authenticationService.validateOtp(dto);
   }
 
@@ -77,12 +78,13 @@ export class AuthenticationController {
   })
   @ApiOkResponse({
     description: 'User successfully registered and updated.',
+    type: () => ValidateOtpDto,
   })
   @Put('register')
   async updateUserInfos(
     @USER('id') userId: number,
     @Body() dto: RegisterUserDto,
-  ) {
+  ): Promise<ValidateOtpDto> {
     return this.authenticationService.registerUser(dto, userId);
   }
 
@@ -96,13 +98,13 @@ export class AuthenticationController {
   })
   @ApiOkResponse({
     description: 'Returns the new access token and refresh token.',
-    type: () => AuthResponseDto,
+    type: () => AuthResDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Unauthorized. Invalid refresh token provided.',
   })
-  async refreshTokens(@USER() user: User) {
+  async refreshTokens(@USER() user: User): Promise<AuthResDto> {
     return this.authenticationService.issueTokens(user);
   }
 }

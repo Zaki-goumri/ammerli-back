@@ -25,7 +25,7 @@ export class CategoryService {
   logger = new Logger(CategoryService.name);
 
   async getAll(): Promise<Category[]> {
-    return this.categoryRepo.find({ where: { parentCategoryId: null } });
+    return this.categoryRepo.find({ where: { parentCategoryId: undefined } });
   }
 
   async getChildrenCaregories(parentId: number): Promise<Category[]> {
@@ -83,7 +83,7 @@ export class CategoryService {
       throw new NotFoundException('Category not found');
   }
   //TODO: use one method to update
-  private async clearPictureUrl(id: number): Promise<Category> {
+  private async clearPictureUrl(id: number): Promise<void> {
     await this.categoryRepo.update(id, { pictureUrl: undefined });
   }
   //TODO: add notification

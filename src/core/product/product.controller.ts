@@ -292,7 +292,7 @@ export class ProductController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get all children categories' })
   @ApiOkResponse({
-    description: 'Returns all categories',
+    description: 'Returns all children categories',
     type: [Category],
   })
   getChildrenCategories(@Param('id', ParseIntPipe) id: number) {
