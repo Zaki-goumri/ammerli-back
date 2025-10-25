@@ -1,10 +1,11 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
   IsEnum,
   IsNotEmpty,
   IsNumber,
   IsOptional,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import {
@@ -53,11 +54,21 @@ export class CreateOrderDto {
   @IsNotEmpty()
   payementWay: PaymentWay;
 
-  @ApiProperty({
-    description: 'address for delivery',
+  @ApiPropertyOptional({
+    description: 'ID of the address to use for delivery',
+    example: 1,
+  })
+  @IsNumber()
+  @IsOptional()
+  @ValidateIf((o) => !o.address)
+  addressId?: number;
+
+  @ApiPropertyOptional({
+    description: 'A new address to create for delivery',
   })
   @IsOptional()
   @ValidateNested()
   @Type(() => CreateAddressDto)
-  address: CreateAddressDto;
+  @ValidateIf((o) => !o.addressId)
+  address?: CreateAddressDto;
 }

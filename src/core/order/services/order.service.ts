@@ -57,16 +57,23 @@ export class OrderService {
         products,
         dto.items,
       );
-      let addressId: number | null = null;
-      if (typeof dto.address === 'object') {
-        const addressRepo = em.getRepository(Address);
-        const newAddress = addressRepo.create({ ...dto.address });
-        await addressRepo.save(newAddress);
+      let addressId: number;
+      if (dto.addressId) {
+        const address = await em.getRepository(Address).findOneOrFail({
+          where: { id: dto.addressId, userId: buyerId },
+        });
+        addressId = address.id;
+      } else if (dto.address) {
+        const newAddress = await this.userService.createAddress(
+          buyerId,
+          dto.address,
+        );
         addressId = newAddress.id;
       } else {
-        addressId = await this.userService.getDefaultAddress(buyerId, em);
+        throw new BadRequestException(
+          'Either addressId or address must be provided',
+        );
       }
-
       const orderRepo = em.getRepository(Order);
       const order = orderRepo.create({
         buyerId,

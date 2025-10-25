@@ -10,6 +10,8 @@ import {
   UseInterceptors,
   HttpCode,
   HttpStatus,
+  Post,
+  Param,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -29,6 +31,7 @@ import { AccessTokenGuard } from '../authentication/guards/access-token.guard';
 import { UpdateUserDto } from './dtos/update-user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import { CreateAddressDto } from './dtos/create-address.dto';
 
 @ApiTags('User')
 @ApiBearerAuth()
@@ -97,5 +100,48 @@ export class UserController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     return this.userService.updateUserProfilePic(userId, file);
+  }
+
+  @Post('/address')
+  @ApiOperation({ summary: 'Create a new address for the current user' })
+  @ApiOkResponse({
+    description: 'Address created successfully',
+  })
+  createAddress(
+    @USER('id') userId: number,
+    @Body() createAddressDto: CreateAddressDto,
+  ) {
+    return this.userService.createAddress(userId, createAddressDto);
+  }
+
+  @Get('/address')
+  @ApiOperation({ summary: 'Get all addresses for the current user' })
+  @ApiOkResponse({
+    description: 'Successfully fetched user addresses',
+  })
+  getAddresses(@USER('id') userId: number) {
+    return this.userService.getAddresses(userId);
+  }
+
+  @Put('/address/:id')
+  @ApiOperation({ summary: 'Update an address for the current user' })
+  @ApiOkResponse({
+    description: 'Address updated successfully',
+  })
+  updateAddress(
+    @USER('id') userId: number,
+    @Param('id') addressId: number,
+    @Body() updateAddressDto: CreateAddressDto,
+  ) {
+    return this.userService.updateAddress(userId, addressId, updateAddressDto);
+  }
+
+  @Delete('/address/:id')
+  @ApiOperation({ summary: 'Delete an address for the current user' })
+  @ApiOkResponse({
+    description: 'Address deleted successfully',
+  })
+  deleteAddress(@USER('id') userId: number, @Param('id') addressId: number) {
+    return this.userService.deleteAddress(userId, addressId);
   }
 }

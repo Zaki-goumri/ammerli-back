@@ -18,6 +18,7 @@ import { ObjectService } from 'src/infrastructure/object-storage/object-storage.
 import { UPLOAD_JOBS } from 'src/common/constants/jobs';
 import { OnEvent } from '@nestjs/event-emitter';
 import { FinalizePayloadDto } from 'src/infrastructure/queue/upload/dto/finalize-payload.dto';
+import { CreateAddressDto } from './dtos/create-address.dto';
 
 @Injectable()
 export class UserService {
@@ -25,6 +26,8 @@ export class UserService {
     private readonly entityManager: EntityManager,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(Address)
+    private readonly addressRepo: Repository<Address>,
     private readonly redisService: RedisService,
     @InjectQueue(QUEUE_NAME.UPLOAD)
     private readonly uploadQueue: Queue,
@@ -43,15 +46,6 @@ export class UserService {
 
   async create(dto: CreateUserDto): Promise<User> {
     return this.entityManager.transaction(async (em) => {
-      let address: Address | null = null;
-      const addressDetailsProvided =
-        dto.address && Object.keys(dto.address).length > 0;
-      if (addressDetailsProvided) {
-        const addressRepo = em.getRepository(Address);
-        address = addressRepo.create({ ...dto.address });
-        await addressRepo.save(address);
-      }
-
       const userRepo = em.getRepository(User);
 
       const existingUser = await userRepo.findOneBy({
@@ -64,7 +58,6 @@ export class UserService {
       }
       const user = userRepo.create({
         ...dto,
-        address: address || undefined,
       });
       await userRepo.save(user);
 
@@ -88,11 +81,10 @@ export class UserService {
         name: true,
         phoneNumber: true,
         id: true,
-        locationUrl: true,
         supermarketName: true,
         updatedAt: true,
-        address: {
-          id: false,
+        addresses: {
+          id: true,
           district: true,
           city: true,
           street: true,
@@ -111,7 +103,7 @@ export class UserService {
     return user;
   }
 
-  async findById(id: number): Promise<User> {
+  async findById(id: number, isRegistered?: boolean): Promise<User> {
     const cachedUser = await this.redisService.get<User>(
       UserService.getCacheKey(id, 'id'),
     );
@@ -120,17 +112,17 @@ export class UserService {
     const user = await this.userRepo.findOne({
       where: { id },
       withDeleted: false,
-      relations: ['address'],
+      relations: ['addresses'],
       select: {
         profilePic: true,
         name: true,
         phoneNumber: true,
         id: true,
-        locationUrl: true,
         supermarketName: true,
         updatedAt: true,
-        address: {
-          id: false,
+        isRegistered: isRegistered,
+        addresses: {
+          id: true,
           district: true,
           city: true,
           street: true,
@@ -149,64 +141,16 @@ export class UserService {
   }
 
   async updateUserInfo(dto: UpdateUserDto, id: number): Promise<User> {
-    return this.entityManager.transaction(async (em) => {
-      const userRepo = em.getRepository(User);
-      const addressRepo = em.getRepository(Address);
-      const user = await userRepo.findOneOrFail({
-        where: { id },
-        withDeleted: false,
-        relations: ['address'],
-      });
-
-      userRepo.merge(user, dto);
-
-      if (dto.address && Object.keys(dto.address).length > 0) {
-        if (user.address) {
-          addressRepo.merge(user.address, dto.address);
-          await addressRepo.save(user.address);
-        } else {
-          const newAddress = addressRepo.create(dto.address);
-          user.address = newAddress;
-          await addressRepo.save(newAddress);
-        }
-      }
-      await userRepo.save(user);
-      await this.redisService.del(UserService.getCacheKey(id, 'id'));
-      return user;
+    const user = await this.userRepo.findOneOrFail({
+      where: { id },
+      withDeleted: false,
     });
-  }
 
-  //TODO: handle registration
-  async registgerUserInfo(dto: UpdateUserDto, id: number): Promise<User> {
-    return this.entityManager.transaction(async (em) => {
-      const userRepo = em.getRepository(User);
-      const addressRepo = em.getRepository(Address);
-      const user = await userRepo.findOneOrFail({
-        where: { id },
-        withDeleted: false,
-        relations: ['address'],
-      });
+    this.userRepo.merge(user, dto);
 
-      // if (user.updatedAt !== user.createdAt) {
-      //   throw new BadRequestException('User already registered');
-      // }
-
-      userRepo.merge(user, dto);
-
-      if (dto.address && Object.keys(dto.address).length > 0) {
-        if (user.address) {
-          addressRepo.merge(user.address, dto.address);
-          await addressRepo.save(user.address);
-        } else {
-          const newAddress = addressRepo.create(dto.address);
-          user.address = newAddress;
-          await addressRepo.save(newAddress);
-        }
-      }
-      await userRepo.save(user);
-      await this.redisService.del(UserService.getCacheKey(id, 'id'));
-      return user;
-    });
+    await this.userRepo.save(user);
+    await this.redisService.del(UserService.getCacheKey(id, 'id'));
+    return user;
   }
 
   async findByPhoneNumberWithoutException(
@@ -215,29 +159,16 @@ export class UserService {
     return this.userRepo.findOne({
       where: { phoneNumber },
       withDeleted: false,
-      relations: ['address'],
+      relations: ['addresses'],
     });
   }
 
-  //TODO: delete address too
   async deleteUser(id: number): Promise<{ message: string }> {
     await this.userRepo.softDelete(id);
     await this.redisService.del(UserService.getCacheKey(id, 'id'));
     return { message: 'User deleted successfully (soft delete)' };
   }
 
-  async getDefaultAddress(userId: number, em?: EntityManager): Promise<number> {
-    const userRepository = em ? em.getRepository(User) : this.userRepo;
-    const user = await userRepository.findOne({
-      where: { id: userId },
-      relations: ['address'],
-    });
-    const id = user?.address?.id;
-    if (!id) {
-      throw new NotFoundException('Default address not found for user');
-    }
-    return id;
-  }
   async updateUserProfilePic(userId: number, profilePic: Express.Multer.File) {
     const objectName = this.objectService.generateUniqueObjectName(
       profilePic.originalname,
@@ -264,5 +195,54 @@ export class UserService {
       `Finalizing user profile pic upload for user ID: ${payload.targetId}`,
     );
     await this.setProfilePicUrlNull(payload.targetId);
+  }
+
+  async createAddress(userId: number, createAddressDto: CreateAddressDto) {
+    return this.entityManager.transaction(async (em) => {
+      const addressRepo = em.getRepository(Address);
+      const address = addressRepo.create({ ...createAddressDto, userId });
+      return addressRepo.save(address);
+    });
+  }
+
+  async getAddresses(userId: number) {
+    return this.addressRepo.find({
+      where: { userId },
+      select: {
+        id: true,
+        street: true,
+        district: true,
+        city: true,
+        createdAt: false,
+        updatedAt: false,
+      },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async updateAddress(
+    userId: number,
+    addressId: number,
+    updateAddressDto: CreateAddressDto,
+  ) {
+    const address = await this.addressRepo.findOneOrFail({
+      where: { id: addressId, userId },
+    });
+    this.addressRepo.merge(address, updateAddressDto);
+    await this.addressRepo.save(address);
+    return address;
+  }
+
+  async deleteAddress(userId: number, addressId: number) {
+    const userAddressesCount = await this.addressRepo.count({
+      where: { userId },
+    });
+    if (userAddressesCount <= 1) {
+      throw new BadRequestException(
+        'Cannot delete the only address associated with the user',
+      );
+    }
+    await this.addressRepo.delete(addressId);
+    return { message: 'Address deleted successfully' };
   }
 }

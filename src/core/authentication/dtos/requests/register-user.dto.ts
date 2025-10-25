@@ -13,15 +13,6 @@ export class RegisterUserDto {
   name: string;
 
   @ApiProperty({
-    description: "Google Maps location URL of the user's store or home",
-    example: 'https://maps.google.com/?q=36.7525,3.04197',
-  })
-  @IsString()
-  @IsNotEmpty()
-  @IsUrl()
-  locationUrl: string;
-
-  @ApiProperty({
     description: 'Name of the supermarket or store owned by the user',
     example: 'Super Marché El Baraka',
   })

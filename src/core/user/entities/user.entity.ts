@@ -1,11 +1,4 @@
-import {
-  Entity,
-  Column,
-  OneToOne,
-  JoinColumn,
-  OneToMany,
-  DeleteDateColumn,
-} from 'typeorm';
+import { Entity, Column, OneToMany, DeleteDateColumn, Index } from 'typeorm';
 import { FavProduct } from '../../product/entities/fav-product.entity';
 import { Product } from '../../product/entities/product.entity';
 import { Address } from './address.entity';
@@ -18,13 +11,16 @@ import {
 import { BaseEntity } from '../../../common/entities/base.entity';
 
 @Entity('users')
-//TODO: add chargili customer_id
+@Index('IDX_UNIQUE_PHONE_ACTIVE', ['phoneNumber'], {
+  unique: true,
+  where: '"deletedAt" IS NULL',
+})
 export class User extends BaseEntity {
   @ApiProperty({
     description: 'User phone number',
     example: '+213551234567',
   })
-  @Column({ unique: true })
+  @Column()
   phoneNumber: string;
 
   @ApiPropertyOptional({
@@ -35,19 +31,14 @@ export class User extends BaseEntity {
   name?: string;
 
   @ApiPropertyOptional({
-    description: 'Optional Google Maps location URL',
-    example: 'https://maps.google.com/?q=36.7528,3.0422',
+    description: 'Linked addresses of the user',
+    type: () => [Address],
   })
-  @Column({ nullable: true })
-  locationUrl?: string;
-
-  @ApiPropertyOptional({
-    description: 'Linked address of the user',
-    type: () => Address,
+  @OneToMany(() => Address, (address) => address.user, {
+    cascade: true,
+    onDelete: 'CASCADE',
   })
-  @OneToOne(() => Address, { cascade: true, onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'address_id' })
-  address?: Address;
+  addresses?: Address[];
 
   @ApiProperty({
     description: 'Name of the supermarket (for sellers)',
@@ -81,6 +72,9 @@ export class User extends BaseEntity {
   })
   @OneToMany(() => Product, (product) => product.seller)
   products: Product[];
+
+  @Column({ default: false })
+  isRegistered: boolean;
 
   @DeleteDateColumn()
   deletedAt?: Date;

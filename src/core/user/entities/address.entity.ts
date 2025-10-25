@@ -1,6 +1,7 @@
-import { Entity, Column } from 'typeorm';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { BaseEntity } from '../../../common/entities/base.entity';
+import { User } from './user.entity';
 
 @Entity('addresses')
 export class Address extends BaseEntity {
@@ -24,4 +25,15 @@ export class Address extends BaseEntity {
   })
   @Column({ nullable: true })
   district?: string;
+
+  @ApiProperty({
+    description: 'User ID who owns the address',
+    example: 1,
+  })
+  @Column()
+  userId: number;
+
+  @ManyToOne(() => User, (user) => user.addresses)
+  @JoinColumn({ name: 'userId' })
+  user: User;
 }

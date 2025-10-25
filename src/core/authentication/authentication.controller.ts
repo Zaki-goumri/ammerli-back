@@ -21,6 +21,7 @@ import { SendOtpResDto } from './dtos/responses/send-otp-response.dto';
 import { UpdateUserDto } from '../user/dtos/update-user.dto';
 import { AccessTokenGuard } from './guards/access-token.guard';
 import { RegisterUserDto } from './dtos/requests/register-user.dto';
+import { SkipRegistrationCheck } from './decorators/skip-registration-check.decorator';
 
 @Controller('authentication')
 @ApiBadRequestResponse({ description: 'Bad request' })
@@ -68,6 +69,7 @@ export class AuthenticationController {
   }
 
   @UseGuards(AccessTokenGuard)
+  @SkipRegistrationCheck()
   @ApiBearerAuth()
   @ApiBody({ type: UpdateUserDto })
   @ApiOperation({

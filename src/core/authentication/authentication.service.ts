@@ -1,4 +1,9 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthResponseDto } from './dtos/responses/auth-response.dto';
 import { JwtService } from '@nestjs/jwt';
 import { RedisService } from 'nestjs-redis-client';
@@ -60,12 +65,14 @@ export class AuthenticationService {
       await this.userService.findByPhoneNumberWithoutException(phoneNumber);
     if (!user) {
       const newUser = await this.userService.create({ phoneNumber });
-      const accessToken = await this.issueAccessToken(newUser);
-      return { accessToken, user: newUser, isRegistered: false };
+      const accessToken = await this.issueAccessToken(newUser, false);
+      return { accessToken, isRegistered: false };
     }
-
     const isRegistered = this.validateFields(user);
-    const tokens = await this.issueTokens(user);
+    const tokens = await this.issueTokens(user, isRegistered);
+    if (!isRegistered) {
+      return { accessToken: tokens.accessToken, isRegistered: false };
+    }
     return { ...tokens, isRegistered };
   }
 
@@ -94,10 +101,13 @@ export class AuthenticationService {
    * @returns {Promise<AuthResponseDto>} An object containing the new tokens and user information.
    * @throws {Error} If token issuance fails.
    */
-  async issueTokens(user: User): Promise<AuthResponseDto> {
+  async issueTokens(
+    user: User,
+    isRegistered?: boolean,
+  ): Promise<AuthResponseDto> {
     try {
       const { id, phoneNumber, role } = user;
-      const accessTokenPayload = { id, phoneNumber, role };
+      const accessTokenPayload = { id, phoneNumber, role, isRegistered };
       const refreshTokenPayload = {
         sub: id,
         phoneNumber,
@@ -129,9 +139,12 @@ export class AuthenticationService {
     }
   }
 
-  private async issueAccessToken(user: User): Promise<string> {
+  private async issueAccessToken(
+    user: User,
+    isRegistered: boolean,
+  ): Promise<string> {
     const { id, phoneNumber } = user;
-    const accessTokenPayload = { id, phoneNumber };
+    const accessTokenPayload = { id, phoneNumber, isRegistered };
     const jwtConfig = authConfig().jwt;
     const accessToken = await this.jwtService.signAsync(accessTokenPayload, {
       expiresIn: jwtConfig.accessTokenExpiresIn,
@@ -171,8 +184,15 @@ export class AuthenticationService {
   }
 
   async registerUser(dto: RegisterUserDto, userId: number) {
-    const user = await this.userService.registgerUserInfo(dto, userId);
-    const tokens = await this.issueTokens(user);
+    const existingUser = await this.userService.findById(userId, true);
+    if (existingUser.isRegistered) {
+      throw new BadRequestException('User is already registered');
+    }
+    const user = await this.userService.updateUserInfo(
+      { ...dto, isRegistered: true },
+      userId,
+    );
+    const tokens = await this.issueTokens(user, true);
     return { ...tokens, isRegistered: true };
   }
 }

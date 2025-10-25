@@ -82,6 +82,10 @@ services:
         condition: service_healthy
     volumes:
       - .:/usr/src/app
+    ports:
+      - "3000:3000"
+      - "8000:8000"
+      - "8008:8008"
     networks:
       - proxy
       - internal
@@ -116,7 +120,7 @@ services:
     container_name: db
     restart: unless-stopped
     ports:
-      - "5432:5432" 
+      - "5432:5432"
     user: postgres
     env_file:
       - .env

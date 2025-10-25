@@ -1,28 +1,26 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsString } from 'class-validator';
 
 export class CreateAddressDto {
-  @ApiPropertyOptional({
-    description: 'Street address',
+  @ApiProperty({
+    description: 'Street name of the address',
     example: '123 Rue Didouche Mourad',
   })
   @IsString()
-  @IsOptional()
   street: string;
 
-  @ApiPropertyOptional({
-    description: 'City name',
+  @ApiProperty({
+    description: 'City where the address is located',
     example: 'Algiers',
   })
   @IsString()
-  @IsOptional()
   city: string;
 
-  @ApiPropertyOptional({
-    description: 'District/Commune',
+  @ApiProperty({
+    description: 'District/Commune of the address',
     example: 'Bab El Oued',
   })
   @IsString()
-  @IsOptional()
   district: string;
 }
+

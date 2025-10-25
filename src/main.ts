@@ -18,6 +18,7 @@ async function bootstrap() {
       credentials: true,
     },
     logger: ['log', 'error', 'warn', 'debug', 'verbose'],
+    snapshot: true,
   });
 
   app.enableVersioning({
