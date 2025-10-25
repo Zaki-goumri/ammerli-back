@@ -62,7 +62,7 @@ export class UserController {
   })
   @ApiBody({ type: UpdateUserDto })
   updateUserInfos(@USER('id') userId: number, @Body() userDto: UpdateUserDto) {
-    return this.userService.updateUserInfo(userDto, userId);
+    return this.userService.updateUser(userId, userDto);
   }
 
   @Delete('/me')

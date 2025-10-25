@@ -68,30 +68,11 @@ export class AuthenticationService {
       const accessToken = await this.issueAccessToken(newUser, false);
       return { accessToken, isRegistered: false };
     }
-    const isRegistered = this.validateFields(user);
-    const tokens = await this.issueTokens(user, isRegistered);
-    if (!isRegistered) {
+    const tokens = await this.issueTokens(user);
+    if (!user?.isRegistered) {
       return { accessToken: tokens.accessToken, isRegistered: false };
     }
-    return { ...tokens, isRegistered };
-  }
-
-  /**
-   * @method validateFields
-   * @description Validates that all required fields for a user are present.
-   * @param {User} user - The user object to validate.
-   * @returns {boolean} `true` if all required fields are present, otherwise `false`.
-   */
-  private validateFields(user: User): boolean {
-    if (!user) return false;
-    const nullableKeys = ['profilePic', 'deletedAt', 'updatedAt', 'createdAt'];
-    for (const [key, value] of Object.entries(user)) {
-      if (nullableKeys.includes(key)) continue;
-      if (value === null || value === undefined) {
-        return false;
-      }
-    }
-    return true;
+    return { ...tokens, isRegistered: true };
   }
 
   /**
@@ -101,13 +82,15 @@ export class AuthenticationService {
    * @returns {Promise<AuthResponseDto>} An object containing the new tokens and user information.
    * @throws {Error} If token issuance fails.
    */
-  async issueTokens(
-    user: User,
-    isRegistered?: boolean,
-  ): Promise<AuthResponseDto> {
+  async issueTokens(user: User): Promise<AuthResponseDto> {
     try {
-      const { id, phoneNumber, role } = user;
-      const accessTokenPayload = { id, phoneNumber, role, isRegistered };
+      const { id, phoneNumber, role, isRegistered } = user;
+      const accessTokenPayload = {
+        id,
+        phoneNumber,
+        role,
+        isRegistered,
+      };
       const refreshTokenPayload = {
         sub: id,
         phoneNumber,
@@ -184,15 +167,8 @@ export class AuthenticationService {
   }
 
   async registerUser(dto: RegisterUserDto, userId: number) {
-    const existingUser = await this.userService.findById(userId, true);
-    if (existingUser.isRegistered) {
-      throw new BadRequestException('User is already registered');
-    }
-    const user = await this.userService.updateUserInfo(
-      { ...dto, isRegistered: true },
-      userId,
-    );
-    const tokens = await this.issueTokens(user, true);
+    const user = await this.userService.registerUserInfo(dto, userId);
+    const tokens = await this.issueTokens(user);
     return { ...tokens, isRegistered: true };
   }
 }

@@ -38,15 +38,6 @@ export class CreateUserDto {
   name?: string;
 
   @ApiPropertyOptional({
-    description: 'Optional Google Maps location URL',
-    example: 'https://maps.google.com/?q=36.7528,3.0422',
-  })
-  @IsString()
-  @IsOptional()
-  @IsUrl(undefined, { message: 'Invalid URL' })
-  locationUrl?: string;
-
-  @ApiPropertyOptional({
     description: 'Name of the supermarket if the user is a seller',
     example: 'Market El Baraka',
   })
