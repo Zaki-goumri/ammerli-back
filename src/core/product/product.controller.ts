@@ -1,11 +1,3 @@
-/**
- * @fileoverview This file contains the controller for handling product-related requests.
- * It defines routes for creating, reading, updating, and deleting products, as well as managing
- * product categories and brands. It uses decorators for routing, parameter validation, and Swagger documentation.
- *
- * @module ProductController
- */
-
 import {
   Controller,
   Get,
@@ -51,7 +43,6 @@ import { ProductDto } from './dtos/product/product.dto';
 import { ProductResDto } from './dtos/product/many-product.dto';
 import { UpdateProductDto } from './dtos/product/update.dto';
 import { PaginatedResponse } from 'src/common/dtos/pagination.dto';
-import { Product } from './entities/product.entity';
 import { FilterProductDto } from './dtos/product/filter.dto';
 import { USER } from '../authentication/decorators/user.decorartor';
 import { AccessTokenGuard } from '../authentication/guards/access-token.guard';
@@ -115,7 +106,7 @@ export class ProductController {
       pagination,
       userId,
       query.search,
-      query.categoryId,
+      query.categoryIds,
     );
   }
 
@@ -296,7 +287,7 @@ export class ProductController {
       pagination,
       userId,
       query.search,
-      query.categoryId,
+      query.categoryIds,
     );
   }
 
@@ -548,7 +539,10 @@ export class ProductController {
   @HttpCode(HttpStatus.OK)
   @Roles(USER_ROLES.ADMIN)
   @ApiOperation({ summary: 'Update an existing brand' })
-  @ApiOkResponse({ description: 'Brand successfully updated', type: BrandResDto })
+  @ApiOkResponse({
+    description: 'Brand successfully updated',
+    type: BrandResDto,
+  })
   @ApiNotFoundResponse({ description: 'Brand not found' })
   @ApiParam({ name: 'id', type: Number, description: 'Brand ID' })
   @ApiBody({

@@ -108,14 +108,6 @@ export class OrderController {
     }
     res.send({ received: true });
   }
-
-  /**
-   * @method getAllOrders
-   * @description Get all orders for the authenticated user.
-   * @param {PaginationQueryDto} query - The pagination query parameters.
-   * @param {number} userId - The ID of the authenticated user.
-   * @returns {Promise<any>} A paginated list of orders.
-   */
   @ApiOkResponse({
     type: [ProductOrderItemDto],
     description: 'A list of products for the order',
@@ -132,6 +124,7 @@ export class OrderController {
   }
 
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all orders for the authenticated user' })
   @ApiOkResponse({
     type: PaginatedResponse(OrderListItemDto),
     description: 'A paginated list of orders',

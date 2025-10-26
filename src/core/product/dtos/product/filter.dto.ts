@@ -1,4 +1,10 @@
-import { IsOptional, IsInt, IsPositive, IsString } from 'class-validator';
+import {
+  IsOptional,
+  IsInt,
+  IsPositive,
+  IsString,
+  IsArray,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationQueryDto } from 'src/common/dtos/pagination.dto';
@@ -18,8 +24,9 @@ export class FilterProductDto extends PaginationQueryDto {
     example: 1,
   })
   @IsOptional()
+  @IsArray()
   @Type(() => Number)
-  @IsInt()
-  @IsPositive()
-  categoryId?: number;
+  @IsInt({ each: true })
+  @IsPositive({ each: true })
+  categoryIds?: number[];
 }

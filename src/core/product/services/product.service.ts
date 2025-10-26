@@ -14,7 +14,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { UpdateProductDto } from '../dtos/product/update.dto';
 import { FavProduct } from '../entities/fav-product.entity';
 import { ProductResDto } from '../dtos/product/many-product.dto';
-import { FavProductDtoRes } from '../dtos/product/fav-product.dto';
 import { CreateProductDto } from '../dtos/product/create.dto';
 import { UploadingOptions } from 'src/infrastructure/object-storage/types/upload-options.interface';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -44,7 +43,7 @@ export class ProductService {
     paginationQuery: PaginationQueryDto,
     userId: number,
     search?: string,
-    categoryId?: number,
+    categoryIds?: number[],
   ): Promise<PaginationResponseDto<ProductResDto>> {
     const { page, limit } = paginationQuery;
     const offset = (page - 1) * limit;
@@ -88,8 +87,8 @@ export class ProductService {
       .addGroupBy('fav_products.id')
       .orderBy('product.createdAt', 'DESC');
 
-    if (categoryId) {
-      queryBuilder.andWhere('category.id = :categoryId', { categoryId });
+    if (categoryIds && categoryIds.length > 0) {
+      queryBuilder.andWhere('category.id IN (...categoryIds)', { categoryIds });
     }
     if (search) {
       queryBuilder.andWhere(
@@ -200,7 +199,7 @@ export class ProductService {
     paginationQuery: PaginationQueryDto,
     sellerId: number,
     search?: string,
-    categoryId?: number,
+    categoryIds?: number[],
   ): Promise<PaginationResponseDto<WholesellerProductDto>> {
     const { page, limit } = paginationQuery;
     const offset = (page - 1) * limit;
@@ -224,8 +223,10 @@ export class ProductService {
       ])
       .orderBy('product.createdAt', 'DESC');
 
-    if (categoryId) {
-      queryBuilder.andWhere('category.id = :categoryId', { categoryId });
+    if (categoryIds && categoryIds.length > 0) {
+      queryBuilder.andWhere('category.id IN :(...categoryIds)', {
+        categoryIds,
+      });
     }
     if (search) {
       queryBuilder.andWhere(
