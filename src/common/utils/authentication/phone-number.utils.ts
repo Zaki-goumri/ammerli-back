@@ -1,4 +1,4 @@
-const transformPhoneNumber = (value: string): string => {
+export const transformPhoneNumber = (value: string): string => {
   if (!value) return value;
 
   const cleaned = value.toString().trim().replace(/\s+/g, '');

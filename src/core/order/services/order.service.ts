@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -8,6 +12,9 @@ import { Order } from '../entities/order.entity';
 import { ProductService } from 'src/core/product/services/product.service';
 import { Address } from 'src/core/user/entities/address.entity';
 import { ConfigService } from '@nestjs/config';
+import { OrderListItemDto } from '../dtos/order-list-item.dto';
+import { ProductOrderItemDto } from '../dtos/product-order-item.dto';
+import { CreateOrderResDto } from '../dtos/create-order.res.dto';
 import { CreateOrderDto } from '../dtos/create-order.dto';
 import { Product } from 'src/core/product/entities/product.entity';
 import { CheckoutService } from './checkout.service';
@@ -17,6 +24,7 @@ import {
 } from 'src/common/dtos/pagination.dto';
 import { OrderStatus } from '../enums/delivery.enum';
 import { UserService } from 'src/core/user/user.service';
+import { CreateCheckoutRes } from '../dtos/checkout-create-res.dto';
 
 @Injectable()
 export class OrderService {
@@ -40,6 +48,40 @@ export class OrderService {
     });
   }
 
+  async findProductsByOrderId(
+    orderId: number,
+    userId: number,
+  ): Promise<ProductOrderItemDto[]> {
+    const products = await this.orderProductRepo
+      .createQueryBuilder('op')
+      .innerJoin('op.order', 'o')
+      .where('op.orderId = :orderId', { orderId })
+      .andWhere('o.buyerId = :userId', { userId })
+      .leftJoin('op.product', 'p')
+      .leftJoin('p.pictures', 'mainPicture', 'mainPicture.isMain = TRUE')
+      .select([
+        'p.id AS id',
+        'p.name AS name',
+        'p.price AS price',
+        'op.quantity AS quantity',
+        'mainPicture.url AS picture',
+      ])
+      .getRawMany();
+
+    if (products.length > 0) {
+      return products;
+    }
+
+    const order = await this.orderRepo.findOneBy({ id: orderId });
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${orderId} not found.`);
+    }
+    // If order exists, but products are empty, it means the user is not the buyer
+    throw new NotFoundException(
+      `Order with ID ${orderId} not found for the current user.`,
+    );
+  }
+
   async countProductsInOrder(orderId: number) {
     return this.orderProductRepo.count({ where: { order: { id: orderId } } });
   }
@@ -47,7 +89,7 @@ export class OrderService {
   async createOrderProductWithPayement(
     dto: CreateOrderDto,
     buyerId: number,
-  ): Promise<any> {
+  ): Promise<CreateOrderResDto> {
     const order = await this.entityManager.transaction(async (em) => {
       const products = await this.productService.validateAndReserveStock(
         dto.items,
@@ -95,11 +137,13 @@ export class OrderService {
       return order;
     });
     if (dto.payementWay === 'CASH') {
-      return { order, checkout: null };
+      return { order, checkoutUrl: null };
     }
-    const checkout = await this.createChargilyCheckout(order.totalAmount);
-    await this.CheckoutService.createCheckout(order.id, checkout.id);
-    return { order, checkout };
+    const { checkoutId, checkoutUrl } = await this.createChargilyCheckout(
+      order.totalAmount,
+    );
+    await this.CheckoutService.createCheckout(order.id, checkoutId);
+    return { order, checkoutUrl };
   }
 
   private async calculateOrderTotals(
@@ -122,7 +166,9 @@ export class OrderService {
     return { totalAmount };
   }
 
-  private async createChargilyCheckout(totalAmount: number) {
+  private async createChargilyCheckout(
+    totalAmount: number,
+  ): Promise<CreateCheckoutRes> {
     const backendApiUrl = this.configService.get<string>('BACKEND_API_URL');
     const backendBaseUrl = this.configService.get<string>('BACKEND_URL');
 
@@ -134,7 +180,7 @@ export class OrderService {
       webhook_endpoint: `${backendApiUrl}/order/webhook/chargili`,
       failure_url: `${backendBaseUrl}/api-docs`,
     });
-    return checkout;
+    return { checkoutUrl: checkout.checkout_url, checkoutId: checkout.id };
   }
 
   async getOrderById(orderId: number): Promise<Order | null> {
@@ -144,14 +190,8 @@ export class OrderService {
   async getAllOrders(
     paginationQuery: PaginationQueryDto,
     userId: number,
-  ): Promise<
-    PaginationResponseDto<{
-      id: number;
-      totalAmount: number;
-      productCount: number;
-      status: string;
-    }>
-  > {
+    withProducts: boolean = false,
+  ): Promise<PaginationResponseDto<OrderListItemDto>> {
     const { limit, page } = paginationQuery;
     const queryBuilder = this.orderRepo
       .createQueryBuilder('order')
@@ -170,8 +210,46 @@ export class OrderService {
 
     const [data, total] = await Promise.all([
       queryBuilder.getRawMany(),
-      this.orderRepo.count(),
+      this.orderRepo.count({ where: { buyerId: userId } }),
     ]);
+
+    const orders: OrderListItemDto[] = data.map((d) => ({
+      id: d.id,
+      totalAmount: d.totalAmount,
+      status: d.status,
+      productCount: parseInt(d.productcount, 10),
+    }));
+
+    if (withProducts && orders.length > 0) {
+      const orderIds = orders.map((o) => o.id);
+      const products = await this.orderProductRepo
+        .createQueryBuilder('op')
+        .where('op.orderId IN (:...orderIds)', { orderIds })
+        .leftJoin('op.product', 'p')
+        .leftJoin('p.pictures', 'mainPicture', 'mainPicture.isMain = TRUE')
+        .select([
+          'op.orderId as orderId',
+          'p.id AS id',
+          'p.name AS name',
+          'p.price AS price',
+          'op.quantity AS quantity',
+          'mainPicture.url AS picture',
+        ])
+        .getRawMany();
+
+      const productsByOrderId = products.reduce((acc, p) => {
+        if (!acc[p.orderId]) {
+          acc[p.orderId] = [];
+        }
+        acc[p.orderId].push(p);
+        return acc;
+      }, {});
+
+      for (const order of orders) {
+        order.products = productsByOrderId[order.id] || [];
+      }
+    }
+
     return {
       meta: {
         total,
@@ -180,7 +258,7 @@ export class OrderService {
         totalPages: Math.ceil(total / limit),
         hasNextPage: page * limit < total,
       },
-      data,
+      data: orders,
     };
   }
 

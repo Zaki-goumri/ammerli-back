@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsMobilePhone } from 'class-validator';
+import { transformPhoneNumber } from 'src/common/utils/authentication/phone-number.utils';
 
 export class AuthDto {
   @ApiProperty({
