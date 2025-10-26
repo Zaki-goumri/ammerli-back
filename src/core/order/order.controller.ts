@@ -50,6 +50,7 @@ import { USER } from '../authentication/decorators/user.decorartor';
  * @ApiTags order
  */
 @Controller('order')
+@UseGuards(AccessTokenGuard)
 export class OrderController {
   constructor(
     private readonly orderService: OrderService,
@@ -97,14 +98,31 @@ export class OrderController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
+    console.log('Received Chargili webhook:', data);
     const checkoutId = extractCheckoutIdFromUrl(data.checkout_url);
-    if (checkoutId && data.status === 'paid') {
-      await this.checkoutService.updateCheckoutStatus(
-        checkoutId,
-        data.payment_method?.toUpperCase() as PaymentWay,
-        data.fees,
-        headers.authorization,
+    if (!checkoutId) {
+      this.logger.error(
+        `Invalid checkout URL received in webhook: ${data.checkout_url}`,
       );
+      return res.status(400).send({ error: 'Invalid checkout URL' });
+    }
+    const isPaymentSuccessful = data.status === 'paid' ? true : false;
+    await this.checkoutService.updateCheckoutStatus(
+      checkoutId,
+      data.payment_method?.toUpperCase() as PaymentWay,
+      isPaymentSuccessful,
+      data.fees,
+      headers.authorization,
+    );
+    if (isPaymentSuccessful) {
+      this.logger.log(
+        `Payment successful for checkout ID: ${checkoutId}. Order processed.`,
+      );
+    } else {
+      this.logger.warn(
+        `Payment failed for checkout ID: ${checkoutId}. Order not processed.`,
+      );
+      //TODO: add notification for failed payment
     }
     res.send({ received: true });
   }

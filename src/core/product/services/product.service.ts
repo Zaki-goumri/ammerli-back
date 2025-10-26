@@ -298,7 +298,7 @@ export class ProductService {
       .orderBy('product.createdAt', 'DESC');
 
     if (categoryIds && categoryIds.length > 0) {
-      queryBuilder.andWhere('category.id IN (:...:categoryId)', {
+      queryBuilder.andWhere('category.id IN (:...categoryIds)', {
         categoryIds,
       });
     }

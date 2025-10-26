@@ -12,6 +12,8 @@ import { ObjectStorageModule } from 'src/infrastructure/object-storage/object-st
 import { QueueModule } from 'src/infrastructure/queue/queue.module';
 import { ProductPicture } from './entities/product-picture.entity';
 import { ProductPictureService } from './services/product-picture.service';
+import { CategoryController } from './category.controller';
+import { BrandController } from './brand.controller';
 
 @Module({
   imports: [
@@ -25,13 +27,8 @@ import { ProductPictureService } from './services/product-picture.service';
     ObjectStorageModule,
     QueueModule,
   ],
-  controllers: [ProductController],
-  providers: [
-    ProductService,
-    BrandService,
-    CategoryService,
-    ProductPictureService,
-  ],
+  controllers: [ProductController, CategoryController, BrandController],
+  providers: [ProductService, BrandService, CategoryService, ProductPictureService],
   exports: [ProductService],
 })
 export class ProductModule {}

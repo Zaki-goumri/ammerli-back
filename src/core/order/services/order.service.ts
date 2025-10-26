@@ -175,9 +175,9 @@ export class OrderService {
       amount: totalAmount,
       currency: 'dzd',
       //NOTE: Update URLs to actual frontend pages in production
-      success_url: `${backendBaseUrl}/api-docs`,
+      success_url: `${backendBaseUrl}api/v1`,
       webhook_endpoint: `${backendApiUrl}/order/webhook/chargili`,
-      failure_url: `${backendBaseUrl}/api-docs`,
+      failure_url: `${backendBaseUrl}api/v1`,
     });
     return { checkoutUrl: checkout.checkout_url, checkoutId: checkout.id };
   }
@@ -193,17 +193,16 @@ export class OrderService {
   ): Promise<PaginationResponseDto<OrderListItemDto>> {
     const { limit, page } = paginationQuery;
     const queryBuilder = this.orderRepo
-      .createQueryBuilder('order')
-      .where('order.buyerId=:userId', { userId })
-      .leftJoin('order_products', 'op', 'op.orderId=order.id')
+      .createQueryBuilder('orders')
+      .where('orders.buyerId=:userId', { userId })
+      .leftJoin('order_products', 'op', 'op.orderId=orders.id')
       .select([
-        'order.id AS id',
-        'order.totalAmount AS totalAmount',
-        'order.status AS status',
+        'orders.id AS id',
+        'orders.totalAmount AS totalAmount',
         'COUNT(op.id) AS productCount',
       ])
-      .groupBy('order.id')
-      .orderBy('order.createdAt', 'DESC')
+      .groupBy('orders.id')
+      .orderBy('orders.createdAt', 'DESC')
       .take(limit)
       .skip((page - 1) * limit);
 
@@ -215,7 +214,6 @@ export class OrderService {
     const orders: OrderListItemDto[] = data.map((d) => ({
       id: d.id,
       totalAmount: d.totalAmount,
-      status: d.status,
       productCount: parseInt(d.productcount, 10),
     }));
 
@@ -223,26 +221,33 @@ export class OrderService {
       const orderIds = orders.map((o) => o.id);
       const products = await this.orderProductRepo
         .createQueryBuilder('op')
-        .where('op.orderId IN (:...orderIds)', { orderIds })
         .leftJoin('op.product', 'p')
-        .leftJoin('p.pictures', 'mainPicture', 'mainPicture.isMain = TRUE')
+        .leftJoin('p.pictures', 'pic', 'pic.isMain = :isMain', { isMain: true })
+        .where('op.orderId IN (:...orderIds)', { orderIds })
         .select([
-          'op.orderId as orderId',
+          'op.orderId AS orderId',
           'p.id AS id',
           'p.name AS name',
           'p.price AS price',
           'op.quantity AS quantity',
-          'mainPicture.url AS picture',
+          'pic.url AS picture',
         ])
         .getRawMany();
 
-      const productsByOrderId = products.reduce((acc, p) => {
-        if (!acc[p.orderId]) {
-          acc[p.orderId] = [];
-        }
-        acc[p.orderId].push(p);
-        return acc;
-      }, {});
+      const productsByOrderId = products.reduce(
+        (acc, p) => {
+          if (!acc[p.orderid]) {
+            acc[p.orderid] = [];
+          }
+          const { orderid, ...productData } = p;
+          acc[p.orderid].push({
+            ...productData,
+            price: parseFloat(productData.price),
+          });
+          return acc;
+        },
+        {} as Record<number, ProductOrderItemDto[]>,
+      );
 
       for (const order of orders) {
         order.products = productsByOrderId[order.id] || [];

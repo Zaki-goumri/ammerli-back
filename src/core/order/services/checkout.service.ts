@@ -22,12 +22,13 @@ export class CheckoutService {
   async updateCheckoutStatus(
     chargiliCheckoutId: string,
     paymentWay: PaymentWay,
+    isPaid: boolean,
     fees?: number,
     signature?: string,
   ) {
     const checkout = await this.checkoutRepo.update(
       { chargiliCheckoutId },
-      { isPaid: true, paymentWay, fees, paidAt: new Date(), signature },
+      { isPaid, paymentWay, fees, paidAt: new Date(), signature },
     );
     return checkout;
   }

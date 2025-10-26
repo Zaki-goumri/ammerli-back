@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { Category } from '../entities/category.entity';
 import { InjectQueue } from '@nestjs/bullmq';
 import { QUEUE_NAME } from 'src/common/constants/queues';
@@ -26,13 +26,25 @@ export class CategoryService {
   logger = new Logger(CategoryService.name);
 
   async getAll(): Promise<CategoryResDto[]> {
-    const categories = await this.categoryRepo.find({ where: { parentCategoryId: undefined } });
-    return categories.map(c => ({id: c.id, label: c.label, pictureUrl: c.pictureUrl}));
+    const categories = await this.categoryRepo.find({
+      where: { parentCategoryId: IsNull() },
+    });
+    return categories.map((c) => ({
+      id: c.id,
+      label: c.label,
+      pictureUrl: c.pictureUrl,
+    }));
   }
 
   async getChildrenCaregories(parentId: number): Promise<CategoryResDto[]> {
-    const categories = await this.categoryRepo.find({ where: { parentCategoryId: parentId } });
-    return categories.map(c => ({id: c.id, label: c.label, pictureUrl: c.pictureUrl}));
+    const categories = await this.categoryRepo.find({
+      where: { parentCategoryId: parentId },
+    });
+    return categories.map((c) => ({
+      id: c.id,
+      label: c.label,
+      pictureUrl: c.pictureUrl,
+    }));
   }
 
   async create(
@@ -51,7 +63,11 @@ export class CategoryService {
       options: { objectName },
       metadata: { targetId: newCategory.id, targetType: 'category_picture' },
     });
-    return {id: newCategory.id, label: newCategory.label, pictureUrl: newCategory.pictureUrl};
+    return {
+      id: newCategory.id,
+      label: newCategory.label,
+      pictureUrl: newCategory.pictureUrl,
+    };
   }
 
   async update(
