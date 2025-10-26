@@ -1,8 +1,8 @@
 export const ORDER_STATUS = {
-  ON_PREPARATION: 'on_preparation',
-  ON_DELIVERING: 'on_delivering',
-  DELIVERED: 'delivered',
-  CANCELLED: 'cancelled',
+  CONFIRMATION: 'CONFIRMATION',
+  PREPARATION: 'PREPARATION',
+  ON_DELIVERING: 'ON_DELIVERING',
+  DELIVERED: 'DELIVERED',
 } as const;
 
 export const ORDER_STATUS_VALUES = Object.values(ORDER_STATUS);

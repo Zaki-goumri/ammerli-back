@@ -11,15 +11,19 @@ import { ChargilyWebhookMiddleware } from '../chargili/middlewares/signature-ver
 import { OrderService } from './services/order.service';
 import { CheckoutService } from './services/checkout.service';
 import { UserModule } from '../user/user.module';
+import { Tracking } from './entities/tracking.entity';
+import { TrackingService } from './services/tracking.service';
+import { TrackingController } from './tracking.controller';
+
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Order, OrderProduct, Checkout]),
+    TypeOrmModule.forFeature([Order, OrderProduct, Checkout, Tracking]),
     ProductModule,
     ChargiliModule.registerAsync(chargiliConfig.asProvider()),
     UserModule,
   ],
-  controllers: [OrderController],
-  providers: [OrderService, CheckoutService],
+  controllers: [OrderController, TrackingController],
+  providers: [OrderService, CheckoutService, TrackingService],
 })
 export class OrderModule {
   configure(consumer: MiddlewareConsumer) {

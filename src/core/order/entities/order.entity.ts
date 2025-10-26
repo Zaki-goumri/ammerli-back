@@ -57,7 +57,7 @@ export class Order extends BaseEntity {
   @Column({
     type: 'enum',
     enum: ORDER_STATUS,
-    default: ORDER_STATUS.CANCELLED,
+    default: ORDER_STATUS.CONFIRMATION,
   })
   status: OrderStatus;
 
