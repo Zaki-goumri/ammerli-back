@@ -36,4 +36,16 @@ export class ProductResDto {
     description: 'Whether the product is loved (favorited) by the current user',
   })
   isLoved: boolean;
+
+  @ApiProperty({
+    example: 'https://example.com/image.png',
+    description: 'URL of the main picture of the product',
+  })
+  picture: string;
+
+  @ApiProperty({
+    example: 10,
+    description: 'Number of buyers for the product',
+  })
+  buyerCount: number;
 }

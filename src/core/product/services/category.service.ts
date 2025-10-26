@@ -11,6 +11,7 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { FinalizePayloadDto } from 'src/infrastructure/queue/upload/dto/finalize-payload.dto';
 import { Logger } from '@nestjs/common';
 import { CreateCategoryDto } from '../dtos/category/create-category.dto';
+import { CategoryResDto } from '../dtos/category/category.res.dto';
 
 @Injectable()
 export class CategoryService {
@@ -24,18 +25,20 @@ export class CategoryService {
 
   logger = new Logger(CategoryService.name);
 
-  async getAll(): Promise<Category[]> {
-    return this.categoryRepo.find({ where: { parentCategoryId: undefined } });
+  async getAll(): Promise<CategoryResDto[]> {
+    const categories = await this.categoryRepo.find({ where: { parentCategoryId: undefined } });
+    return categories.map(c => ({id: c.id, label: c.label, pictureUrl: c.pictureUrl}));
   }
 
-  async getChildrenCaregories(parentId: number): Promise<Category[]> {
-    return this.categoryRepo.find({ where: { parentCategoryId: parentId } });
+  async getChildrenCaregories(parentId: number): Promise<CategoryResDto[]> {
+    const categories = await this.categoryRepo.find({ where: { parentCategoryId: parentId } });
+    return categories.map(c => ({id: c.id, label: c.label, pictureUrl: c.pictureUrl}));
   }
 
   async create(
     dto: CreateCategoryDto,
     picutre: Express.Multer.File,
-  ): Promise<Category> {
+  ): Promise<CategoryResDto> {
     const objectName = this.objectStorageService.generateUniqueObjectName(
       picutre.originalname,
     );
@@ -48,7 +51,7 @@ export class CategoryService {
       options: { objectName },
       metadata: { targetId: newCategory.id, targetType: 'category_picture' },
     });
-    return newCategory;
+    return {id: newCategory.id, label: newCategory.label, pictureUrl: newCategory.pictureUrl};
   }
 
   async update(

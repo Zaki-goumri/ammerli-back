@@ -22,6 +22,10 @@ import { QUEUE_NAME } from 'src/common/constants/queues';
 import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
 import { UPLOAD_JOBS } from 'src/common/constants/jobs';
 import { Queue } from 'bullmq';
+import { ToggleFavoriteDto } from '../dtos/product/toggle-favorite.dto';
+import { FavoriteProductDto } from '../dtos/product/favorite-product.dto';
+import { WholesellerProductDto } from '../dtos/product/wholeseller-product.dto';
+import { ProductDto } from '../dtos/product/product.dto';
 
 @Injectable()
 export class ProductService {
@@ -36,7 +40,6 @@ export class ProductService {
     private readonly objectService: ObjectService,
   ) {}
 
-  //TODO: calculate buyer
   async findManyWithPagination(
     paginationQuery: PaginationQueryDto,
     userId: number,
@@ -125,15 +128,28 @@ export class ProductService {
     };
   }
 
-  async findOne(id: number): Promise<Product> {
+  async findOne(id: number): Promise<ProductDto> {
     const product = await this.productRepo.findOne({
       where: { id },
-      relations: ['pictures'],
+      relations: ['pictures', 'brand', 'category'],
     });
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
-    return product;
+    return {
+      id: product.id,
+      name: product.name,
+      description: product.description ?? null,
+      price: product.price,
+      quantity: product.quantity,
+      brand: product.brand.label,
+      category: {
+        label: product.category.label,
+        picture: product.category.pictureUrl,
+      },
+      pictures:
+        product.pictures.filter((pic) => pic.url).map((pic) => pic.url) ?? [],
+    };
   }
 
   async initiateQueuedCreation() {}
@@ -143,7 +159,7 @@ export class ProductService {
     sellerId: number,
     files: Array<Express.Multer.File>,
     uploadOptions: UploadingOptions,
-  ): Promise<Product> {
+  ): Promise<ProductDto> {
     const preliminaryProduct = this.productRepo.create({
       ...dto,
       sellerId,
@@ -156,7 +172,7 @@ export class ProductService {
         error,
       );
     });
-    return newProduct;
+    return this.findOne(newProduct.id);
   }
 
   async update(
@@ -185,7 +201,7 @@ export class ProductService {
     sellerId: number,
     search?: string,
     categoryId?: number,
-  ): Promise<PaginationResponseDto<any>> {
+  ): Promise<PaginationResponseDto<WholesellerProductDto>> {
     const { page, limit } = paginationQuery;
     const offset = (page - 1) * limit;
 
@@ -225,15 +241,14 @@ export class ProductService {
       .take(limit)
       .getRawMany();
 
-    console.log(productsRaw);
-
-    const formatted = productsRaw.map((p) => ({
+    const formatted: WholesellerProductDto[] = productsRaw.map((p) => ({
       id: p?.id,
       name: p?.name,
       price: p?.price,
       brand: p?.brand,
       picture: p?.picture,
       category: p?.category,
+      createdAt: p?.createdAt,
       quantity: p?.quantity,
     }));
 
@@ -254,7 +269,7 @@ export class ProductService {
     pagination: PaginationQueryDto,
     search?: string,
     categoryId?: number,
-  ): Promise<PaginationResponseDto<FavProductDtoRes>> {
+  ): Promise<PaginationResponseDto<FavoriteProductDto>> {
     const { page, limit } = pagination;
     const offset = (page - 1) * limit;
 
@@ -294,14 +309,14 @@ export class ProductService {
       .take(limit)
       .getRawMany();
 
-    const formatted = productsRaw.map((p) => ({
+    const formatted: FavoriteProductDto[] = productsRaw.map((p) => ({
       id: p?.id,
       productId: p?.id,
       name: p?.name,
       price: p?.price,
       brand: p?.brand,
       picture: p?.picture,
-      category: p?.label,
+      category: p?.category,
     }));
 
     return {
@@ -359,7 +374,7 @@ export class ProductService {
   async toggleFavorite(
     userId: number,
     productId: number,
-  ): Promise<{ isLoved: boolean }> {
+  ): Promise<ToggleFavoriteDto> {
     const existing = await this.favProductRepo.findOneBy({ userId, productId });
     if (existing) {
       await this.favProductRepo.delete({ userId, productId });

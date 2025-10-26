@@ -1,3 +1,11 @@
+/**
+ * @fileoverview This file contains the controller for handling product-related requests.
+ * It defines routes for creating, reading, updating, and deleting products, as well as managing
+ * product categories and brands. It uses decorators for routing, parameter validation, and Swagger documentation.
+ *
+ * @module ProductController
+ */
+
 import {
   Controller,
   Get,
@@ -34,6 +42,13 @@ import {
   ApiExtraModels,
 } from '@nestjs/swagger';
 import { ProductService } from './services/product.service';
+import { CategoryResDto } from './dtos/category/category.res.dto';
+import { BrandResDto } from './dtos/brand/brand.res.dto';
+import { ToggleFavoriteDto } from './dtos/product/toggle-favorite.dto';
+import { FavoriteProductDto } from './dtos/product/favorite-product.dto';
+import { WholesellerProductDto } from './dtos/product/wholeseller-product.dto';
+import { ProductDto } from './dtos/product/product.dto';
+import { ProductResDto } from './dtos/product/many-product.dto';
 import { UpdateProductDto } from './dtos/product/update.dto';
 import { PaginatedResponse } from 'src/common/dtos/pagination.dto';
 import { Product } from './entities/product.entity';
@@ -55,6 +70,12 @@ import { UploadingOptions } from 'src/infrastructure/object-storage/types/upload
 import { CreateCategoryDto } from './dtos/category/create-category.dto';
 import { CreateBrandDto } from './dtos/brand/brand.dto';
 
+/**
+ * @class ProductController
+ * @classdesc The main controller for handling product-related operations.
+ * This controller is protected by authentication and role-based access control.
+ * @ApiTags products
+ */
 @ApiTags('products')
 @ApiBearerAuth()
 @UseGuards(AccessTokenGuard, RoleGuard)
@@ -72,13 +93,20 @@ export class ProductController {
     private readonly categoryService: CategoryService,
   ) {}
 
+  /**
+   * @method findAll
+   * @description Get all products with pagination, search, and filters.
+   * @param {FilterProductDto} query - The query parameters for filtering and pagination.
+   * @param {number} userId - The ID of the user making the request.
+   * @returns {Promise<PaginatedResponse<Product>>} A paginated list of products.
+   */
   @Get('/all')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get all products with pagination, search, and filters',
   })
   @ApiOkResponse({
-    type: PaginatedResponse(Product),
+    type: PaginatedResponse(ProductResDto),
     description: 'Returns paginated products',
   })
   findAll(@Query() query: FilterProductDto, @USER('id') userId: number) {
@@ -91,10 +119,16 @@ export class ProductController {
     );
   }
 
+  /**
+   * @method findOne
+   * @description Get a product by its ID.
+   * @param {number} id - The ID of the product to retrieve.
+   * @returns {Promise<Product>} The product with the specified ID.
+   */
   @Get(':id')
   @ApiOperation({ summary: 'Get product by ID' })
   @ApiOkResponse({
-    type: Product,
+    type: ProductDto,
     description: 'Returns a single product',
   })
   @ApiNotFoundResponse({ description: 'Product not found' })
@@ -102,12 +136,20 @@ export class ProductController {
     return this.productService.findOne(id);
   }
 
+  /**
+   * @method create
+   * @description Create a new product with picture upload.
+   * @param {CreateProductDto} createProductDto - The data for creating the new product.
+   * @param {number} userId - The ID of the user creating the product.
+   * @param {Array<Express.Multer.File>} files - The product pictures to upload.
+   * @returns {Promise<Product>} The newly created product.
+   */
   @Post('/create')
   @HttpCode(HttpStatus.CREATED)
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Create a new product with picture upload' })
   @ApiCreatedResponse({
-    type: Product,
+    type: ProductDto,
     description: 'Product successfully created',
   })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
@@ -187,6 +229,13 @@ export class ProductController {
     );
   }
 
+  /**
+   * @method update
+   * @description Update an existing product.
+   * @param {number} id - The ID of the product to update.
+   * @param {UpdateProductDto} updateProductDto - The data for updating the product.
+   * @returns {Promise<{ message: string }>} A message indicating the result of the operation.
+   */
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   @Roles(USER_ROLES.ADMIN, USER_ROLES.WHOLESELLER)
@@ -203,6 +252,12 @@ export class ProductController {
     return { message: 'Product successfully updated' };
   }
 
+  /**
+   * @method remove
+   * @description Delete a product.
+   * @param {number} id - The ID of the product to delete.
+   * @returns {Promise<void>}
+   */
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Roles(USER_ROLES.ADMIN, USER_ROLES.WHOLESELLER)
@@ -214,13 +269,20 @@ export class ProductController {
     return this.productService.remove(id);
   }
 
+  /**
+   * @method getWholesellerProducts
+   * @description Get all products for a wholesaler with pagination, search, and filters.
+   * @param {FilterProductDto} query - The query parameters for filtering and pagination.
+   * @param {number} userId - The ID of the wholesaler.
+   * @returns {Promise<PaginatedResponse<Product>>} A paginated list of wholesaler products.
+   */
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary:
       'Get all wholeseller products with pagination, search, and filters',
   })
   @ApiOkResponse({
-    type: PaginatedResponse(Product),
+    type: PaginatedResponse(WholesellerProductDto),
     description: 'Returns paginated wholeseller products',
   })
   @Roles(USER_ROLES.WHOLESELLER, USER_ROLES.ADMIN)
@@ -238,12 +300,21 @@ export class ProductController {
     );
   }
 
+  /**
+   * @method getFavoriteProducts
+   * @description Get all favorite products for the current user with pagination, search, and filters.
+   * @param {FilterProductDto} query - The query parameters for filtering and pagination.
+   * @param {number} userId - The ID of the current user.
+   * @param {number} categoryId - The ID of the category to filter by.
+   * @param {string} search - The search term to filter by.
+   * @returns {Promise<PaginatedResponse<FavProductDtoRes>>} A paginated list of favorite products.
+   */
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get all favorite products with pagination, search, and filters',
   })
   @ApiOkResponse({
-    type: PaginatedResponse(FavProductDtoRes),
+    type: PaginatedResponse(FavoriteProductDto),
     description: 'Returns paginated favorite products',
   })
   @Get('favorite/all')
@@ -262,12 +333,19 @@ export class ProductController {
     );
   }
 
+  /**
+   * @method toggleFavorite
+   * @description Toggle the favorite status of a product for the current user.
+   * @param {number} productId - The ID of the product to toggle.
+   * @param {number} userId - The ID of the current user.
+   * @returns {Promise<{ isLoved: boolean }>} An object indicating the new favorite status.
+   */
   @Post(':id/toggle-favorite')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Toggle favorite status for a product' })
   @ApiOkResponse({
     description: 'Favorite status toggled successfully',
-    type: FavProductDtoRes,
+    type: ToggleFavoriteDto,
   })
   @ApiNotFoundResponse({ description: 'Product not found' })
   toggleFavorite(
@@ -277,28 +355,46 @@ export class ProductController {
     return this.productService.toggleFavorite(userId, productId);
   }
 
+  /**
+   * @method getAllCategories
+   * @description Get all main categories.
+   * @returns {Promise<Category[]>} A list of all main categories.
+   */
   @Get('main-categories')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get all categories' })
   @ApiOkResponse({
     description: 'Returns all categories',
-    type: [Category],
+    type: [CategoryResDto],
   })
   getAllCategories() {
     return this.categoryService.getAll();
   }
 
+  /**
+   * @method getChildrenCategories
+   * @description Get all children categories for a given parent category.
+   * @param {number} id - The ID of the parent category.
+   * @returns {Promise<Category[]>} A list of children categories.
+   */
   @Get('categories/:id/children')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get all children categories' })
   @ApiOkResponse({
     description: 'Returns all children categories',
-    type: [Category],
+    type: [CategoryResDto],
   })
   getChildrenCategories(@Param('id', ParseIntPipe) id: number) {
     return this.categoryService.getChildrenCaregories(id);
   }
 
+  /**
+   * @method createCategory
+   * @description Create a new category.
+   * @param {CreateCategoryDto} dto - The data for creating the new category.
+   * @param {Express.Multer.File} file - The category picture to upload.
+   * @returns {Promise<Category>} The newly created category.
+   */
   @Post('categories')
   @HttpCode(HttpStatus.CREATED)
   @Roles(USER_ROLES.ADMIN)
@@ -324,7 +420,7 @@ export class ProductController {
   })
   @ApiCreatedResponse({
     description: 'Category successfully created',
-    type: Category,
+    type: CategoryResDto,
   })
   @ApiBody({
     type: CreateCategoryDto,
@@ -342,6 +438,14 @@ export class ProductController {
     return this.categoryService.create(dto, file);
   }
 
+  /**
+   * @method updateCategory
+   * @description Update an existing category.
+   * @param {number} id - The ID of the category to update.
+   * @param {Partial<CreateCategoryDto>} dto - The data for updating the category.
+   * @param {Express.Multer.File} file - The new category picture to upload.
+   * @returns {Promise<{ message: string }>} A message indicating the result of the operation.
+   */
   @Put('categories/:id')
   @HttpCode(HttpStatus.OK)
   @ApiConsumes('multipart/form-data')
@@ -379,6 +483,12 @@ export class ProductController {
     return this.categoryService.update(id, dto, file);
   }
 
+  /**
+   * @method removeCategory
+   * @description Delete a category.
+   * @param {number} id - The ID of the category to delete.
+   * @returns {Promise<void>}
+   */
   @Delete('categories/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Roles(USER_ROLES.ADMIN)
@@ -390,24 +500,35 @@ export class ProductController {
     return this.categoryService.remove(id);
   }
 
+  /**
+   * @method getAllBrands
+   * @description Get all brands.
+   * @returns {Promise<Brand[]>} A list of all brands.
+   */
   @Get('brands')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get all brands' })
   @ApiOkResponse({
     description: 'Returns all brands',
-    type: [Brand],
+    type: [BrandResDto],
   })
   getAllBrands() {
     return this.brandService.getAll();
   }
 
+  /**
+   * @method createBrand
+   * @description Create a new brand.
+   * @param {string} label - The label of the new brand.
+   * @returns {Promise<Brand>} The newly created brand.
+   */
   @Post('brands')
   @HttpCode(HttpStatus.CREATED)
   @Roles(USER_ROLES.ADMIN)
   @ApiOperation({ summary: 'Create a new brand' })
   @ApiCreatedResponse({
     description: 'Brand successfully created',
-    type: Brand,
+    type: BrandResDto,
   })
   @ApiBody({
     type: CreateBrandDto,
@@ -416,11 +537,18 @@ export class ProductController {
     return this.brandService.create(label);
   }
 
+  /**
+   * @method updateBrand
+   * @description Update an existing brand.
+   * @param {number} id - The ID of the brand to update.
+   * @param {string} label - The new label for the brand.
+   * @returns {Promise<Brand>} The updated brand.
+   */
   @Put('brands/:id')
   @HttpCode(HttpStatus.OK)
   @Roles(USER_ROLES.ADMIN)
   @ApiOperation({ summary: 'Update an existing brand' })
-  @ApiOkResponse({ description: 'Brand successfully updated' })
+  @ApiOkResponse({ description: 'Brand successfully updated', type: BrandResDto })
   @ApiNotFoundResponse({ description: 'Brand not found' })
   @ApiParam({ name: 'id', type: Number, description: 'Brand ID' })
   @ApiBody({
@@ -433,6 +561,12 @@ export class ProductController {
     return this.brandService.update(id, label);
   }
 
+  /**
+   * @method removeBrand
+   * @description Delete a brand.
+   * @param {number} id - The ID of the brand to delete.
+   * @returns {Promise<void>}
+   */
   @Delete('brands/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Roles(USER_ROLES.ADMIN)
