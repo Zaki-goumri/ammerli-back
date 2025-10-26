@@ -98,6 +98,7 @@ export class ProductController {
     description: 'Returns paginated products',
   })
   findAll(@Query() query: FilterProductDto, @USER('id') userId: number) {
+    console.log('categoryIds', query.categoryIds);
     const pagination = { page: query.page || 1, limit: query.limit || 10 };
     return this.productService.findManyWithPagination(
       pagination,
@@ -253,8 +254,8 @@ export class ProductController {
   @ApiNoContentResponse({ description: 'Product successfully deleted' })
   @ApiNotFoundResponse({ description: 'Product not found' })
   @ApiParam({ name: 'id', type: Number, description: 'Product ID' })
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.productService.remove(id);
+  remove(@Param('id', ParseIntPipe) id: number, @USER('id') userId: number) {
+    return this.productService.remove(id, userId);
   }
 
   /**
@@ -293,7 +294,7 @@ export class ProductController {
    * @description Get all favorite products for the current user with pagination, search, and filters.
    * @param {FilterProductDto} query - The query parameters for filtering and pagination.
    * @param {number} userId - The ID of the current user.
-   * @param {number} categoryId - The ID of the category to filter by.
+   * @param {number} categoryIds - The ID of the category to filter by.
    * @param {string} search - The search term to filter by.
    * @returns {Promise<PaginatedResponse<FavProductDtoRes>>} A paginated list of favorite products.
    */
@@ -309,15 +310,15 @@ export class ProductController {
   getFavoriteProducts(
     @Query() query: FilterProductDto,
     @USER('id') userId: number,
-    @Query('categoryId') categoryId: number,
-    @Query('search') search: string,
+    @Query('categoryIds') categoryIds?: number[],
+    @Query('search') search?: string,
   ) {
     const pagination = { page: query.page || 1, limit: query.limit || 10 };
     return this.productService.getFavoriteProducts(
       userId,
       pagination,
       search,
-      categoryId,
+      categoryIds,
     );
   }
 

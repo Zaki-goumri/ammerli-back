@@ -49,18 +49,6 @@ export class Order extends BaseEntity {
   @JoinColumn({ name: 'addressId' })
   address: Address;
 
-  @ApiProperty({
-    enum: ORDER_STATUS,
-    example: ORDER_STATUS.DELIVERED,
-    description: 'Current status of the order',
-  })
-  @Column({
-    type: 'enum',
-    enum: ORDER_STATUS,
-    default: ORDER_STATUS.CONFIRMATION,
-  })
-  status: OrderStatus;
-
   @ApiProperty({ example: 150.75, description: 'Total amount of the order' })
   @Column('decimal', { precision: 10, scale: 2 })
   totalAmount: number;

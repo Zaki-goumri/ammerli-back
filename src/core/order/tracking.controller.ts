@@ -1,4 +1,11 @@
-import { Controller, Get, Post, Param, UseGuards, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  UseGuards,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { TrackingService } from './services/tracking.service';
 import { AccessTokenGuard } from '../authentication/guards/access-token.guard';
@@ -7,9 +14,9 @@ import { USER_ROLES } from 'src/common/enums/user-role.enum';
 import { RoleGuard } from '../authentication/guards/role.guard';
 import { USER } from '../authentication/decorators/user.decorartor';
 
-@ApiTags('order-tracking')
+@ApiTags('tracking')
 @ApiBearerAuth()
-@Controller('order-tracking')
+@Controller('tracking')
 export class TrackingController {
   constructor(private readonly trackingService: TrackingService) {}
 

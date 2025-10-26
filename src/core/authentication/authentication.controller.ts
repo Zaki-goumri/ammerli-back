@@ -1,4 +1,12 @@
-import { Body, Controller, Post, Put, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthenticationService } from './authentication.service';
 import { USER } from './decorators/user.decorartor';
 import {
@@ -50,10 +58,12 @@ export class AuthenticationController {
   async auth(@Body() dto: AuthDto): Promise<SendOtpDto> {
     return this.authenticationService.sendVerificationCode(dto.phoneNumber);
   }
+
   @ApiOperation({
     summary: 'validate otp',
     description: 'validate otp for user',
   })
+  @HttpCode(HttpStatus.OK)
   @ApiOkResponse({
     description: 'Returns user if it is registered esle register him',
     type: () => ValidateOtpDto,

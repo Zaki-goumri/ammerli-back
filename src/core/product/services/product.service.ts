@@ -88,7 +88,9 @@ export class ProductService {
       .orderBy('product.createdAt', 'DESC');
 
     if (categoryIds && categoryIds.length > 0) {
-      queryBuilder.andWhere('category.id IN (...categoryIds)', { categoryIds });
+      queryBuilder.andWhere('category.id IN (:...categoryIds)', {
+        categoryIds,
+      });
     }
     if (search) {
       queryBuilder.andWhere(
@@ -186,8 +188,11 @@ export class ProductService {
   }
 
   //TODO: check ownership
-  async remove(id: number): Promise<{ message: string }> {
-    const { affected } = await this.productRepo.delete(id);
+  async remove(id: number, userId: number): Promise<{ message: string }> {
+    const { affected } = await this.productRepo.delete({
+      id,
+      sellerId: userId,
+    });
     if (affected === 0) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
@@ -224,7 +229,7 @@ export class ProductService {
       .orderBy('product.createdAt', 'DESC');
 
     if (categoryIds && categoryIds.length > 0) {
-      queryBuilder.andWhere('category.id IN :(...categoryIds)', {
+      queryBuilder.andWhere('category.id IN (:...categoryIds)', {
         categoryIds,
       });
     }
@@ -269,7 +274,7 @@ export class ProductService {
     userId: number,
     pagination: PaginationQueryDto,
     search?: string,
-    categoryId?: number,
+    categoryIds?: number[],
   ): Promise<PaginationResponseDto<FavoriteProductDto>> {
     const { page, limit } = pagination;
     const offset = (page - 1) * limit;
@@ -292,8 +297,10 @@ export class ProductService {
       ])
       .orderBy('product.createdAt', 'DESC');
 
-    if (categoryId) {
-      queryBuilder.andWhere('category.id = :categoryId', { categoryId });
+    if (categoryIds && categoryIds.length > 0) {
+      queryBuilder.andWhere('category.id IN (:...:categoryId)', {
+        categoryIds,
+      });
     }
     if (search) {
       queryBuilder.andWhere(

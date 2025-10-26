@@ -23,6 +23,7 @@ import { RegisterUserDto } from '../authentication/dtos/requests/register-user.d
 import { GetMeDto } from './dtos/response/get-me.dto';
 import { UserDto } from './dtos/response/user.dto';
 import { AddressDto } from './dtos/response/address.dto';
+import { UpdateAddressDto } from './dtos/update-address.dto';
 
 @Injectable()
 export class UserService {
@@ -156,6 +157,9 @@ export class UserService {
         where: { id },
         withDeleted: false,
       });
+      if (user.isRegistered) {
+        throw new BadRequestException('User is already registered');
+      }
       userRepo.merge(user, { ...dto, isRegistered: true });
       if (dto.address) {
         await this.createAddress(id, dto.address, em);
@@ -269,7 +273,7 @@ export class UserService {
   async updateAddress(
     userId: number,
     addressId: number,
-    updateAddressDto: CreateAddressDto,
+    updateAddressDto: UpdateAddressDto,
   ): Promise<AddressDto> {
     const address = await this.addressRepo.findOneOrFail({
       where: { id: addressId, userId },
@@ -299,6 +303,7 @@ export class UserService {
       select: ['isRegistered'],
       withDeleted: false,
     });
+    console.log('User registration status:', user?.isRegistered);
 
     return user?.isRegistered ?? false;
   }

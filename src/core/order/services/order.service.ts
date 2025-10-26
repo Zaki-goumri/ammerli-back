@@ -22,9 +22,7 @@ import {
   PaginationQueryDto,
   PaginationResponseDto,
 } from 'src/common/dtos/pagination.dto';
-import { OrderStatus } from '../enums/delivery.enum';
 import { UserService } from 'src/core/user/user.service';
-import { TrackingService } from './tracking.service';
 import { CreateCheckoutRes } from '../dtos/checkout-create-res.dto';
 
 @Injectable()
@@ -40,7 +38,6 @@ export class OrderService {
     private readonly configService: ConfigService,
     private readonly CheckoutService: CheckoutService,
     private readonly userService: UserService,
-    private readonly trackingService: TrackingService,
   ) {}
 
   async findProductsByOrder(orderId: number) {
@@ -126,7 +123,6 @@ export class OrderService {
         addressId,
       });
       await orderRepo.save(order);
-      await this.trackingService.createInitialTracking(order.id);
 
       const orderProductRepo = em.getRepository(OrderProduct);
       const items = dto.items.map((item) =>
@@ -252,7 +248,6 @@ export class OrderService {
         order.products = productsByOrderId[order.id] || [];
       }
     }
-
     return {
       meta: {
         total,
@@ -263,9 +258,5 @@ export class OrderService {
       },
       data: orders,
     };
-  }
-
-  async updateOrderStatus(orderId: number, status: OrderStatus): Promise<void> {
-    await this.orderRepo.update({ id: orderId }, { status });
   }
 }

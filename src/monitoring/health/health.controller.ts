@@ -8,8 +8,10 @@ import {
   TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
 import { RedisCustomHealthIndicator } from './redis.health';
+import { ApiExcludeController } from '@nestjs/swagger';
 
 @Controller('health')
+@ApiExcludeController()
 export class HealthController {
   constructor(
     private health: HealthCheckService,

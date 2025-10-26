@@ -37,6 +37,7 @@ import { UserDto } from './dtos/response/user.dto';
 import { MessageDto } from './dtos/response/message.dto';
 import { ProfilePictureDto } from './dtos/response/profile-picture.dto';
 import { AddressDto } from './dtos/response/address.dto';
+import { UpdateAddressDto } from './dtos/update-address.dto';
 
 @ApiTags('User')
 @ApiBearerAuth()
@@ -151,7 +152,7 @@ export class UserController {
   updateAddress(
     @USER('id') userId: number,
     @Param('id') addressId: number,
-    @Body() updateAddressDto: CreateAddressDto,
+    @Body() updateAddressDto: UpdateAddressDto,
   ): Promise<AddressDto> {
     return this.userService.updateAddress(userId, addressId, updateAddressDto);
   }
