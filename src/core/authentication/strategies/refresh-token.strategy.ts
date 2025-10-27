@@ -1,11 +1,10 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { RefreshTokenPayload } from '../interfaces/refresh-token.dto';
 import { UserService } from 'src/core/user/user.service';
 import authConfig from 'src/config/auth.config';
-import { GetMeDto } from 'src/core/user/dtos/response/get-me.dto';
 
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(
@@ -17,13 +16,24 @@ export class RefreshTokenStrategy extends PassportStrategy(
     private readonly userService: UserService,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromBodyField('refreshToken'),
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: configService.jwt.refreshTokenSecret,
     });
   }
 
-  async validate(payload: RefreshTokenPayload): Promise<GetMeDto | null> {
-    return this.userService.findById(payload.id);
+  async validate(payload: RefreshTokenPayload): Promise<RefreshTokenPayload> {
+    console.log('RefreshTokenStrategy payload:', payload);
+    if (!payload?.id || !payload?.phoneNumber) {
+      throw new UnauthorizedException('Invalid token payload');
+    }
+    const user = this.userService.findById(payload.id);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    return {
+      id: payload.id,
+      phoneNumber: payload.phoneNumber,
+    };
   }
 }

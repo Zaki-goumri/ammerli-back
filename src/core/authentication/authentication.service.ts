@@ -88,10 +88,9 @@ export class AuthenticationService {
         isRegistered,
       };
       const refreshTokenPayload = {
-        sub: id,
+        id,
         phoneNumber,
         role,
-        type: 'refresh',
       };
 
       const jwtConfig = authConfig().jwt;

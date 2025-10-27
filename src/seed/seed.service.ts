@@ -51,111 +51,61 @@ export class SeedService {
 
   async seedUsers() {
     for (const user of users) {
-      const existingUser = await this.userRepository.findOne({
-        where: { id: user.id },
-      });
-      if (!existingUser) {
-        await this.userRepository.save(user);
-      }
+      await this.userRepository.save(user);
     }
   }
 
   async seedAddresses() {
     for (const address of addresses) {
-      const existingAddress = await this.addressRepository.findOne({
-        where: { id: address.id },
-      });
-      if (!existingAddress) {
-        await this.addressRepository.save(address);
-      }
+      await this.addressRepository.save(address);
     }
   }
 
   async seedBrands() {
     for (const brand of brands) {
-      const existingBrand = await this.brandRepository.findOne({
-        where: { id: brand.id },
-      });
-      if (!existingBrand) {
-        await this.brandRepository.save(brand);
-      }
+      await this.brandRepository.save(brand);
     }
   }
 
   async seedCategories() {
     for (const category of categories) {
-      const existingCategory = await this.categoryRepository.findOne({
-        where: { id: category.id },
-      });
-      if (!existingCategory) {
-        await this.categoryRepository.save(category);
-      }
+      await this.categoryRepository.save(category);
     }
   }
 
   async seedProducts() {
     for (const product of products) {
-      const existingProduct = await this.productRepository.findOne({
-        where: { id: product.id },
-      });
-      if (!existingProduct) {
-        await this.productRepository.save(product);
-      }
+      await this.productRepository.save(product);
     }
   }
 
   async seedProductPictures() {
     for (const productPicture of productPictures) {
-      const existingPicture = await this.productPictureRepository.findOne({
-        where: { id: productPicture.id },
-      });
-      if (!existingPicture) {
-        await this.productPictureRepository.save(productPicture);
-      }
+      await this.productPictureRepository.save(productPicture);
     }
   }
 
   async seedOrders() {
     for (const order of orders) {
-      const existingOrder = await this.orderRepository.findOne({
-        where: { id: order.id },
-      });
-      if (!existingOrder) {
-        await this.orderRepository.save(order);
-      }
+      await this.orderRepository.save(order);
     }
   }
 
   async seedCheckouts() {
     for (const checkout of checkouts) {
-      const existingCheckout = await this.checkoutRepository.findOne({
-        where: { id: checkout.id },
-      });
-      if (!existingCheckout) {
-        await this.checkoutRepository.save(checkout);
-      }
+      await this.checkoutRepository.save(checkout);
     }
   }
 
   async seedProductOrders() {
     for (const productOrder of productOrders) {
-      const existingProductOrder = await this.productOrderRepository.findOne({
-        where: { id: productOrder.id },
-      });
-      if (!existingProductOrder) {
-        await this.productOrderRepository.save(productOrder);
-      }
+      await this.productOrderRepository.save(productOrder);
     }
   }
 
   async seedTrackings() {
     for (const tracking of trackings) {
-      const existingTracking = await this.trackingRepository.findOne({
-        where: { id: tracking.id },
-      });
-      if (!existingTracking) {
-        await this.trackingRepository.save(tracking);
-      }
+      await this.trackingRepository.save(tracking);
     }
   }
 

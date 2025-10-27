@@ -20,7 +20,9 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "migration:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/data-source.ts",
     "db:update": "npm run migration:run",
-    "seed": "ts-node -r tsconfig-paths/register src/seed/seed-runner.ts"
+    "seed": "ts-node -r tsconfig-paths/register src/seed/seed-runner.ts",
+        "seed:docker": "docker exec -it server pnpm run seed"
+
   },
   "dependencies": {
     "@nestjs-mod/common": "^2.18.2",
