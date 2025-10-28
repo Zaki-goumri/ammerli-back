@@ -17,6 +17,7 @@ import elasticSearchConfig from './config/elastic-search.config';
 import dbConfig from './config/db.config';
 import chargiliConfig from './config/chargili.config';
 import minioConfig from './config/minio.config';
+import firebaseConfig from './config/firebase.config';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import minioConfig from './config/minio.config';
       validationSchema: null,
       expandVariables: true,
       load: [
+        firebaseConfig,
         minioConfig,
         redisConfig,
         authConfig,

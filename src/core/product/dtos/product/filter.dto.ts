@@ -24,7 +24,6 @@ export class FilterProductDto extends PaginationQueryDto {
     example: 1,
   })
   @IsOptional()
-  @IsArray()
   @Type(() => Number)
   @IsInt({ each: true })
   @IsPositive({ each: true })

@@ -8,6 +8,8 @@ import {
   USER_ROLES,
 } from 'src/common/enums/user-role.enum';
 import { BaseEntity } from '../../../common/entities/base.entity';
+import { Notification } from 'src/core/notifications/entities/notification.entity';
+import { Token } from 'src/core/notifications/entities/token.entity';
 
 @Entity('users')
 @Index('IDX_UNIQUE_PHONE_ACTIVE', ['phoneNumber'], {
@@ -75,6 +77,12 @@ export class User extends BaseEntity {
   @Column({ default: false })
   isRegistered: boolean;
 
+  @OneToMany(() => Notification, (notification) => notification.receiver)
+  notifications?: Notification[];
+
   @DeleteDateColumn()
   deletedAt?: Date;
+
+  @OneToMany(() => Token, (token) => token.user)
+  tokens?: Token[];
 }

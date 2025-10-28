@@ -8,6 +8,8 @@ import { BullModule } from '@nestjs/bullmq';
 import { QUEUE_NAME } from 'src/common/constants/queues';
 import { ObjectStorageModule } from './object-storage/object-storage.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { FirebaseModule } from './firebase/firebase.module';
+import firebaseConfig from 'src/config/firebase.config';
 
 @Module({
   imports: [
@@ -34,6 +36,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
         name: queueName,
       })),
     ),
+    FirebaseModule.forRootAsync(firebaseConfig.asProvider()),
   ],
   exports: [
     RedisModule,
@@ -41,6 +44,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     ObjectStorageModule,
     BullModule,
     DbModule,
+    FirebaseModule,
   ],
 })
 export class InfrastructureModule {}

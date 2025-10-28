@@ -12,7 +12,6 @@ import {
   HttpStatus,
   UseGuards,
   UseInterceptors,
-  UploadedFile,
   UploadedFiles,
 } from '@nestjs/common';
 import {
@@ -29,13 +28,10 @@ import {
   ApiUnauthorizedResponse,
   ApiTooManyRequestsResponse,
   ApiInternalServerErrorResponse,
-  PartialType,
   ApiConsumes,
   ApiExtraModels,
 } from '@nestjs/swagger';
 import { ProductService } from './services/product.service';
-import { CategoryResDto } from './dtos/category/category.res.dto';
-import { BrandResDto } from './dtos/brand/brand.res.dto';
 import { ToggleFavoriteDto } from './dtos/product/toggle-favorite.dto';
 import { FavoriteProductDto } from './dtos/product/favorite-product.dto';
 import { WholesellerProductDto } from './dtos/product/wholeseller-product.dto';
@@ -49,15 +45,10 @@ import { AccessTokenGuard } from '../authentication/guards/access-token.guard';
 import { Roles } from 'src/core/authentication/decorators/role.decorator';
 import { USER_ROLES } from 'src/common/enums/user-role.enum';
 import { RoleGuard } from '../authentication/guards/role.guard';
-import { BrandService } from './services/brand.service';
-import { CategoryService } from './services/category.service';
 import { CreateProductDto } from './dtos/product/create.dto';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { UploadingOptions } from 'src/infrastructure/object-storage/types/upload-options.interface';
-import { CreateCategoryDto } from './dtos/category/create-category.dto';
-import { CreateBrandDto } from './dtos/brand/brand.dto';
-
 /**
  * @class ProductController
  * @classdesc The main controller for handling product-related operations.
@@ -75,9 +66,7 @@ import { CreateBrandDto } from './dtos/brand/brand.dto';
 @ApiInternalServerErrorResponse({ description: 'Internal server error' })
 @Controller('products')
 export class ProductController {
-  constructor(
-    private readonly productService: ProductService,
-  ) {}
+  constructor(private readonly productService: ProductService) {}
 
   /**
    * @method findAll
@@ -96,7 +85,7 @@ export class ProductController {
     description: 'Returns paginated products',
   })
   findAll(@Query() query: FilterProductDto, @USER('id') userId: number) {
-    console.log('categoryIds', query.categoryIds);
+    console.log('Query Params:', query.categoryIds);
     const pagination = { page: query.page || 1, limit: query.limit || 10 };
     return this.productService.findManyWithPagination(
       pagination,
@@ -312,12 +301,9 @@ export class ProductController {
     @Query('search') search?: string,
   ) {
     const pagination = { page: query.page || 1, limit: query.limit || 10 };
-    return this.productService.getFavoriteProducts(
-      userId,
-      pagination,
-      search,
-      categoryIds,
-    );
+    return this.productService.getFavoriteProducts(userId, pagination, search, [
+      ...(categoryIds || []),
+    ]);
   }
 
   /**
@@ -341,6 +327,4 @@ export class ProductController {
   ) {
     return this.productService.toggleFavorite(userId, productId);
   }
-
-  
 }
