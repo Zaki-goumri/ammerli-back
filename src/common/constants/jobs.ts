@@ -11,10 +11,9 @@ export const SEARACH_JOB_NAME = {
   SEARCH_SYNC_DELETE: 'search_sync_delete',
   SEARCH_SYNC_UPDATE: 'search_sync_update',
 } as const;
-export const MAIL_JOBS = {
-  SEND_MAIL: 'send-mail',
-  SEND_VERIFICATION_MAIL: 'send-verification-mail',
-  SEND_PASSWORD_RESET_MAIL: 'send-password-reset-mail',
+export const NOTIFICATION_JOBS = {
+  SEND_NOTIFICATION: 'send-notification',
+  SEND_BULK_NOTIFICATION: 'send-bulk-notification',
 };
 
 export const UPLOAD_JOBS = {

@@ -1,5 +1,5 @@
 export const QUEUE_NAME = {
-  MAIL: 'mail',
+  NOTIFICATION: 'notification',
   SEARCH: 'search',
   UPLOAD: 'upload',
 } as const;

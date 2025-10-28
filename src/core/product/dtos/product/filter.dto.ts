@@ -5,9 +5,10 @@ import {
   IsString,
   IsArray,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationQueryDto } from 'src/common/dtos/pagination.dto';
+import { parseIntArrayQueryParam } from 'src/common/utils';
 
 export class FilterProductDto extends PaginationQueryDto {
   @ApiPropertyOptional({
@@ -24,6 +25,7 @@ export class FilterProductDto extends PaginationQueryDto {
     example: 1,
   })
   @IsOptional()
+  @Transform(({ value }) => parseIntArrayQueryParam(value))
   @Type(() => Number)
   @IsInt({ each: true })
   @IsPositive({ each: true })
