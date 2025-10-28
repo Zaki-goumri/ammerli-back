@@ -9,7 +9,6 @@ import { Token } from './entities/token.entity';
 import { InjectQueue } from '@nestjs/bullmq';
 import { QUEUE_NAME } from 'src/common/constants/queues';
 import { Queue } from 'bullmq';
-import { FirebaseService } from 'src/infrastructure/firebase/firebase.service';
 import { NotificationType } from './enums/notification-type.enum';
 import { NOTIFICATION_JOBS } from 'src/common/constants/jobs';
 
@@ -22,7 +21,6 @@ export class NotificationsService {
     private readonly tokenRepo: Repository<Token>,
     @InjectQueue(QUEUE_NAME.NOTIFICATION)
     private readonly notificationQueue: Queue,
-    private readonly firebaseService: FirebaseService,
   ) {}
 
   logger = new Logger(NotificationsService.name);
@@ -38,6 +36,7 @@ export class NotificationsService {
     return this.notificationRepo.find({
       skip: (page - 1) * limit,
       take: limit,
+      order: { createdAt: 'DESC' },
     });
   }
 
@@ -45,13 +44,15 @@ export class NotificationsService {
     return this.notificationRepo.findOne({ where: { id } });
   }
 
-  async updateRead(id: number, userId: number) {
-    await this.notificationRepo.update(
-      { id, receiverId: userId },
-      {
-        isRead: true,
-      },
-    );
+  async updateRead(ids: number[], userId: number) {
+    for (const id of ids) {
+      await this.notificationRepo.update(
+        { id, receiverId: userId },
+        {
+          isRead: true,
+        },
+      );
+    }
   }
 
   async remove(id: number, userId: number) {
