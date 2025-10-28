@@ -14,6 +14,8 @@ import { UserModule } from '../user/user.module';
 import { Tracking } from './entities/tracking.entity';
 import { TrackingService } from './services/tracking.service';
 import { TrackingController } from './tracking.controller';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { TrackingController } from './tracking.controller';
     ProductModule,
     ChargiliModule.registerAsync(chargiliConfig.asProvider()),
     UserModule,
+    NotificationsModule,
+    EventEmitterModule,
   ],
   controllers: [OrderController, TrackingController],
   providers: [OrderService, CheckoutService, TrackingService],

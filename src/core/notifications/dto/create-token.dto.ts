@@ -10,13 +10,7 @@ export class CreateTokenDto {
   @IsString()
   @IsNotEmpty()
   fcmToken: string;
-  @ApiProperty({
-    description: 'The ID of the user associated with the token.',
-    example: 1,
-  })
-  @IsNumber()
-  @IsNotEmpty()
-  userId: number;
+
   @ApiProperty({
     description: 'The operating system type of the device.',
     enum: OsType,

@@ -1,16 +1,22 @@
 import { BullModule } from '@nestjs/bullmq';
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { QUEUE_NAME } from 'src/common/constants/queues';
 import redisConfig from 'src/config/redis.config';
 import { UploadProcessor } from './upload/upload.processor';
-import { ObjectStorageModule } from '../object-storage/object-storage.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { NotificationProcessor } from './notification/notification.processor';
+import { FirebaseModule } from '../firebase/firebase.module';
+import { ObjectStorageModule } from '../object-storage/object-storage.module';
+import { NotificationsModule } from 'src/core/notifications/notifications.module';
 
+@Global()
 @Module({
   imports: [
-    ObjectStorageModule,
     EventEmitterModule,
+    ObjectStorageModule,
+    NotificationsModule,
+    FirebaseModule,
     BullModule.forRootAsync({
       useFactory: (configService: ConfigType<typeof redisConfig>) => {
         const redisHost = configService.host;
@@ -34,7 +40,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
       })),
     ),
   ],
-  providers: [UploadProcessor],
+  providers: [UploadProcessor, NotificationProcessor],
   exports: [BullModule],
 })
 export class QueueModule {}

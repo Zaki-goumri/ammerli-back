@@ -1,4 +1,4 @@
-import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseEntity } from 'src/common/entities/base.entity';
 import { Order } from './order.entity';
@@ -14,7 +14,10 @@ export class Checkout extends BaseEntity {
   @Column()
   orderId: number;
 
-  @ManyToOne(() => Order, { onDelete: 'NO ACTION', nullable: true })
+  @ManyToOne(() => Order, (order) => order.checkouts, {
+    onDelete: 'NO ACTION',
+    nullable: true,
+  })
   @JoinColumn({ name: 'orderId' })
   order: Order;
 

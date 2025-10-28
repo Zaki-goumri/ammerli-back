@@ -4,17 +4,12 @@ import { NotificationsController } from './notifications.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Token } from './entities/token.entity';
 import { Notification } from './entities/notification.entity';
-import { FcmService } from './fcm.service';
-import { FcmTokenService } from './fcm-token.service';
-import { InfrastructureModule } from 'src/infrastructure/infrastructure.module';
+import { FirebaseModule } from 'src/infrastructure/firebase/firebase.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Token, Notification]),
-    InfrastructureModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Token, Notification]), FirebaseModule],
   controllers: [NotificationsController],
-  providers: [FcmService, FcmTokenService, NotificationsService],
+  providers: [NotificationsService],
   exports: [NotificationsService],
 })
 export class NotificationsModule {}

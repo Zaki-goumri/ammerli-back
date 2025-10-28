@@ -1,26 +1,117 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Notification } from './entities/notification.entity';
+import { Repository } from 'typeorm';
+import { PaginationQueryDto } from 'src/common/dtos/pagination.dto';
+import { Token } from './entities/token.entity';
+import { InjectQueue } from '@nestjs/bullmq';
+import { QUEUE_NAME } from 'src/common/constants/queues';
+import { Queue } from 'bullmq';
+import { FirebaseService } from 'src/infrastructure/firebase/firebase.service';
+import { NotificationType } from './enums/notification-type.enum';
+import { NOTIFICATION_JOBS } from 'src/common/constants/jobs';
 
 @Injectable()
 export class NotificationsService {
-  create(createNotificationDto: CreateNotificationDto) {
-    return 'This action adds a new notification';
+  constructor(
+    @InjectRepository(Notification)
+    private readonly notificationRepo: Repository<Notification>,
+    @InjectRepository(Token)
+    private readonly tokenRepo: Repository<Token>,
+    @InjectQueue(QUEUE_NAME.NOTIFICATION)
+    private readonly notificationQueue: Queue,
+    private readonly firebaseService: FirebaseService,
+  ) {}
+
+  logger = new Logger(NotificationsService.name);
+
+  // NotificationsService methods
+  create(dto: CreateNotificationDto) {
+    const notification = this.notificationRepo.create(dto);
+    return this.notificationRepo.save(notification);
   }
 
-  findAll() {
-    return `This action returns all notifications`;
+  findAll(paginationaQuery: PaginationQueryDto) {
+    const { limit, page } = paginationaQuery;
+    return this.notificationRepo.find({
+      skip: (page - 1) * limit,
+      take: limit,
+    });
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} notification`;
+    return this.notificationRepo.findOne({ where: { id } });
   }
 
-  update(id: number, updateNotificationDto: UpdateNotificationDto) {
-    return `This action updates a #${id} notification`;
+  async updateRead(id: number, userId: number) {
+    await this.notificationRepo.update(
+      { id, receiverId: userId },
+      {
+        isRead: true,
+      },
+    );
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} notification`;
+  async remove(id: number, userId: number) {
+    await this.notificationRepo.delete({ id, receiverId: userId });
+  }
+
+  async saveNotificationRecord(
+    title: string,
+    body: string,
+    receiverId: number,
+    type: NotificationType,
+  ): Promise<Notification> {
+    const createNotificationDto: CreateNotificationDto = {
+      title,
+      body,
+      receiverId,
+      type,
+      isRead: false, // Default to unread
+    };
+    return this.create(createNotificationDto);
+  }
+
+  // FcmTokenService methods
+  async registerToken(
+    dto: CreateNotificationDto,
+    userId: number,
+  ): Promise<{ message: string }> {
+    const token = this.tokenRepo.create({
+      userId,
+      ...dto,
+    });
+    await this.tokenRepo.save(token);
+    return { message: 'Token registered successfully' };
+  }
+
+  async getActiveTokensForUser(userId: number): Promise<string[]> {
+    const tokens = await this.tokenRepo.find({ where: { userId } });
+    if (!tokens || tokens.length === 0) {
+      throw new BadRequestException('No active tokens found for the user');
+    }
+    return tokens.map((token) => token.fcmToken);
+  }
+
+  async revokeToken(token: string): Promise<void> {
+    await this.tokenRepo.delete({ fcmToken: token });
+  }
+
+  // FcmService methods
+  async sendNotification(
+    title: string,
+    body: string,
+    userId: number,
+    type: NotificationType,
+  ): Promise<any> {
+    await this.notificationQueue.add(NOTIFICATION_JOBS.SEND_NOTIFICATION, {
+      title,
+      body,
+      userId,
+      type,
+    });
+    return { success: true, message: 'Notification job added to queue' };
   }
 }

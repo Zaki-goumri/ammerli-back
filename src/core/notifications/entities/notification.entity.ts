@@ -2,6 +2,11 @@ import { Column, Entity, ManyToOne } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from 'src/core/user/entities/user.entity';
+import {
+  NOTIFICATION_TYPE,
+  NOTIFICATION_TYPE_VALUES,
+  NotificationType,
+} from '../enums/notification-type.enum';
 
 /**
  * @fileoverview Defines the Notification entity.
@@ -16,6 +21,17 @@ export class Notification extends BaseEntity {
   })
   @Column()
   title: string;
+
+  @ApiProperty({
+    description: 'The type of the notification.',
+    enum: NOTIFICATION_TYPE_VALUES,
+    example: NOTIFICATION_TYPE.ORDERS,
+  })
+  @Column({
+    type: 'enum',
+    enum: NOTIFICATION_TYPE_VALUES,
+  })
+  type: NotificationType;
 
   @ApiProperty({
     description: 'The body of the notification.',

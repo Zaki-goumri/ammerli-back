@@ -17,7 +17,8 @@ export class FirebaseModule {
       module: FirebaseModule,
       imports: options.imports,
       providers: [FirebaseService, FirebaseProvider, optionsProvider],
-      exports: [FirebaseService],
+      global: true,
+      exports: [FirebaseService, FirebaseProvider, optionsProvider],
     };
   }
 }

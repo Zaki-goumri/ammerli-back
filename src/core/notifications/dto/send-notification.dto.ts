@@ -1,14 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsEnum, IsString } from 'class-validator';
+import {
+  NOTIFICATION_TYPE,
+  NOTIFICATION_TYPE_VALUES,
+  NotificationType,
+} from '../enums/notification-type.enum';
 
 export class SendNotificationDto {
-  @IsString()
-  @ApiProperty({
-    description: 'FCM device token',
-    example:
-      'e1IBNvDp3xDTixSuX0PmHi:APA91bEwHP-Vc5TyCCpP9W28lHJ-MRcLVNGGW1Q_r8xJH1vnmO77b9pUzLLckc7BTV05u1_nn6dWBPE8zPMADJS-bEc4owee7198ILyDKef9sxT0eUmdLw0',
-  })
-  token: string;
   @IsString()
   @ApiProperty({
     description: 'Notification title',
@@ -21,4 +19,12 @@ export class SendNotificationDto {
     example: 'This is a test notification sent via FCM',
   })
   body: string;
+
+  @IsEnum(NOTIFICATION_TYPE_VALUES)
+  @ApiProperty({
+    description: 'Notification type',
+    enum: NOTIFICATION_TYPE_VALUES,
+    example: NOTIFICATION_TYPE.ORDERS,
+  })
+  type: NotificationType;
 }

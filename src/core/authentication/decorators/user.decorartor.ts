@@ -6,7 +6,7 @@ export const USER = createParamDecorator(
   (data: keyof AccessTokenPayload, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest<ExtendedRequest>();
     const { user } = request;
-    console.log(user);
+
     if (!user) {
       throw new Error('User not found in request');
     }

@@ -42,6 +42,9 @@ import { CheckoutDataDto } from '../chargili/dtos/chargili-webhook.dto';
 import { extractCheckoutIdFromUrl } from './utils/extract-checkout-id.utils';
 import { AccessTokenGuard } from '../authentication/guards/access-token.guard';
 import { USER } from '../authentication/decorators/user.decorartor';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NOTIFICATION_TYPE } from '../notifications/enums/notification-type.enum';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 /**
  * @class OrderController
@@ -50,11 +53,12 @@ import { USER } from '../authentication/decorators/user.decorartor';
  * @ApiTags order
  */
 @Controller('order')
-@UseGuards(AccessTokenGuard)
 export class OrderController {
   constructor(
     private readonly orderService: OrderService,
     private readonly checkoutService: CheckoutService,
+    private readonly notificationService: NotificationsService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
   logger = new Logger(OrderController.name);
 
@@ -98,7 +102,6 @@ export class OrderController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    console.log('Received Chargili webhook:', data);
     const checkoutId = extractCheckoutIdFromUrl(data.checkout_url);
     if (!checkoutId) {
       this.logger.error(
@@ -114,15 +117,33 @@ export class OrderController {
       data.fees,
       headers.authorization,
     );
+
+    const buyerId =
+      await this.checkoutService.findBuyerIdByCheckoutId(checkoutId);
+
     if (isPaymentSuccessful) {
       this.logger.log(
         `Payment successful for checkout ID: ${checkoutId}. Order processed.`,
       );
+      await this.notificationService.sendNotification(
+        'Payment Successful',
+        `Your payment for order with checkout ID ${checkoutId} has been received successfully.`,
+        buyerId,
+        NOTIFICATION_TYPE.ORDERS,
+      );
+      const orderId =
+        await this.checkoutService.findOrderIdByCheckoutId(checkoutId);
+      this.eventEmitter.emit('order.paid', orderId);
     } else {
       this.logger.warn(
         `Payment failed for checkout ID: ${checkoutId}. Order not processed.`,
       );
-      //TODO: add notification for failed payment
+      await this.notificationService.sendNotification(
+        'Payment Failed',
+        `Your payment for order with checkout ID ${checkoutId} has failed. Please try again.`,
+        buyerId,
+        NOTIFICATION_TYPE.ORDERS,
+      );
     }
     res.send({ received: true });
   }
@@ -142,6 +163,7 @@ export class OrderController {
   }
 
   @ApiBearerAuth()
+  @UseGuards(AccessTokenGuard)
   @ApiOperation({ summary: 'Get all orders for the authenticated user' })
   @ApiOkResponse({
     type: PaginatedResponse(OrderListItemDto),

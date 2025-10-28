@@ -6,51 +6,57 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
-import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
-import { FcmService } from './fcm.service';
 import { SendNotificationDto } from './dto/send-notification.dto';
+import { PaginationQueryDto } from 'src/common/dtos/pagination.dto';
+import { CreateTokenDto } from './dto/create-token.dto';
+import { USER } from '../authentication/decorators/user.decorartor';
+import { AccessTokenGuard } from '../authentication/guards/access-token.guard';
 
 @Controller('notifications')
+@UseGuards(AccessTokenGuard)
 export class NotificationsController {
-  constructor(
-    private readonly notificationsService: NotificationsService,
-    private readonly fcmService: FcmService,
-  ) {}
-
-  @Post()
-  create(@Body() createNotificationDto: CreateNotificationDto) {
-    return this.notificationsService.create(createNotificationDto);
-  }
+  constructor(private readonly notificationsService: NotificationsService) {}
 
   @Post('send-fcm-notification')
-  sendFcmNotification(@Body() sendNotificationDto: SendNotificationDto) {
-    const { token, title, body } = sendNotificationDto;
-    return this.fcmService.sendNotification(token, title, body);
+  @HttpCode(HttpStatus.OK)
+  sendFcmNotification(
+    @Body() sendNotificationDto: SendNotificationDto,
+    @USER('id') userId: number,
+  ) {
+    const { title, body, type } = sendNotificationDto;
+    return this.notificationsService.sendNotification(
+      title,
+      body,
+      userId,
+      type,
+    );
+  }
+
+  @Post('register-fcm-token')
+  registerToken(@Body() dto: CreateTokenDto, @USER('id') userId: number) {
+    return this.notificationsService.registerToken(dto, userId);
   }
 
   @Get()
-  findAll() {
-    return this.notificationsService.findAll();
+  findAll(@Query() paginationQuery: PaginationQueryDto) {
+    return this.notificationsService.findAll(paginationQuery);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.notificationsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateNotificationDto: UpdateNotificationDto,
-  ) {
-    return this.notificationsService.update(+id, updateNotificationDto);
+  @Patch(':id/read')
+  update(@Param('id', ParseIntPipe) id: number, @USER('id') userId: number) {
+    return this.notificationsService.updateRead(id, userId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.notificationsService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number, @USER('id') userId: number) {
+    return this.notificationsService.remove(id, userId);
   }
 }

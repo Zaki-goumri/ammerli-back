@@ -32,4 +32,23 @@ export class CheckoutService {
     );
     return checkout;
   }
+  async findBuyerIdByCheckoutId(chargiliCheckoutId: string): Promise<number> {
+    const { order } = await this.checkoutRepo.findOneOrFail({
+      where: { chargiliCheckoutId },
+      relations: ['order'],
+      select: { order: { buyerId: true } },
+    });
+    const buyerId = order.buyerId;
+    return buyerId;
+  }
+
+  async findOrderIdByCheckoutId(chargiliCheckoutId: string): Promise<number> {
+    const { order } = await this.checkoutRepo.findOneOrFail({
+      where: { chargiliCheckoutId },
+      relations: ['order'],
+      select: { order: { id: true } },
+    });
+    const orderId = order.id;
+    return orderId;
+  }
 }
