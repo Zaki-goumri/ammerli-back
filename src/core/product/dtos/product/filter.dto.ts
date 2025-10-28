@@ -26,7 +26,6 @@ export class FilterProductDto extends PaginationQueryDto {
   })
   @IsOptional()
   @Transform(({ value }) => parseIntArrayQueryParam(value))
-  @Type(() => Number)
   @IsInt({ each: true })
   @IsPositive({ each: true })
   categoryIds?: number[];

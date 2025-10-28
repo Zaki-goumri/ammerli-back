@@ -7,10 +7,10 @@
 export function parseIntArrayQueryParam(
   value: string | undefined,
 ): number[] | undefined {
+  console.log('Parsing value:', value);
   if (value === undefined || value === '') {
     return undefined;
   }
-
   if (Array.isArray(value)) {
     return value.map((v) => Number(v));
   }
