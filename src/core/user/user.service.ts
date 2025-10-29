@@ -206,12 +206,29 @@ export class UserService {
   }
 
   async deleteUser(id: number): Promise<{ message: string }> {
+    const user = await this.userRepo.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
     await this.userRepo.softDelete(id);
     await this.redisService.del(UserService.getCacheKey(id, 'id'));
-    return { message: 'User deleted successfully (soft delete)' };
+
+    if (user.profilePic) {
+      await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
+        objectUrls: [user.profilePic],
+        metadata: { targetId: id, targetType: 'user_picture' },
+      });
+    }
+    return { message: 'User soft deleted successfully' };
   }
 
   async updateUserProfilePic(userId: number, profilePic: Express.Multer.File) {
+    const user = await this.userRepo.findOneOrFail({
+      where: { id: userId },
+      select: ['id', 'profilePic'],
+      withDeleted: false,
+    });
     const objectName = this.objectService.generateUniqueObjectName(
       profilePic.originalname,
     );
@@ -223,6 +240,12 @@ export class UserService {
       options: { objectName },
       metadata: { targetId: userId, targetType: 'user_picture' },
     });
+    if (user.profilePic)
+      await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
+        objectUrls: [user.profilePic],
+        metadata: { targetId: userId, targetType: 'user_picture' },
+      });
+    await this.redisService.del(UserService.getCacheKey(userId, 'id'));
     return { profilePic: presignedUrl };
   }
 

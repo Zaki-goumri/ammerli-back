@@ -8,7 +8,7 @@ import {
   PaginationQueryDto,
   PaginationResponseDto,
 } from 'src/common/dtos/pagination.dto';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, Repository, In } from 'typeorm';
 import { Product } from '../entities/product.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UpdateProductDto } from '../dtos/product/update.dto';
@@ -25,6 +25,7 @@ import { ToggleFavoriteDto } from '../dtos/product/toggle-favorite.dto';
 import { FavoriteProductDto } from '../dtos/product/favorite-product.dto';
 import { WholesellerProductDto } from '../dtos/product/wholeseller-product.dto';
 import { ProductDto } from '../dtos/product/product.dto';
+import { ProductPicture } from '../entities/product-picture.entity';
 
 @Injectable()
 export class ProductService {
@@ -34,6 +35,8 @@ export class ProductService {
     private readonly productRepo: Repository<Product>,
     @InjectRepository(FavProduct)
     private readonly favProductRepo: Repository<FavProduct>,
+    @InjectRepository(ProductPicture)
+    private readonly productPictureRepo: Repository<ProductPicture>,
     @InjectQueue(QUEUE_NAME.UPLOAD)
     private readonly uploadQueue: Queue,
     private readonly objectService: ObjectService,
@@ -136,12 +139,16 @@ export class ProductService {
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
+    const loveCount = await this.favProductRepo.count({
+      where: { productId: id },
+    });
     return {
       id: product.id,
       name: product.name,
       description: product.description ?? null,
       price: product.price,
       quantity: product.quantity,
+      loveCount,
       brand: product.brand.label,
       category: {
         label: product.category.label,
@@ -186,16 +193,48 @@ export class ProductService {
     return { message: 'Product successfully updated' };
   }
 
-  //TODO: check ownership
   async remove(id: number, userId: number): Promise<{ message: string }> {
-    const { affected } = await this.productRepo.delete({
-      id,
-      sellerId: userId,
+    const product = await this.productRepo.findOne({
+      where: { id, sellerId: userId },
+      relations: ['pictures'],
     });
-    if (affected === 0) {
+    if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
-    return { message: 'Product successfully deleted' };
+
+    const pictureUrls = product.pictures.map((pic) => pic.url).filter(Boolean) as string[];
+
+    await this.productRepo.softDelete(id);
+
+    if (pictureUrls.length > 0) {
+      await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
+        objectUrls: pictureUrls,
+        metadata: { targetId: id, targetType: 'product_picture' },
+      });
+    }
+    return { message: 'Product soft deleted successfully' };
+  }
+
+  async deleteProductImages(productId: number, pictureIds: number[]): Promise<{ message: string }> {
+    const picturesToDelete = await this.productPictureRepo.find({
+      where: { productId, id: In(pictureIds) },
+    });
+
+    if (picturesToDelete.length === 0) {
+      throw new NotFoundException('No product pictures found with the given IDs for this product');
+    }
+
+    const pictureUrls = picturesToDelete.map((pic) => pic.url).filter(Boolean) as string[];
+
+    await this.productPictureRepo.softDelete({ id: In(pictureIds) });
+
+    if (pictureUrls.length > 0) {
+      await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
+        objectUrls: pictureUrls,
+        metadata: { targetId: productId, targetType: 'product_picture' },
+      });
+    }
+    return { message: 'Product pictures soft deleted and queued for file deletion' };
   }
 
   //TODO: add type to return
@@ -398,19 +437,20 @@ export class ProductService {
     uploadOptions: UploadingOptions,
     productId: number,
   ) {
-    const queuePromises = files.map((file) => {
-      const objectName = this.objectService.generateUniqueObjectName(
-        file.originalname,
-      );
-      return this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
-        file,
-        options: { ...uploadOptions, objectName },
-        metadata: {
-          targetId: productId,
-          targetType: 'product_picture',
-        },
-      });
+    const queueFiles = files.map(file => ({
+      buffer: file.buffer,
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+    }));
+
+    await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILES_BULK, {
+      files: queueFiles,
+      options: uploadOptions,
+      metadata: {
+        targetId: productId,
+        targetType: 'product_picture',
+      },
     });
-    await Promise.all(queuePromises);
   }
 }

@@ -3,7 +3,7 @@ import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Notification } from './entities/notification.entity';
-import { Repository } from 'typeorm';
+import { Repository, LessThan } from 'typeorm';
 import { PaginationQueryDto } from 'src/common/dtos/pagination.dto';
 import { Token } from './entities/token.entity';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -11,6 +11,7 @@ import { QUEUE_NAME } from 'src/common/constants/queues';
 import { Queue } from 'bullmq';
 import { NotificationType } from './enums/notification-type.enum';
 import { NOTIFICATION_JOBS } from 'src/common/constants/jobs';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class NotificationsService {
@@ -24,6 +25,20 @@ export class NotificationsService {
   ) {}
 
   logger = new Logger(NotificationsService.name);
+
+  @Cron(CronExpression.EVERY_WEEK)
+  async handleCron() {
+    this.logger.log(
+      'Running cron job to delete old notifications than one week',
+    );
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    await this.notificationRepo.delete({
+      createdAt: LessThan(oneWeekAgo),
+      isRead: true,
+    });
+    this.logger.log('Old notifications deleted');
+  }
 
   // NotificationsService methods
   create(dto: CreateNotificationDto) {

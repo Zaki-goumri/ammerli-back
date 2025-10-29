@@ -35,7 +35,6 @@ import { ProductService } from './services/product.service';
 import { ToggleFavoriteDto } from './dtos/product/toggle-favorite.dto';
 import { FavoriteProductDto } from './dtos/product/favorite-product.dto';
 import { WholesellerProductDto } from './dtos/product/wholeseller-product.dto';
-import { ProductDto } from './dtos/product/product.dto';
 import { ProductResDto } from './dtos/product/many-product.dto';
 import { UpdateProductDto } from './dtos/product/update.dto';
 import { PaginatedResponse } from 'src/common/dtos/pagination.dto';
@@ -49,6 +48,8 @@ import { CreateProductDto } from './dtos/product/create.dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { UploadingOptions } from 'src/infrastructure/object-storage/types/upload-options.interface';
+import { ProductDto } from './dtos/product/product.dto';
+import { DeleteProductPicturesDto } from './dtos/product/delete-product-pictures.dto';
 /**
  * @class ProductController
  * @classdesc The main controller for handling product-related operations.
@@ -243,6 +244,36 @@ export class ProductController {
   @ApiParam({ name: 'id', type: Number, description: 'Product ID' })
   remove(@Param('id', ParseIntPipe) id: number, @USER('id') userId: number) {
     return this.productService.remove(id, userId);
+  }
+
+  /**
+   * @method deleteProductImages
+   * @description Delete specific images from a product.
+   * @param {number} productId - The ID of the product.
+   * @param {DeleteProductPicturesDto} dto - DTO containing picture IDs to delete.
+   * @returns {Promise<{ message: string }>} A message indicating the result of the operation.
+   */
+  @Delete(':productId/pictures')
+  @HttpCode(HttpStatus.OK)
+  @Roles(USER_ROLES.ADMIN, USER_ROLES.WHOLESELLER)
+  @ApiOperation({ summary: 'Delete specific images from a product' })
+  @ApiOkResponse({
+    description: 'Product pictures soft deleted and queued for file deletion',
+  })
+  @ApiNotFoundResponse({
+    description:
+      'No product pictures found with the given IDs for this product',
+  })
+  @ApiParam({ name: 'productId', type: Number, description: 'Product ID' })
+  @ApiBody({
+    type: DeleteProductPicturesDto,
+    description: 'Picture IDs to delete',
+  })
+  async deleteProductImages(
+    @Param('productId', ParseIntPipe) productId: number,
+    @Body() dto: DeleteProductPicturesDto,
+  ) {
+    return this.productService.deleteProductImages(productId, dto.pictureIds);
   }
 
   /**

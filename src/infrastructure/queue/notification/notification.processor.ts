@@ -46,8 +46,6 @@ export class NotificationProcessor extends WorkerHost {
           message: 'Bulk notification job processed',
           jobId: job.id,
         });
-      case NOTIFICATION_JOBS.SEND_BULK_NOTIFICATION:
-        throw new Error('Method not implemented.');
       default:
         return Promise.resolve({
           message: 'Unknown job processed',

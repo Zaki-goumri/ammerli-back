@@ -24,6 +24,8 @@ import {
 } from 'src/common/dtos/pagination.dto';
 import { UserService } from 'src/core/user/user.service';
 import { CreateCheckoutRes } from '../dtos/checkout-create-res.dto';
+import { Tracking } from '../entities/tracking.entity';
+import { OrderStatus } from '../enums/delivery.enum';
 
 @Injectable()
 export class OrderService {
@@ -38,6 +40,8 @@ export class OrderService {
     private readonly configService: ConfigService,
     private readonly CheckoutService: CheckoutService,
     private readonly userService: UserService,
+    @InjectRepository(Tracking)
+    private readonly trackingRepo: Repository<Tracking>,
   ) {}
 
   async findProductsByOrder(orderId: number) {
@@ -195,16 +199,42 @@ export class OrderService {
     withProducts: boolean = false,
   ): Promise<PaginationResponseDto<OrderListItemDto>> {
     const { limit, page } = paginationQuery;
+
     const queryBuilder = this.orderRepo
       .createQueryBuilder('orders')
-      .where('orders.buyerId=:userId', { userId })
-      .leftJoin('order_products', 'op', 'op.orderId=orders.id')
+      .where('orders.buyerId = :userId', { userId })
+      .leftJoin(
+        (subQuery) =>
+          subQuery
+            .select('t1.orderId', 'orderId')
+            .addSelect('t1.status', 'latestStatus')
+            .from(Tracking, 't1')
+            .innerJoin(
+              (innerSubquery) => {
+                return innerSubquery
+                  .select('MAX(t2.createdAt)', 'maxCreatedAt')
+                  .addSelect('t2.orderId', 'order_id_alias')
+                  .from(Tracking, 't2')
+                  .groupBy('t2.orderId');
+              },
+              't_max',
+              't_max.order_id_alias = t1.orderId AND t_max."maxCreatedAt" = t1.createdAt',
+            ),
+        'latest_tracking',
+        'latest_tracking."orderId" = orders.id',
+      )
+
+      .leftJoin('order_products', 'op', 'op.orderId = orders.id')
       .select([
         'orders.id AS id',
         'orders.totalAmount AS totalAmount',
+        'orders.createdAt AS createdAt',
+        'orders.updatedAt AS updatedAt',
+        'latest_tracking."latestStatus" AS status',
         'COUNT(op.id) AS productCount',
       ])
       .groupBy('orders.id')
+      .addGroupBy('latest_tracking."latestStatus"')
       .orderBy('orders.createdAt', 'DESC')
       .take(limit)
       .skip((page - 1) * limit);
@@ -216,9 +246,12 @@ export class OrderService {
 
     const orders: OrderListItemDto[] = data.map((d) => ({
       id: d.id,
-      totalAmount: d.totalAmount,
+      totalAmount: parseFloat(d.totalAmount),
+      status: d?.status as OrderStatus,
       productCount: parseInt(d.productcount, 10),
-    }));
+      createdAt: d.createdAt,
+      updatedAt: d.updatedAt,
+    })) as OrderListItemDto[];
 
     if (withProducts && orders.length > 0) {
       const orderIds = orders.map((o) => o.id);
@@ -239,11 +272,11 @@ export class OrderService {
 
       const productsByOrderId = products.reduce(
         (acc, p) => {
-          if (!acc[p.orderid]) {
-            acc[p.orderid] = [];
+          if (!acc[p.orderId]) {
+            acc[p.orderId] = [];
           }
-          const { orderid, ...productData } = p;
-          acc[p.orderid].push({
+          const { orderId, ...productData } = p;
+          acc[p.orderId].push({
             ...productData,
             price: parseFloat(productData.price),
           });

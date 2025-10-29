@@ -32,7 +32,7 @@ export class ObjectService implements ObjectStorageService {
   ) {}
 
   async uploadFile(
-    file: Express.Multer.File,
+    file: { buffer: Buffer | SerializedBuffer; originalname: string; mimetype: string; size: number },
     options?: UploadingOptions,
   ): Promise<{ message: string; fileUrl: string }> {
     if (!file || !file.buffer) {
@@ -87,23 +87,29 @@ export class ObjectService implements ObjectStorageService {
     }
   }
 
-  async deleteFile(objectName: string): Promise<void> {
-    this.logger.log(
-      `Attempting to delete object: ${objectName} from bucket ${this.bucketName}`,
-    );
-
+  async deleteFile(objectUrl: string): Promise<void> {
     try {
+      const objectName = this.getFileNameFromUrl(objectUrl);
+      this.logger.log(
+        `Attempting to delete object: ${objectName} from bucket ${this.bucketName}`,
+      );
       await this.minioClient.removeObject(this.bucketName, objectName);
       this.logger.log(`Successfully deleted object: ${objectName}`);
     } catch (error) {
       this.logger.error(
-        `MinIO deletion failed for object ${objectName}: ${error.message}`,
+        `MinIO deletion failed for object ${objectUrl}: ${error.message}`,
         error.stack,
       );
-      throw new InternalServerErrorException(
-        'Failed to delete file from object storage.',
-      );
+      // Do not rethrow to allow other deletions to proceed
     }
+  }
+
+  async deleteBulkFiles(objectUrls: string[]): Promise<void> {
+    this.logger.log(`Attempting to delete ${objectUrls.length} files in bulk.`);
+    await Promise.allSettled(
+      objectUrls.map((url) => this.deleteFile(url)),
+    );
+    this.logger.log('Bulk file deletion process completed.');
   }
 
   generateUniqueObjectName(originalName: string): string {
@@ -120,10 +126,14 @@ export class ObjectService implements ObjectStorageService {
   }
 
   async uploadBulkFiles(
-    files: Array<Express.Multer.File>,
+    files: Array<{ buffer: Buffer | SerializedBuffer; originalname: string; mimetype: string; size: number }>,
     options?: UploadingOptions,
   ): Promise<Array<{ message: string; fileUrl: string }>> {
     const uploadPromises = files.map((file) => this.uploadFile(file, options));
     return Promise.all(uploadPromises);
+  }
+
+  getFileNameFromUrl(url: string): string {
+    return url.split('/').pop() || '';
   }
 }

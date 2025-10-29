@@ -33,4 +33,7 @@ export class ProductDto {
 
   @ApiProperty({ type: [String] })
   pictures: (string | undefined)[];
+
+  @ApiProperty()
+  loveCount?: number;
 }

@@ -1,4 +1,4 @@
-import { Entity, Column, ManyToOne, Relation } from 'typeorm';
+import { Entity, Column, ManyToOne, Relation, DeleteDateColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseEntity } from '../../../common/entities/base.entity';
 
@@ -23,4 +23,7 @@ export class Category extends BaseEntity {
 
   @ManyToOne(() => Category, (category) => category.id, { nullable: true })
   parentCategory?: Relation<Category>;
+
+  @DeleteDateColumn()
+  deletedAt?: Date;
 }

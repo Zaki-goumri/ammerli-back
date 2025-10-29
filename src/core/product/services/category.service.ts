@@ -95,17 +95,27 @@ export class CategoryService {
     return { message: 'Category updated successfully' };
   }
 
-  //TODO: delete picutue
-  async remove(id: number): Promise<void> {
-    const result = await this.categoryRepo.delete(id);
-    if (result.affected === 0)
-      throw new NotFoundException('Category not found');
+  async remove(id: number): Promise<{ message: string }> {
+    const category = await this.categoryRepo.findOne({ where: { id } });
+    if (!category) {
+      throw new NotFoundException(`Category with ID ${id} not found`);
+    }
+
+    await this.categoryRepo.softDelete(id);
+
+    if (category.pictureUrl) {
+      await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
+        objectUrls: [category.pictureUrl],
+        metadata: { targetId: id, targetType: 'category_picture' },
+      });
+    }
+    return { message: 'Category soft deleted successfully' };
   }
-  //TODO: use one method to update
+
   private async clearPictureUrl(id: number): Promise<void> {
     await this.categoryRepo.update(id, { pictureUrl: undefined });
   }
-  //TODO: add notification
+
   @OnEvent('file.failed.category_picture', { async: true })
   async handlePictureUpload(payload: FinalizePayloadDto): Promise<void> {
     this.logger.log(
