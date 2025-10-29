@@ -140,6 +140,7 @@ export class OrderService {
     }
     const { checkoutId, checkoutUrl } = await this.createChargilyCheckout(
       order.totalAmount,
+      order.id,
     );
     await this.CheckoutService.createCheckout(order.id, checkoutId);
     return { order, checkoutUrl };
@@ -167,17 +168,19 @@ export class OrderService {
 
   private async createChargilyCheckout(
     totalAmount: number,
+    orderId?: number,
   ): Promise<CreateCheckoutRes> {
     const backendApiUrl = this.configService.get<string>('BACKEND_API_URL');
-    const backendBaseUrl = this.configService.get<string>('BACKEND_URL');
+    const backendBaseUrl = this.configService.get<string>('BACKEND_BASE_URL');
 
+    console.log('Backend API URL:', backendApiUrl);
     const checkout = await this.chargilyService.createCheckout({
       amount: totalAmount,
       currency: 'dzd',
       //NOTE: Update URLs to actual frontend pages in production
-      success_url: `${backendBaseUrl}api/v1`,
+      success_url: `${backendApiUrl}/order/redirect/${orderId}`,
       webhook_endpoint: `${backendApiUrl}/order/webhook/chargili`,
-      failure_url: `${backendBaseUrl}api/v1`,
+      failure_url: `${backendApiUrl}/order/redirect/${orderId}`,
     });
     return { checkoutUrl: checkout.checkout_url, checkoutId: checkout.id };
   }

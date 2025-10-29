@@ -104,7 +104,6 @@ export class ProductService {
       .skip(offset)
       .take(limit)
       .getRawMany();
-    console.log(productsRaw);
 
     const formatted = productsRaw.map((p) => ({
       id: p?.id,

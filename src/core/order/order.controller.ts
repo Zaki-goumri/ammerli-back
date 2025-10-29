@@ -20,6 +20,7 @@ import {
   UseGuards,
   Param,
   ParseIntPipe,
+  HttpStatus,
 } from '@nestjs/common';
 import { OrderService } from './services/order.service';
 import { PaginationQueryDto } from 'src/common/dtos/pagination.dto';
@@ -45,13 +46,47 @@ import { USER } from '../authentication/decorators/user.decorartor';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NOTIFICATION_TYPE } from '../notifications/enums/notification-type.enum';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-
+import { RedisService } from 'nestjs-redis-client';
 /**
+ *
  * @class OrderController
  * @classdesc The main controller for handling order-related operations.
  * This controller is responsible for creating orders, handling payment webhooks, and retrieving user orders.
  * @ApiTags order
  */
+
+export type PaymentStatus =
+  | 'paid'
+  | 'failed'
+  | 'canceled'
+  | 'pending'
+  | 'error';
+export type CurrencyCode = 'dzd' | 'usd' | 'eur' | string; // Assuming 'dzd' is used, include common ones
+
+/**
+ * Interface defining the minimal, essential data required by the Flutter client
+ * to display the final payment result page. This data is temporarily stored in Redis.
+ */
+export interface PaymentClientData {
+  /** The internal ID of the order/resource the payment belongs to. */
+  orderId: number;
+
+  /** The final status of the payment, used for routing the client to success/failure screen. */
+  status: string;
+
+  /** The amount paid (usually an integer representing cents/smallest unit). */
+  amount: number;
+
+  /** The currency code (e.g., 'dzd', 'usd'). */
+  currency: CurrencyCode;
+
+  /** The method used for payment (e.g., 'edahabia', 'cib', 'visa'). */
+  paymentMethod: string | null | undefined;
+
+  /** Optional error message/reason in case of payment failure. */
+  errorMessage?: string;
+}
+
 @Controller('order')
 export class OrderController {
   constructor(
@@ -59,6 +94,7 @@ export class OrderController {
     private readonly checkoutService: CheckoutService,
     private readonly notificationService: NotificationsService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly redisService: RedisService,
   ) {}
   logger = new Logger(OrderController.name);
 
@@ -102,6 +138,7 @@ export class OrderController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
+    this.logger.log('Received Chargili webhook');
     const checkoutId = extractCheckoutIdFromUrl(data.checkout_url);
     if (!checkoutId) {
       this.logger.error(
@@ -118,6 +155,10 @@ export class OrderController {
       headers.authorization,
     );
 
+    const orderId =
+      await this.checkoutService.findOrderIdByCheckoutId(checkoutId);
+    console.log('Webhook processed for order ID:', orderId);
+
     const buyerId =
       await this.checkoutService.findBuyerIdByCheckoutId(checkoutId);
 
@@ -131,9 +172,21 @@ export class OrderController {
         buyerId,
         NOTIFICATION_TYPE.ORDERS,
       );
-      const orderId =
-        await this.checkoutService.findOrderIdByCheckoutId(checkoutId);
+
+      const finalDataForClient: PaymentClientData = {
+        orderId: orderId as number,
+        status: data.status,
+        amount: data.amount,
+        currency: data.currency,
+        paymentMethod: data.payment_method || null,
+      };
+      await this.redisService.set<PaymentClientData>(
+        `payment:result:${orderId}`,
+        finalDataForClient,
+        3600,
+      );
       this.eventEmitter.emit('order.paid', orderId);
+      return res.send({ received: true });
     } else {
       this.logger.warn(
         `Payment failed for checkout ID: ${checkoutId}. Order not processed.`,
@@ -144,9 +197,26 @@ export class OrderController {
         buyerId,
         NOTIFICATION_TYPE.ORDERS,
       );
+
+      const finalDataForClient: PaymentClientData = {
+        orderId: orderId as number,
+        status: data.status,
+        amount: data.amount,
+        currency: data.currency,
+        paymentMethod: data.payment_method || null,
+        errorMessage: 'Payment failed or was canceled.',
+      };
+
+      await this.redisService.set<PaymentClientData>(
+        `payment:result:${orderId}`,
+        finalDataForClient,
+        3600,
+      );
+
+      return res.send({ received: true });
     }
-    res.send({ received: true });
   }
+
   @ApiOkResponse({
     type: [ProductOrderItemDto],
     description: 'A list of products for the order',
@@ -175,5 +245,94 @@ export class OrderController {
     @USER('id') userId: number,
   ) {
     return this.orderService.getAllOrders({ page, limit }, userId, true);
+  }
+
+  // @Get('success/:orderId')
+  // @HttpCode(HttpStatus.TEMPORARY_REDIRECT) // Use 302 or 307
+  // async getSuccessPage(
+  //   @Param('orderId') orderId: string,
+  //   @Res() res: Response,
+  // ) {
+  //   if (!orderId) {
+  //     this.logger.error(`Order ID not found for checkout ID: ${orderId}.`);
+  //     const genericFailureLink =
+  //       'amerli://payment/status?status=error&message=InvalidCheckoutId';
+  //     return res.redirect(genericFailureLink);
+  //   }
+  //
+  //   const data = await this.redisService.get<PaymentClientData>(
+  //     `payment:result:${orderId}`,
+  //   );
+  //
+  //   if (!data) {
+  //     this.logger.error(
+  //       `Payment token for order ${orderId} not found or expired.`,
+  //     );
+  //     const genericFailureLink =
+  //       'amerli://payment/status?status=error&message=SyncError';
+  //     return res.redirect(genericFailureLink);
+  //   }
+  //
+  //   const statusPath = data.status === 'paid' ? 'success' : 'failure';
+  //
+  //   const params = new URLSearchParams();
+  //   params.append('orderId', data.orderId || 'N/A');
+  //   params.append('status', data.status);
+  //   params.append('amount', `${data.amount} ${data.currency}`);
+  //   params.append('paymentMethod', data.paymentMethod);
+  //
+  //   const deepLinkUrl = `amerli://payment/${statusPath}?${params.toString()}`;
+  //
+  //   await this.redisService.del(`payment:result:${orderId}`);
+  //
+  //   res.redirect(deepLinkUrl);
+  // }
+  //
+  @Get('redirect/:orderId')
+  @HttpCode(HttpStatus.FOUND)
+  async handlePaymentRedirectTest(
+    @Param('orderId') orderId: string,
+    @Res() res: Response,
+  ) {
+    if (!orderId) {
+      this.logger.error(`Redirect attempt without Order ID.`);
+      const genericFailureLink =
+        'amerli://payment/status?status=error&message=InvalidId';
+      return res.redirect(genericFailureLink);
+    }
+    console.log('Handling payment redirect for order ID:', orderId);
+
+    const redisData = await this.redisService.get<PaymentClientData>(
+      `payment:result:${orderId}`,
+    );
+    console.log('Re trieved raw data from Redis:', redisData);
+
+    const data: PaymentClientData | null = redisData ? redisData : null;
+
+    console.log('Retrieved payment data from Redis:', data);
+
+    if (!data) {
+      this.logger.error(
+        `Payment token for order ${orderId} not found or expired.`,
+      );
+      const genericFailureLink =
+        'amerli://payment/status?status=error&message=SyncError';
+      return res.redirect(genericFailureLink);
+    }
+
+    const statusPath = data.status === 'paid' ? 'success' : 'failure';
+
+    const params = new URLSearchParams();
+    params.append('orderId', data?.orderId ? data.orderId.toString() : 'N/A');
+    params.append('status', data.status);
+    params.append('amount', `${data.amount} ${data.currency}`);
+    params.append('paymentMethod', data.paymentMethod as string);
+    if (data.errorMessage) {
+      params.append('errorReason', data.errorMessage);
+    }
+
+    const deepLinkUrl = `amerli://payment/${statusPath}?${params.toString()}`;
+
+    return res.redirect(deepLinkUrl);
   }
 }
