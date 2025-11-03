@@ -1,3 +1,10 @@
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { RedisService } from 'nestjs-redis-client';
+import { RoleGuard } from '../authentication/guards/role.guard';
+import { Roles } from '../authentication/decorators/role.decorator';
+import { USER_ROLES } from 'src/common/enums/user-role.enum';
+import { OrderForAdminListItemDto } from './dtos/order-for-admin-list-item.dto';
+
 /**
  * @fileoverview This file contains the controller for handling order-related requests.
  * It defines routes for creating orders, handling payment webhooks, and retrieving user orders.
@@ -23,7 +30,10 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { OrderService } from './services/order.service';
-import { PaginationQueryDto } from 'src/common/dtos/pagination.dto';
+import {
+  PaginationQueryDto,
+  PaginationResponseDto,
+} from 'src/common/dtos/pagination.dto';
 import { ProductOrderItemDto } from './dtos/product-order-item.dto';
 import { OrderListItemDto } from './dtos/order-list-item.dto';
 import { PaginatedResponse } from 'src/common/dtos/pagination.dto';
@@ -45,8 +55,7 @@ import { AccessTokenGuard } from '../authentication/guards/access-token.guard';
 import { USER } from '../authentication/decorators/user.decorartor';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NOTIFICATION_TYPE } from '../notifications/enums/notification-type.enum';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { RedisService } from 'nestjs-redis-client';
+import { PaymentInfoDto } from './dtos/payment-info.dto';
 /**
  *
  * @class OrderController
@@ -247,47 +256,28 @@ export class OrderController {
     return this.orderService.getAllOrders({ page, limit }, userId, true);
   }
 
-  // @Get('success/:orderId')
-  // @HttpCode(HttpStatus.TEMPORARY_REDIRECT) // Use 302 or 307
-  // async getSuccessPage(
-  //   @Param('orderId') orderId: string,
-  //   @Res() res: Response,
-  // ) {
-  //   if (!orderId) {
-  //     this.logger.error(`Order ID not found for checkout ID: ${orderId}.`);
-  //     const genericFailureLink =
-  //       'amerli://payment/status?status=error&message=InvalidCheckoutId';
-  //     return res.redirect(genericFailureLink);
-  //   }
-  //
-  //   const data = await this.redisService.get<PaymentClientData>(
-  //     `payment:result:${orderId}`,
-  //   );
-  //
-  //   if (!data) {
-  //     this.logger.error(
-  //       `Payment token for order ${orderId} not found or expired.`,
-  //     );
-  //     const genericFailureLink =
-  //       'amerli://payment/status?status=error&message=SyncError';
-  //     return res.redirect(genericFailureLink);
-  //   }
-  //
-  //   const statusPath = data.status === 'paid' ? 'success' : 'failure';
-  //
-  //   const params = new URLSearchParams();
-  //   params.append('orderId', data.orderId || 'N/A');
-  //   params.append('status', data.status);
-  //   params.append('amount', `${data.amount} ${data.currency}`);
-  //   params.append('paymentMethod', data.paymentMethod);
-  //
-  //   const deepLinkUrl = `amerli://payment/${statusPath}?${params.toString()}`;
-  //
-  //   await this.redisService.del(`payment:result:${orderId}`);
-  //
-  //   res.redirect(deepLinkUrl);
-  // }
-  //
+  /**
+   * @method getOrdersForAdmin
+   * @description Retrieves a paginated list of all orders for admin view.
+   * @param {PaginationQueryDto} paginationQuery - Pagination parameters (page, limit).
+   * @returns {Promise<PaginatedResponse<OrderForAdminListItemDto>>} A paginated list of orders.
+   */
+  @ApiBearerAuth()
+  @UseGuards(AccessTokenGuard, RoleGuard)
+  @Roles(USER_ROLES.ADMIN)
+  @ApiOperation({ summary: 'Get all orders for admin view' })
+  @ApiOkResponse({
+    type: PaginatedResponse(OrderForAdminListItemDto),
+    description: 'A paginated list of orders for admin view',
+  })
+  @Get('/admin/all')
+  getOrdersForAdmin(
+    @Query() { page, limit }: PaginationQueryDto,
+  ): Promise<PaginationResponseDto<OrderForAdminListItemDto>> {
+    return this.orderService.getOrdersForAdmin({ page, limit });
+  }
+
+  @ApiExcludeEndpoint()
   @Get('redirect/:orderId')
   @HttpCode(HttpStatus.FOUND)
   async handlePaymentRedirectTest(
@@ -334,5 +324,25 @@ export class OrderController {
     const deepLinkUrl = `amerli://payment/${statusPath}?${params.toString()}`;
 
     return res.redirect(deepLinkUrl);
+  }
+
+  /**
+   * Retrieves payment information for a specific order.
+   *
+   * @param {number} orderId - The ID of the order.
+   * @returns {Promise<PaymentInfoDto>} The payment information.
+   */
+  @ApiBearerAuth()
+  @UseGuards(AccessTokenGuard)
+  @ApiOperation({ summary: 'Get payment information for a specific order' })
+  @ApiOkResponse({
+    type: PaymentInfoDto,
+    description: 'The payment information.',
+  })
+  @Get(':orderId/payment-info')
+  getPaymentInfo(
+    @Param('orderId', ParseIntPipe) orderId: number,
+  ): Promise<PaymentInfoDto> {
+    return this.orderService.getPaymentInfo(orderId);
   }
 }

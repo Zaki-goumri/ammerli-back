@@ -80,12 +80,6 @@ export class Product extends BaseEntity {
   @Column()
   categoryId: number;
 
-  @ApiProperty({
-    description: 'images of the product',
-    example: ['https://example.com/product1.jpg'],
-  })
-  @Column({ default: true })
-  isActive: boolean;
   @OneToMany(() => ProductPicture, (picture) => picture.product, {
     cascade: true,
   })
@@ -96,4 +90,23 @@ export class Product extends BaseEntity {
 
   @DeleteDateColumn()
   deletedAt?: Date;
+
+  @ApiProperty({
+    description: 'The quantity of the product per batch',
+    example: 5,
+  })
+  @Column({ type: 'int' })
+  quantityPerBatch: number;
+
+  @ApiProperty({
+    description: 'An array of strings for product specifications',
+    example: ['Screen size: 6.1 inches', 'Color: Blue', 'Weight: 175g'],
+    isArray: true,
+    nullable: true,
+  })
+  @Column('text', { array: true, nullable: true })
+  specification?: string[];
+
+  @Column({ type: 'date', nullable: true })
+  expirationDate?: Date;
 }

@@ -1,6 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { CreateNotificationDto } from './dto/create-notification.dto';
-import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Notification } from './entities/notification.entity';
 import { Repository, LessThan } from 'typeorm';
@@ -40,7 +39,6 @@ export class NotificationsService {
     this.logger.log('Old notifications deleted');
   }
 
-  // NotificationsService methods
   create(dto: CreateNotificationDto) {
     const notification = this.notificationRepo.create(dto);
     return this.notificationRepo.save(notification);

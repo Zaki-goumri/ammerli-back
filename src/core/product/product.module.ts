@@ -14,6 +14,7 @@ import { ProductPicture } from './entities/product-picture.entity';
 import { ProductPictureService } from './services/product-picture.service';
 import { CategoryController } from './category.controller';
 import { BrandController } from './brand.controller';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { BrandController } from './brand.controller';
     ]),
     ObjectStorageModule,
     QueueModule,
+    NotificationsModule,
   ],
   controllers: [ProductController, CategoryController, BrandController],
   providers: [ProductService, BrandService, CategoryService, ProductPictureService],

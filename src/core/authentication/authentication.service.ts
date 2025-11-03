@@ -1,15 +1,20 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
-import { AuthResponseDto } from './dtos/responses/auth-response.dto';
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { RedisService } from 'nestjs-redis-client';
 import authConfig from 'src/config/auth.config';
-import { UserService } from '../user/user.service';
 import { User } from '../user/entities/user.entity';
+import { UserService } from '../user/user.service';
 import { OtpValidationDto } from './dtos/requests/otp-validation.dto';
 import { RegisterUserDto } from './dtos/requests/register-user.dto';
 import { AuthResDto } from './dtos/response/refresh-token.dto';
-import { UserDto } from '../user/dtos/response/user.dto';
+import { SendOtpDto } from './dtos/response/send-otp.dto';
 import { ValidateOtpDto } from './dtos/response/validate-otp.dto';
+import { BlackListService } from '../user/black-list/black-list.service';
 
 /**
  * @class AuthenticationService
@@ -23,6 +28,7 @@ export class AuthenticationService {
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly redisService: RedisService,
+    private readonly blackListService: BlackListService,
   ) {}
 
   /**
@@ -110,7 +116,7 @@ export class AuthenticationService {
         accessToken,
         refreshToken,
         //TODO: map user to UserDto properly
-        user: user as UserDto,
+        user: user as any,
       };
     } catch (error) {
       this.logger.error('Error issuing tokens', error);
@@ -153,9 +159,13 @@ export class AuthenticationService {
    * @param {string} phoneNumber - The phone number to send the OTP to.
    * @returns {Promise<{ message: string }>} A confirmation message.
    */
-  async sendVerificationCode(
-    phoneNumber: string,
-  ): Promise<{ message: string }> {
+  async sendVerificationCode(phoneNumber: string): Promise<SendOtpDto> {
+    const isBlacklisted = await this.blackListService.isPhoneNumberBlacklisted(
+      phoneNumber,
+    );
+    if (isBlacklisted) {
+      throw new ForbiddenException('This phone number is blacklisted.');
+    }
     const otp = await this.generateAndSetOtp(phoneNumber);
     //TODO: Send sms with OTP
     this.logger.log(`OTP for ${phoneNumber}: ${otp}`);

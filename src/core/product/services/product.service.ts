@@ -8,7 +8,7 @@ import {
   PaginationQueryDto,
   PaginationResponseDto,
 } from 'src/common/dtos/pagination.dto';
-import { EntityManager, Repository, In } from 'typeorm';
+import { EntityManager, Repository, In, Between } from 'typeorm';
 import { Product } from '../entities/product.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UpdateProductDto } from '../dtos/product/update.dto';
@@ -26,6 +26,10 @@ import { FavoriteProductDto } from '../dtos/product/favorite-product.dto';
 import { WholesellerProductDto } from '../dtos/product/wholeseller-product.dto';
 import { ProductDto } from '../dtos/product/product.dto';
 import { ProductPicture } from '../entities/product-picture.entity';
+import { Cron } from '@nestjs/schedule';
+import { NotificationsService } from '../../notifications/notifications.service';
+import { NOTIFICATION_TYPE } from '../../notifications/enums/notification-type.enum';
+import { AdminProductDto } from '../dtos/product/admin-product.dto';
 
 @Injectable()
 export class ProductService {
@@ -40,7 +44,83 @@ export class ProductService {
     @InjectQueue(QUEUE_NAME.UPLOAD)
     private readonly uploadQueue: Queue,
     private readonly objectService: ObjectService,
+    private readonly notificationsService: NotificationsService,
   ) {}
+
+  // Notify sellers about products expiring in the next 15 days
+  @Cron('0 0 1 1,15 * *')
+  async sendProductExpirationNotifications() {
+    const today = new Date();
+    const fifteenDaysFromNow = new Date(today);
+    fifteenDaysFromNow.setDate(today.getDate() + 15);
+
+    const expiringProducts = await this.productRepo.find({
+      where: {
+        expirationDate: Between(today, fifteenDaysFromNow),
+      },
+    });
+
+    const notificationPromises = expiringProducts.map((product) => {
+      if (!product.expirationDate) return;
+      const sellerId = product.sellerId;
+      const daysRemaining =
+        product?.expirationDate?.getTime() - today.getTime();
+      const message = `ur product ${product.name} will expire in ${daysRemaining} days`;
+      return this.notificationsService.saveNotificationRecord(
+        'Product Expiration',
+        message,
+        sellerId,
+        NOTIFICATION_TYPE.EXPIRING_SOON,
+      );
+    });
+
+    await Promise.allSettled(notificationPromises);
+  }
+
+  async findManyForAdmin(
+    paginationQuery: PaginationQueryDto,
+    search?: string,
+  ): Promise<PaginationResponseDto<AdminProductDto>> {
+    const { page, limit } = paginationQuery;
+    const offset = (page - 1) * limit;
+
+    const queryBuilder = this.productRepo
+      .createQueryBuilder('product')
+      .leftJoin('product.pictures', 'mainPicture', 'mainPicture.isMain = TRUE')
+      .select([
+        'product.id AS id',
+        'product.name AS name',
+        'mainPicture.url AS mainPicture',
+        'product.price AS price',
+        'CASE WHEN product.quantity > 0 THEN TRUE ELSE FALSE END AS disponibility',
+      ])
+      .groupBy('product.id')
+      .addGroupBy('mainPicture.url')
+      .orderBy('product.createdAt', 'DESC');
+
+    if (search) {
+      queryBuilder.andWhere('(product.name ILIKE :search)', {
+        search: `%${search}%`,
+      });
+    }
+    const totalQueryBuilder = queryBuilder.clone();
+    const total = await totalQueryBuilder.getCount();
+    const productsRaw = await queryBuilder
+      .skip(offset)
+      .take(limit)
+      .getRawMany();
+
+    return {
+      data: productsRaw,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+      },
+    };
+  }
 
   async findManyWithPagination(
     paginationQuery: PaginationQueryDto,
@@ -202,7 +282,9 @@ export class ProductService {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
 
-    const pictureUrls = product.pictures.map((pic) => pic.url).filter(Boolean) as string[];
+    const pictureUrls = product.pictures
+      .map((pic) => pic.url)
+      .filter(Boolean) as string[];
 
     await this.productRepo.softDelete(id);
 
@@ -215,16 +297,23 @@ export class ProductService {
     return { message: 'Product soft deleted successfully' };
   }
 
-  async deleteProductImages(productId: number, pictureIds: number[]): Promise<{ message: string }> {
+  async deleteProductImages(
+    productId: number,
+    pictureIds: number[],
+  ): Promise<{ message: string }> {
     const picturesToDelete = await this.productPictureRepo.find({
       where: { productId, id: In(pictureIds) },
     });
 
     if (picturesToDelete.length === 0) {
-      throw new NotFoundException('No product pictures found with the given IDs for this product');
+      throw new NotFoundException(
+        'No product pictures found with the given IDs for this product',
+      );
     }
 
-    const pictureUrls = picturesToDelete.map((pic) => pic.url).filter(Boolean) as string[];
+    const pictureUrls = picturesToDelete
+      .map((pic) => pic.url)
+      .filter(Boolean) as string[];
 
     await this.productPictureRepo.softDelete({ id: In(pictureIds) });
 
@@ -234,7 +323,9 @@ export class ProductService {
         metadata: { targetId: productId, targetType: 'product_picture' },
       });
     }
-    return { message: 'Product pictures soft deleted and queued for file deletion' };
+    return {
+      message: 'Product pictures soft deleted and queued for file deletion',
+    };
   }
 
   //TODO: add type to return
@@ -432,25 +523,35 @@ export class ProductService {
     }
   }
 
+  //TODO: use upload bulk
   async addFilesToQueue(
     files: Array<Express.Multer.File>,
     uploadOptions: UploadingOptions,
     productId: number,
   ) {
-    const queueFiles = files.map(file => ({
+    const queueFiles = files.map((file) => ({
       buffer: file.buffer,
       originalname: file.originalname,
       mimetype: file.mimetype,
       size: file.size,
     }));
-
-    await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILES_BULK, {
-      files: queueFiles,
-      options: uploadOptions,
-      metadata: {
-        targetId: productId,
-        targetType: 'product_picture',
-      },
+    Promise.all(
+      queueFiles.map((file) =>
+        this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
+          file,
+          uploadOptions: {
+            ...uploadOptions,
+            metadata: {
+              targetId: productId,
+              targetType: 'product_picture',
+            },
+          },
+        }),
+      ),
+    ).catch((error) => {
+      this.logger.error(
+        `Failed to enqueue upload jobs for product ${productId}: ${error.message}`,
+      );
     });
   }
 }

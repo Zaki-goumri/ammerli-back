@@ -11,7 +11,6 @@ import { User } from 'src/core/user/entities/user.entity';
 import { Address } from 'src/core/user/entities/address.entity';
 import { BaseEntity } from 'src/common/entities/base.entity';
 import { PAYEMENT_WAY, PaymentWay } from '../enums/payement-way.enum';
-import { ORDER_STATUS, OrderStatus } from '../enums/delivery.enum';
 import { Checkout } from './checkout.entity';
 
 @Entity({ name: 'orders' })

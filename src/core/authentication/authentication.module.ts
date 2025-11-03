@@ -1,3 +1,4 @@
+import { BlackListModule } from '../user/black-list/black-list.module';
 import { Module } from '@nestjs/common';
 import { AuthenticationService } from './authentication.service';
 import { AuthenticationController } from './authentication.controller';
@@ -11,7 +12,7 @@ import { QueueModule } from 'src/infrastructure/queue/queue.module';
 import { PassportModule } from '@nestjs/passport';
 
 @Module({
-  imports: [UserModule, JwtModule, PassportModule, QueueModule],
+  imports: [UserModule, JwtModule, PassportModule, QueueModule, BlackListModule],
   controllers: [AuthenticationController],
   providers: [
     AuthenticationService,

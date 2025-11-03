@@ -26,6 +26,12 @@ import { UserService } from 'src/core/user/user.service';
 import { CreateCheckoutRes } from '../dtos/checkout-create-res.dto';
 import { Tracking } from '../entities/tracking.entity';
 import { OrderStatus } from '../enums/delivery.enum';
+import { OrderForAdminListItemDto } from '../dtos/order-for-admin-list-item.dto'; // Import the new DTO
+import { User } from 'src/core/user/entities/user.entity'; // Import User entity
+
+import { PaymentInfoDto } from '../dtos/payment-info.dto'; // Import the new DTO
+import { Checkout } from '../entities/checkout.entity'; // Import Checkout entity
+import { BuyerInfoDto } from '../dtos/buyer-info.dto';
 
 @Injectable()
 export class OrderService {
@@ -299,5 +305,170 @@ export class OrderService {
       },
       data: orders,
     };
+  }
+
+  /**
+   * @method getOrdersForAdmin
+   * @description Retrieves a paginated list of all orders for admin view, including client name and latest tracking status.
+   * @param {PaginationQueryDto} paginationQuery - Pagination parameters (page, limit).
+   * @returns {Promise<PaginationResponseDto<OrderForAdminListItemDto>>} A paginated list of orders with admin-specific details.
+   */
+  async getOrdersForAdmin(
+    paginationQuery: PaginationQueryDto,
+  ): Promise<PaginationResponseDto<OrderForAdminListItemDto>> {
+    const { limit, page } = paginationQuery;
+
+    const queryBuilder = this.orderRepo
+      .createQueryBuilder('order')
+      .leftJoin('order.buyer', 'user') // Assuming 'buyer' is the relation name in Order entity to User entity
+      .leftJoin(
+        (subQuery) =>
+          subQuery
+            .select('t1.orderId', 'orderId')
+            .addSelect('t1.status', 'latestStatus')
+            .from(Tracking, 't1')
+            .innerJoin(
+              (innerSubquery) => {
+                return innerSubquery
+                  .select('MAX(t2.createdAt)', 'maxCreatedAt')
+                  .addSelect('t2.orderId', 'order_id_alias')
+                  .from(Tracking, 't2')
+                  .groupBy('t2.orderId');
+              },
+              't_max',
+              't_max.order_id_alias = t1.orderId AND t_max."maxCreatedAt" = t1.createdAt',
+            ),
+        'latest_tracking',
+        'latest_tracking."orderId" = order.id',
+      )
+      .select([
+        'order.id AS id',
+        'user.name AS clientname',
+        'latest_tracking."latestStatus" AS status',
+      ])
+      .orderBy('order.createdAt', 'DESC')
+      .take(limit)
+      .skip((page - 1) * limit);
+
+    const [data, total] = await Promise.all([
+      queryBuilder.getRawMany(),
+      this.orderRepo.count(),
+    ]);
+
+    const orders: OrderForAdminListItemDto[] = data.map((d) => ({
+      id: d?.id,
+      clientName: d?.clientname,
+      status: d?.status as OrderStatus,
+    }));
+
+    return {
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+      },
+      data: orders,
+    };
+  }
+
+  /**
+   * @method getBuyerInfos
+   * @description Retrieves buyer information for a specific order.
+   * @param {number} orderId - The ID of the order.
+   * @returns {Promise<BuyerInfoDto>} The buyer's information.
+   */
+  async getBuyerInfos(orderId: number): Promise<BuyerInfoDto> {
+    const order = await this.orderRepo
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.buyer', 'user')
+      .leftJoinAndSelect('order.address', 'address')
+      .where('order.id = :orderId', { orderId })
+      .select([
+        'user.supermarketName',
+        'user.name',
+        'user.phoneNumber',
+        'address.street',
+        'address.district',
+        'address.city',
+      ])
+      .getOne();
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${orderId} not found.`);
+    }
+
+    if (!order.buyer) {
+      throw new NotFoundException(
+        `Buyer for order with ID ${orderId} not found.`,
+      );
+    }
+
+    const address = order.address
+      ? `${order.address.street}, ${order.address.district}, ${order.address.city}`
+      : '';
+
+    return {
+      supermarketName: order?.buyer?.supermarketName ?? '',
+      clientName: order?.buyer?.name ?? '',
+      phoneNumber: order?.buyer?.phoneNumber ?? '',
+      address,
+    };
+  }
+
+  /**
+   * @method getPaymentInfo
+   * @description Retrieves payment information for a specific order.
+   * @param {number} orderId - The ID of the order.
+   * @returns {Promise<PaymentInfoDto>} The payment information.
+   */
+  async getPaymentInfo(orderId: number): Promise<PaymentInfoDto> {
+    const order = await this.orderRepo
+      .createQueryBuilder('order')
+      .leftJoin('order.checkouts', 'checkout')
+      .leftJoin(
+        (subQuery) =>
+          subQuery
+            .select('t1.orderId', 'orderId')
+            .addSelect('t1.status', 'latestStatus')
+            .from(Tracking, 't1')
+            .innerJoin(
+              (innerSubquery) => {
+                return innerSubquery
+                  .select('MAX(t2.createdAt)', 'maxCreatedAt')
+                  .addSelect('t2.orderId', 'order_id_alias')
+                  .from(Tracking, 't2')
+                  .groupBy('t2.orderId');
+              },
+              't_max',
+              't_max.order_id_alias = t1.orderId AND t_max."maxCreatedAt" = t1.createdAt',
+            ),
+        'latest_tracking',
+        'latest_tracking."orderId" = order.id',
+      )
+      .where('order.id = :orderId', { orderId })
+      .select([
+        'order.payementWay AS paymentWay',
+        'order.totalAmount AS totalAmount',
+        'order.createdAt AS createdAt',
+        'checkout.isPaid AS isPaid',
+        'latest_tracking."latestStatus" AS trackingStatus',
+      ])
+      .getRawOne();
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${orderId} not found.`);
+    }
+
+    const paymentInfo: PaymentInfoDto = {
+      paymentWay: order?.paymentway,
+      totalAmount: parseFloat(order?.totalamount),
+      createdAt: order?.createdat,
+      isPaid: order?.ispaid,
+      trackingStatus: order?.trackingstatus,
+    };
+
+    return paymentInfo;
   }
 }

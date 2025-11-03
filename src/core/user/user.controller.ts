@@ -12,6 +12,7 @@ import {
   HttpStatus,
   Post,
   Param,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -38,6 +39,16 @@ import { MessageDto } from './dtos/response/message.dto';
 import { ProfilePictureDto } from './dtos/response/profile-picture.dto';
 import { AddressDto } from './dtos/response/address.dto';
 import { UpdateAddressDto } from './dtos/update-address.dto';
+
+import { RoleGuard } from '../authentication/guards/role.guard'; // Import RoleGuard
+import { Roles } from '../authentication/decorators/role.decorator'; // Import Roles decorator
+import { USER_ROLES } from 'src/common/enums/user-role.enum'; // Import USER_ROLES enum
+import { UserForAdminDto } from './dtos/response/user-for-admin.dto'; // Import the new DTO
+import {
+  PaginationQueryDto,
+  PaginatedResponse,
+  PaginationResponseDto,
+} from 'src/common/dtos/pagination.dto'; // Import pagination DTOs
 
 @ApiTags('User')
 @ApiBearerAuth()
@@ -168,5 +179,20 @@ export class UserController {
     @Param('id') addressId: number,
   ): Promise<MessageDto> {
     return this.userService.deleteAddress(userId, addressId);
+  }
+
+  @Get('/admin/all')
+  @ApiOperation({ summary: 'Get all users for admin view' })
+  @ApiOkResponse({
+    description: 'Successfully fetched users for admin view',
+    type: PaginatedResponse(UserForAdminDto),
+  })
+  @UseGuards(AccessTokenGuard, RoleGuard)
+  @Roles(USER_ROLES.ADMIN)
+  getUsersForAdmin(
+    @Query() paginationQuery: PaginationQueryDto,
+    @USER('id') userId: number,
+  ): Promise<PaginationResponseDto<UserForAdminDto>> {
+    return this.userService.getUsersForAdmin(paginationQuery, userId);
   }
 }

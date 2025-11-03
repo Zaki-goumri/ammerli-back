@@ -1,29 +1,35 @@
-import {
-  Injectable,
-  NotFoundException,
-  Logger,
-  BadRequestException,
-} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, EntityManager } from 'typeorm';
+import { UserForAdminDto } from './dtos/response/user-for-admin.dto'; // Import the new DTO
+import {
+  PaginationQueryDto,
+  PaginationResponseDto,
+} from 'src/common/dtos/pagination.dto'; // Import pagination DTOs
 import { User } from './entities/user.entity';
-import { CreateUserDto } from './dtos/create-user.dto';
+import { EntityManager, Repository } from 'typeorm';
 import { Address } from './entities/address.entity';
 import { RedisService } from 'nestjs-redis-client';
-import { UpdateUserDto } from './dtos/update-user.dto';
-import { InjectQueue } from '@nestjs/bullmq';
 import { QUEUE_NAME } from 'src/common/constants/queues';
+import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { GetMeDto } from './dtos/response/get-me.dto';
+import { RegisterUserDto } from '../authentication/dtos/requests/register-user.dto';
 import { UPLOAD_JOBS } from 'src/common/constants/jobs';
-import { OnEvent } from '@nestjs/event-emitter';
 import { FinalizePayloadDto } from 'src/infrastructure/queue/upload/dto/finalize-payload.dto';
 import { CreateAddressDto } from './dtos/create-address.dto';
-import { RegisterUserDto } from '../authentication/dtos/requests/register-user.dto';
-import { GetMeDto } from './dtos/response/get-me.dto';
-import { UserDto } from './dtos/response/user.dto';
 import { AddressDto } from './dtos/response/address.dto';
 import { UpdateAddressDto } from './dtos/update-address.dto';
+import { UpdateUserDto } from './dtos/update-user.dto';
+import { UserDto } from './dtos/response/user.dto';
+import { CreateUserDto } from './dtos/create-user.dto';
+import { OnEvent } from '@nestjs/event-emitter';
+import { UserRole } from 'src/common/enums/user-role.enum';
 
 @Injectable()
 export class UserService {
@@ -150,6 +156,14 @@ export class UserService {
     return user as GetMeDto;
   }
 
+  async findUserEntityById(id: number): Promise<User> {
+    const user = await this.userRepo.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    return user;
+  }
+
   async registerUserInfo(dto: RegisterUserDto, id: number): Promise<User> {
     return this.entityManager.transaction(async (em) => {
       const userRepo = em.getRepository(User);
@@ -205,6 +219,15 @@ export class UserService {
     });
   }
 
+  async findUserByPhoneNumberWithDeleted(
+    phoneNumber: string,
+  ): Promise<User | null> {
+    return this.userRepo.findOne({
+      where: { phoneNumber },
+      withDeleted: true,
+    });
+  }
+
   async deleteUser(id: number): Promise<{ message: string }> {
     const user = await this.userRepo.findOne({ where: { id } });
     if (!user) {
@@ -221,6 +244,15 @@ export class UserService {
       });
     }
     return { message: 'User soft deleted successfully' };
+  }
+
+  async restoreUser(id: number): Promise<{ message: string }> {
+    const restoreResult = await this.userRepo.restore(id);
+    if (restoreResult.affected === 0) {
+      throw new NotFoundException(`User with ID ${id} not found or not deleted.`);
+    }
+    await this.redisService.del(UserService.getCacheKey(id, 'id'));
+    return { message: 'User restored successfully' };
   }
 
   async updateUserProfilePic(userId: number, profilePic: Express.Multer.File) {
@@ -329,5 +361,50 @@ export class UserService {
     console.log('User registration status:', user?.isRegistered);
 
     return user?.isRegistered ?? false;
+  }
+
+  /**
+   * @method getUsersForAdmin
+   * @description Retrieves a paginated list of users for admin view, excluding the current user.
+   * @param {PaginationQueryDto} paginationQuery - Pagination parameters (page, limit).
+   * @param {number} currentUserId - The ID of the current authenticated user to exclude.
+   * @returns {Promise<PaginationResponseDto<UserForAdminDto>>} A paginated list of users with admin-specific details.
+   */
+  async getUsersForAdmin(
+    paginationQuery: PaginationQueryDto,
+    currentUserId: number,
+  ): Promise<PaginationResponseDto<UserForAdminDto>> {
+    const { limit, page } = paginationQuery;
+
+    const queryBuilder = this.userRepo
+      .createQueryBuilder('user')
+      .where('user.id != :currentUserId', { currentUserId })
+      .select(['user.id', 'user.name', 'user.phoneNumber', 'user.role'])
+      .orderBy('user.createdAt', 'DESC')
+      .take(limit)
+      .skip((page - 1) * limit);
+
+    const [data, total] = await Promise.all([
+      queryBuilder.getMany(),
+      queryBuilder.getCount(),
+    ]);
+
+    const users: UserForAdminDto[] = data.map((user) => ({
+      id: user?.id,
+      name: user?.name ?? '',
+      phoneNumber: user?.phoneNumber,
+      role: user?.role as UserRole,
+    }));
+
+    return {
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+      },
+      data: users,
+    };
   }
 }

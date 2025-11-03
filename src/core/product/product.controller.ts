@@ -50,6 +50,7 @@ import { memoryStorage } from 'multer';
 import { UploadingOptions } from 'src/infrastructure/object-storage/types/upload-options.interface';
 import { ProductDto } from './dtos/product/product.dto';
 import { DeleteProductPicturesDto } from './dtos/product/delete-product-pictures.dto';
+import { AdminProductDto } from './dtos/product/admin-product.dto';
 /**
  * @class ProductController
  * @classdesc The main controller for handling product-related operations.
@@ -147,7 +148,7 @@ export class ProductController {
           example: 'Sample Product',
         },
         description: {
-          description: 'Product description.',
+          description: 'Product description (Optional).',
           example: 'This is a sample product description.',
         },
         price: {
@@ -170,14 +171,33 @@ export class ProductController {
           description: 'Category ID.',
           example: 1,
         },
+        quantityPerBatch: {
+          format: 'int32',
+          description: 'The quantity of the product per batch.',
+          example: 20,
+        },
+        specifications: {
+          type: 'string',
+          description:
+            'Optional: Product specifications, submitted as a single comma-separated string (e.g., "Color: Blue, Weight: 2kg").',
+          example: 'Material: Plastic, Screen: 6.1 inch',
+        },
+        expirationDate: {
+          type: 'string',
+          format: 'date',
+          description: 'The product expiration date (YYYY-MM-DD).',
+          example: '2026-12-31',
+        },
       },
       required: [
-        'picture',
+        'pictures',
         'name',
         'price',
         'quantity',
         'brandId',
         'categoryId',
+        // Added the new required field
+        'quantityPerBatch',
       ],
     },
   })
@@ -357,5 +377,20 @@ export class ProductController {
     @USER('id') userId: number,
   ) {
     return this.productService.toggleFavorite(userId, productId);
+  }
+
+  @Get('admin/all')
+  @HttpCode(HttpStatus.OK)
+  @Roles(USER_ROLES.ADMIN)
+  @ApiOperation({
+    summary: 'Get all products for admin with pagination and search',
+  })
+  @ApiOkResponse({
+    type: PaginatedResponse(AdminProductDto),
+    description: 'Returns paginated products for admin',
+  })
+  findManyForAdmin(@Query() query: FilterProductDto) {
+    const pagination = { page: query.page || 1, limit: query.limit || 10 };
+    return this.productService.findManyForAdmin(pagination, query.search);
   }
 }
