@@ -12,6 +12,7 @@ import { Address } from 'src/core/user/entities/address.entity';
 import { BaseEntity } from 'src/common/entities/base.entity';
 import { PAYEMENT_WAY, PaymentWay } from '../enums/payement-way.enum';
 import { Checkout } from './checkout.entity';
+import { OrderProduct } from './product-order.entity';
 
 @Entity({ name: 'orders' })
 export class Order extends BaseEntity {
@@ -54,4 +55,7 @@ export class Order extends BaseEntity {
 
   @OneToMany(() => Checkout, (checkout) => checkout.order)
   checkouts: Relation<Checkout[]>;
+
+  @OneToMany(() => OrderProduct, (op) => op.order, { cascade: true })
+  orderProducts: Relation<OrderProduct[]>;
 }

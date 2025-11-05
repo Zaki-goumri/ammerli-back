@@ -7,6 +7,7 @@ import { ChargiliModule } from './chargili/chargili.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import chargiliConfig from 'src/config/chargili.config';
+import { InvoiceModule } from './order/invoice/invoice.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import chargiliConfig from 'src/config/chargili.config';
     ChargiliModule.registerAsync(chargiliConfig.asProvider()),
     NotificationsModule,
     AnalyticsModule,
+    InvoiceModule,
   ],
   providers: [],
 })

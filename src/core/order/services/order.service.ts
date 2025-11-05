@@ -468,7 +468,20 @@ export class OrderService {
       isPaid: order?.ispaid,
       trackingStatus: order?.trackingstatus,
     };
-
     return paymentInfo;
+  }
+
+  async findOneForInvoice(orderId: number): Promise<Order> {
+    const order = await this.orderRepo.findOneOrFail({
+      where: { id: orderId },
+      relations: [
+        'buyer',
+        'address',
+        'orderProducts',
+        'orderProducts.product',
+        'orderProducts.product.brand',
+      ],
+    });
+    return order;
   }
 }

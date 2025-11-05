@@ -1,0 +1,112 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{setspace}
+\usepackage{xcolor}
+\geometry{margin=1cm}
+\setstretch{1.2}
+
+\begin{document}
+
+%--------------------- LOGO + EN-TÊTE ENTREPRISE ---------------------%
+\noindent
+\begin{minipage}{0.6\textwidth}
+    % Remplace par ton logo ou utilise un placeholder
+    % \includegraphics[width=2cm]{logo.png}
+    \textbf{\Large AMERLI}
+\end{minipage}
+\hfill
+\begin{minipage}{0.35\textwidth}\raggedleft
+    \textbf{Amerli}\\
+    12 Rue des Frères Boukhalfa\\
+    Hydra, Alger, Algérie\\
+    Tél : +213 550 123 456\\
+    Email : contact@amerli.dz\\
+    NIF : 001625478953214\\
+    RC : 16B1234567
+\end{minipage}
+
+\vspace{1cm}
+
+%--------------------- TITRE ---------------------%
+\begin{center}
+    {\LARGE \textbf{FACTURE}}\\[0.2cm]
+    \rule{0.7\textwidth}{0.4pt}
+\end{center}
+
+\vspace{0.3cm}
+
+%--------------------- INFORMATIONS FACTURE ---------------------%
+\noindent
+\textbf{Numéro de facture :} {{{invoiceNumber}}} \hfill \textbf{Date :} {{{invoiceDate}}} \\
+\textbf{Date de livraison prévue :} {{{deliveryDate}}}
+
+\vspace{0.5cm}
+
+%--------------------- INFORMATIONS CLIENT ---------------------%
+\noindent
+\textbf{Client :} {{{clientName}}} \\
+\textbf{Adresse :} {{{clientAddress}}} \\
+\textbf{Téléphone :} {{{clientPhone}}} \\
+\textbf{Mode de paiement :} {{{paymentMethod}}}
+
+\vspace{0.8cm}
+
+%--------------------- TABLEAU PRODUITS ---------------------%
+\renewcommand{\arraystretch}{1.3}
+\begin{table}[H]
+\centering
+\begin{tabular}{|p{5cm}|c|c|c|c|}
+\hline
+\textbf{Désignation du produit} & \textbf{Marque} & \textbf{Qté} & \textbf{P.U. (DZD)} & \textbf{Total (DZD)} \\
+\hline
+{{#products}}
+{{{name}}} & {{{brand}}} & {{{quantity}}} & {{{unitPrice}}} & {{{total}}} \\
+\hline
+{{/products}}
+\end{tabular}
+\end{table}
+
+\vspace{0.5cm}
+
+%--------------------- RÉCAPITULATIF ---------------------%
+\begin{flushright}
+\begin{tabular}{lr}
+\textbf{Sous-total :} & {{{subtotal}}} DZD \\
+\textbf{Livraison :} & {{{deliveryCost}}} DZD \\
+\midrule
+\textbf{Montant total :} & \textbf{ {{{totalAmount}}} DZD} \\
+\textbf{Montant payé :} & {{{amountPaid}}} DZD \\
+\textbf{Reste à payer :} & {{{remainingAmount}}} DZD \\
+\end{tabular}
+\end{flushright}
+
+\vspace{0.8cm}
+
+%--------------------- INFORMATIONS LIVRAISON ---------------------%
+\noindent
+\textbf{Livraison :} sous 48h ouvrables à l'adresse du client.\\
+Transport assuré par \textbf{Amerli}.
+
+\vspace{0.5cm}
+
+\noindent
+\textbf{Coordonnées bancaires :}\\
+Banque Extérieure d'Algérie (BEA)\\
+IBAN : DZ58 001 000 123456789000000\\
+Code SWIFT : BEXADZAL
+
+\vfill
+
+\begin{center}
+    \rule{0.6\textwidth}{0.4pt}\\
+    \textit{Amerli – Vente de produits alimentaires en gros.}
+\end{center}
+
+\end{document}

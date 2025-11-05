@@ -136,4 +136,18 @@ export class ObjectService implements ObjectStorageService {
   getFileNameFromUrl(url: string): string {
     return url.split('/').pop() || '';
   }
+
+  async getFile(objectName: string): Promise<Buffer> {
+    try {
+      const stream = await this.minioClient.getObject(this.bucketName, objectName);
+      const chunks: Buffer[] = [];
+      for await (const chunk of stream) {
+        chunks.push(chunk as Buffer);
+      }
+      return Buffer.concat(chunks);
+    } catch (error) {
+      this.logger.error(`Failed to get file ${objectName} from MinIO`, error.stack);
+      throw new InternalServerErrorException('Failed to retrieve file.');
+    }
+  }
 }

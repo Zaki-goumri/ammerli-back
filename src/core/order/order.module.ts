@@ -16,6 +16,7 @@ import { TrackingService } from './services/tracking.service';
 import { TrackingController } from './tracking.controller';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { InvoiceModule } from './invoice/invoice.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
   ],
   controllers: [OrderController, TrackingController],
   providers: [OrderService, CheckoutService, TrackingService],
+  exports: [OrderService],
 })
 export class OrderModule {
   configure(consumer: MiddlewareConsumer) {
