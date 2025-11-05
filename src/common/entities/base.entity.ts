@@ -21,7 +21,7 @@ export abstract class BaseEntity extends TypeOrmBaseEntity {
     example: '2023-10-05T14:48:00.000Z',
   })
   @CreateDateColumn()
-  createdAt?: Date;
+  createdAt: Date;
 
   @ApiProperty({
     description: 'Timestamp when the entity was last updated',

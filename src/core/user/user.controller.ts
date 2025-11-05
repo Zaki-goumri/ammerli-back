@@ -13,6 +13,7 @@ import {
   Post,
   Param,
   Query,
+  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -49,6 +50,7 @@ import {
   PaginatedResponse,
   PaginationResponseDto,
 } from 'src/common/dtos/pagination.dto'; // Import pagination DTOs
+import { UserDetailForAdminDto } from './dtos/response/user-detail-for-admin.dto';
 
 @ApiTags('User')
 @ApiBearerAuth()
@@ -187,12 +189,26 @@ export class UserController {
     description: 'Successfully fetched users for admin view',
     type: PaginatedResponse(UserForAdminDto),
   })
-  @UseGuards(AccessTokenGuard, RoleGuard)
+  @UseGuards(RoleGuard)
   @Roles(USER_ROLES.ADMIN)
   getUsersForAdmin(
     @Query() paginationQuery: PaginationQueryDto,
     @USER('id') userId: number,
   ): Promise<PaginationResponseDto<UserForAdminDto>> {
     return this.userService.getUsersForAdmin(paginationQuery, userId);
+  }
+
+  @Get('/admin/:id')
+  @ApiOperation({ summary: 'Get user details for admin view' })
+  @ApiOkResponse({
+    description: 'Successfully fetched user details for admin view',
+    type: UserDetailForAdminDto,
+  })
+  @UseGuards(RoleGuard)
+  @Roles(USER_ROLES.ADMIN)
+  getUserDetailsForAdmin(
+    @Param('id', ParseIntPipe) userId: number,
+  ): Promise<UserDetailForAdminDto> {
+    return this.userService.getUserDetailsForAdmin(userId);
   }
 }

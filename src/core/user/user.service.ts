@@ -1,9 +1,9 @@
 import { InjectRepository } from '@nestjs/typeorm';
-import { UserForAdminDto } from './dtos/response/user-for-admin.dto'; // Import the new DTO
+import { UserForAdminDto } from './dtos/response/user-for-admin.dto';
 import {
   PaginationQueryDto,
   PaginationResponseDto,
-} from 'src/common/dtos/pagination.dto'; // Import pagination DTOs
+} from 'src/common/dtos/pagination.dto';
 import { User } from './entities/user.entity';
 import { EntityManager, Repository } from 'typeorm';
 import { Address } from './entities/address.entity';
@@ -30,6 +30,7 @@ import { UserDto } from './dtos/response/user.dto';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { OnEvent } from '@nestjs/event-emitter';
 import { UserRole } from 'src/common/enums/user-role.enum';
+import { UserDetailForAdminDto } from './dtos/response/user-detail-for-admin.dto';
 
 @Injectable()
 export class UserService {
@@ -164,6 +165,61 @@ export class UserService {
     return user;
   }
 
+  async getUserDetailsForAdmin(userId: number): Promise<UserDetailForAdminDto> {
+    const user = await this.userRepo.findOneOrFail({
+      where: { id: userId },
+      relations: ['addresses'],
+      order: {
+        addresses: {
+          createdAt: 'DESC',
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        supermarketName: true,
+        phoneNumber: true,
+        createdAt: true,
+        role: true,
+        deletedAt: true,
+        addresses: {
+          id: true,
+          street: true,
+          district: true,
+          city: true,
+          createdAt: true,
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    const {
+      id,
+      name,
+      supermarketName,
+      phoneNumber,
+      createdAt,
+      role,
+      addresses,
+    } = user;
+
+    const lastAddress = addresses && addresses.length > 0 ? addresses[0] : null;
+
+    return {
+      id,
+      name: name ?? '',
+      supermarketName,
+      phoneNumber,
+      lastAddress,
+      createdAt,
+      role: role as UserRole,
+      isActive: !user.deletedAt,
+    };
+  }
+
   async registerUserInfo(dto: RegisterUserDto, id: number): Promise<User> {
     return this.entityManager.transaction(async (em) => {
       const userRepo = em.getRepository(User);
@@ -249,7 +305,9 @@ export class UserService {
   async restoreUser(id: number): Promise<{ message: string }> {
     const restoreResult = await this.userRepo.restore(id);
     if (restoreResult.affected === 0) {
-      throw new NotFoundException(`User with ID ${id} not found or not deleted.`);
+      throw new NotFoundException(
+        `User with ID ${id} not found or not deleted.`,
+      );
     }
     await this.redisService.del(UserService.getCacheKey(id, 'id'));
     return { message: 'User restored successfully' };

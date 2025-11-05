@@ -10,21 +10,21 @@ export class Address extends BaseEntity {
     example: '123 Rue Didouche Mourad',
   })
   @Column({ nullable: true })
-  street?: string;
+  street: string;
 
   @ApiPropertyOptional({
     description: 'City where the address is located',
     example: 'Algiers',
   })
   @Column({ nullable: true })
-  city?: string;
+  city: string;
 
   @ApiPropertyOptional({
     description: 'District/Commune of the address',
     example: 'Bab El Oued',
   })
   @Column({ nullable: true })
-  district?: string;
+  district: string;
 
   @ApiProperty({
     description: 'User ID who owns the address',
