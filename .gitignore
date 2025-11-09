@@ -2,7 +2,9 @@
 /dist
 /node_modules
 /build
-
+# Docker files dev
+compose.dev.yaml
+Dockerfile.dev
 # Logs
 logs
 *.log
