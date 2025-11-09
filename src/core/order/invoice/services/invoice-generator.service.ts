@@ -2,201 +2,124 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  OnModuleInit,
 } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import * as Mustache from 'mustache';
-
+import * as puppeteer from 'puppeteer';
+import * as Handlebars from 'handlebars';
 import { InvoiceData, InvoiceProduct } from '../interfaces/invoice.interface';
 import { Order } from 'src/core/order/entities/order.entity';
 import { OrderProduct } from 'src/core/order/entities/product-order.entity';
-import { spawn } from 'child_process';
+import { OrderService } from 'src/core/order/services/order.service';
+import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
 
 @Injectable()
-export class InvoiceGeneratorService {
+export class InvoiceGeneratorService implements OnModuleInit {
   private readonly logger = new Logger(InvoiceGeneratorService.name);
-  private templateCache: string | null = null;
+  private compiledTemplate: Handlebars.TemplateDelegate;
+  private templatePath: string;
 
-  /**
-   * Generates a PDF invoice from order data.
-   * @param data - The data for the invoice.
-   * @returns A promise that resolves with the PDF buffer.
-   */
+  constructor(
+    private readonly orderService: OrderService,
+    private readonly objectService: ObjectService,
+  ) {
+    this.templatePath = path.join(
+      process.cwd(),
+      'src/core/order/invoice/templates/invoice.template.hbs',
+    );
+  }
+
+  async onModuleInit() {
+    await this.loadAndCompileTemplate();
+    this.logger.log('Invoice HBS template compiled successfully');
+  }
+
+  private async loadAndCompileTemplate(): Promise<void> {
+    try {
+      const templateContent = await fs.readFile(this.templatePath, 'utf-8');
+      this.compiledTemplate = Handlebars.compile(templateContent);
+    } catch (error) {
+      this.logger.error(`Failed to load template: ${this.templatePath}`, error);
+      throw new Error(`Template file not found: ${this.templatePath}`);
+    }
+  }
+
+  async generateInvoice(orderId: number): Promise<{ invoicePath: string; buyerId: number }> {
+    const order = await this.orderService.findOneForInvoice(orderId);
+    const invoiceData = this.prepareInvoiceData(order);
+    const pdfBuffer = await this.generateInvoicePDF(invoiceData);
+
+    const invoiceFileName = `invoice-${orderId}-${Date.now()}.pdf`;
+    const invoicePath = await this.objectService.uploadFile(
+      {
+        buffer: pdfBuffer,
+        originalname: invoiceFileName,
+        mimetype: 'application/pdf',
+        size: pdfBuffer.length,
+      },
+      { folder: 'invoices' },
+    );
+
+    return { invoicePath: invoicePath.fileUrl, buyerId: order.buyer.id };
+  }
+
+  async getBuyerIdFromOrderId(orderId: number): Promise<number> {
+    const order = await this.orderService.findOneForInvoice(orderId);
+    return order.buyer.id;
+  }
+
   async generateInvoicePDF(data: InvoiceData): Promise<Buffer> {
     try {
-      const template = await this.loadTemplate();
-      const renderedLatex = Mustache.render(template, data);
-      return await this.compileLatexToPdf(renderedLatex);
+      const logo = await this.getLogoBase64();
+      this.logger.debug('Generating invoice with data:', logo);
+      const renderedHtml = this.compiledTemplate({ ...data, logo });
+      return await this.generatePDFFromHTML(renderedHtml);
     } catch (error) {
       this.logger.error('Failed to generate invoice PDF', error.stack);
       throw new InternalServerErrorException('Could not generate invoice PDF.');
     }
   }
 
-  /**
-   * Loads the LaTeX template from the file system.
-   */
-  private async loadTemplate(): Promise<string> {
-    if (this.templateCache) return this.templateCache;
-
-    const templatePath = path.join(
-      __dirname,
-      '..',
-      'templates',
-      'invoice.template.tex',
-    );
-
+  private async generatePDFFromHTML(htmlContent: string): Promise<Buffer> {
+    let browser: puppeteer.Browser | null = null;
     try {
-      this.templateCache = await fs.readFile(templatePath, 'utf-8');
-      return this.templateCache;
+      browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+        ],
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+      });
+      const page = await browser.newPage();
+
+      await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: {
+          top: '1cm',
+          right: '1cm',
+          bottom: '1cm',
+          left: '1cm',
+        },
+      });
+
+      return Buffer.from(pdfBuffer);
     } catch (error) {
-      this.logger.error(
-        `Template file not found at ${templatePath}`,
-        error.stack,
-      );
-      throw new InternalServerErrorException('Invoice template not found.');
+      this.logger.error('Puppeteer PDF generation failed:', error);
+      throw new InternalServerErrorException('HTML to PDF conversion failed.');
+    } finally {
+      if (browser) {
+        await browser.close();
+      }
     }
   }
 
-  /**
-   * Compiles LaTeX content to a PDF buffer using pdflatex.
-   */
-  private compileLatexToPdf(latexContent: string): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-      const tempDir = path.join(__dirname, '..', '..', '..', '..', 'temp');
-      const tempFileName = `invoice-${Date.now()}`;
-      const texFilePath = path.join(tempDir, `${tempFileName}.tex`);
-      const pdfFilePath = path.join(tempDir, `${tempFileName}.pdf`);
-
-      fs.mkdir(tempDir, { recursive: true })
-        .then(() => fs.writeFile(texFilePath, latexContent, 'utf8'))
-        .then(() => {
-          const pdflatex = spawn('pdflatex', [
-            '-interaction=nonstopmode',
-            '-halt-on-error',
-            '-output-directory',
-            tempDir,
-            texFilePath,
-          ]);
-
-          let stdout = '';
-          let stderr = '';
-
-          pdflatex.stdout.on('data', (data) => {
-            stdout += data.toString();
-          });
-
-          pdflatex.stderr.on('data', (data) => {
-            stderr += data.toString();
-          });
-
-          pdflatex.on('close', async (code) => {
-            if (code === 0) {
-              try {
-                const pdfBuffer = await fs.readFile(pdfFilePath);
-                resolve(pdfBuffer);
-              } catch (readError) {
-                this.logger.error(
-                  'Failed to read generated PDF:',
-                  readError.message,
-                );
-                reject(
-                  new InternalServerErrorException(
-                    'Failed to read generated PDF.',
-                  ),
-                );
-              } finally {
-                await fs
-                  .unlink(texFilePath)
-                  .catch((err) =>
-                    this.logger.error(
-                      'Failed to delete .tex file:',
-                      err.message,
-                    ),
-                  );
-                await fs
-                  .unlink(pdfFilePath)
-                  .catch((err) =>
-                    this.logger.error(
-                      'Failed to delete .pdf file:',
-                      err.message,
-                    ),
-                  );
-                await fs
-                  .unlink(path.join(tempDir, `${tempFileName}.log`))
-                  .catch((err) =>
-                    this.logger.error(
-                      'Failed to delete .log file:',
-                      err.message,
-                    ),
-                  );
-                await fs
-                  .unlink(path.join(tempDir, `${tempFileName}.aux`))
-                  .catch((err) =>
-                    this.logger.error(
-                      'Failed to delete .aux file:',
-                      err.message,
-                    ),
-                  );
-              }
-            } else {
-              this.logger.error('pdflatex compilation failed:', {
-                code,
-                stdout,
-                stderr,
-              });
-              reject(
-                new InternalServerErrorException('LaTeX compilation failed.'),
-              );
-              await fs
-                .unlink(texFilePath)
-                .catch((err) =>
-                  this.logger.error('Failed to delete .tex file:', err.message),
-                );
-              await fs
-                .unlink(pdfFilePath)
-                .catch((err) =>
-                  this.logger.error('Failed to delete .pdf file:', err.message),
-                );
-              await fs
-                .unlink(path.join(tempDir, `${tempFileName}.log`))
-                .catch((err) =>
-                  this.logger.error('Failed to delete .log file:', err.message),
-                );
-              await fs
-                .unlink(path.join(tempDir, `${tempFileName}.aux`))
-                .catch((err) =>
-                  this.logger.error('Failed to delete .aux file:', err.message),
-                );
-            }
-          });
-
-          pdflatex.on('error', (err) => {
-            this.logger.error('Failed to start pdflatex process:', err.message);
-            reject(
-              new InternalServerErrorException(
-                'Failed to start LaTeX compiler.',
-              ),
-            );
-          });
-        })
-        .catch((err) => {
-          this.logger.error(
-            'Failed to prepare temporary directory or write .tex file:',
-            err.message,
-          );
-          reject(
-            new InternalServerErrorException(
-              'Failed to prepare for LaTeX compilation.',
-            ),
-          );
-        });
-    });
-  }
-
-  /**
-   * Formats a number into a French-style currency string.
-   */
   formatCurrency(amount: number): string {
     if (amount === null || amount === undefined) return '0.00';
     return new Intl.NumberFormat('fr-FR', {
@@ -207,13 +130,10 @@ export class InvoiceGeneratorService {
       .replace(/,/g, ' ');
   }
 
-  /**
-   * Prepares the invoice data from an order entity.
-   */
   prepareInvoiceData(
     order: Order & {
       orderProducts: (OrderProduct & {
-        product: { name: string; brand: { name: string }; price: number };
+        product: { name: string; brand: { label: string }; price: number };
       })[];
     },
   ): InvoiceData {
@@ -230,11 +150,7 @@ export class InvoiceGeneratorService {
       0,
     );
 
-    const deliveryCost = (order as any).deliveryCost || 0;
-    const totalAmount = subtotal + deliveryCost;
-
-    const amountPaid = (order as any).amountPaid || 0;
-    const remainingAmount = totalAmount - amountPaid;
+    const totalAmount = subtotal;
 
     return {
       invoiceNumber: this.generateInvoiceNumber(order.id),
@@ -248,25 +164,30 @@ export class InvoiceGeneratorService {
       paymentMethod: order.payementWay,
       products,
       subtotal: this.formatCurrency(subtotal),
-      deliveryCost: this.formatCurrency(deliveryCost),
       totalAmount: this.formatCurrency(totalAmount),
-      amountPaid: this.formatCurrency(amountPaid),
-      remainingAmount: this.formatCurrency(remainingAmount),
     };
   }
 
-  /**
-   * Generates an invoice number from an order ID.
-   */
   private generateInvoiceNumber(orderId: number): string {
     const year = new Date().getFullYear();
     const paddedId = orderId.toString().padStart(3, '0');
     return `${year}-${paddedId}`;
   }
 
-  /**
-   * Creates sample data for testing purposes.
-   */
+  private async getLogoBase64(): Promise<string> {
+    try {
+      const logoPath = path.join(
+        process.cwd(),
+        'src/core/order/invoice/templates/assets/logo.svg',
+      );
+      const file = await fs.readFile(logoPath);
+      return `data:image/svg+xml;base64,${file.toString('base64')}`;
+    } catch (err) {
+      this.logger.warn('Logo file not found or failed to load');
+      return '';
+    }
+  }
+
   createSampleData(): InvoiceData {
     const products: InvoiceProduct[] = [
       {

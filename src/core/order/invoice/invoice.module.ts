@@ -5,10 +5,6 @@ import { InvoiceController } from './invoice.controller';
 import { InvoiceService } from './services/invoice.service';
 import { InvoiceGeneratorService } from './services/invoice-generator.service';
 import { OrderModule } from '../order.module';
-import { BullModule } from '@nestjs/bullmq';
-import { QUEUE_NAME } from 'src/common/constants/queues';
-import { ObjectStorageModule } from 'src/infrastructure/object-storage/object-storage.module';
-import { QueueModule } from 'src/infrastructure/queue/queue.module';
 import { InfrastructureModule } from 'src/infrastructure/infrastructure.module';
 
 @Module({
@@ -22,4 +18,3 @@ import { InfrastructureModule } from 'src/infrastructure/infrastructure.module';
   exports: [InvoiceService, InvoiceGeneratorService],
 })
 export class InvoiceModule {}
-

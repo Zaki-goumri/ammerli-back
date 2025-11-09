@@ -9,6 +9,7 @@ import { NotificationProcessor } from './notification/notification.processor';
 import { FirebaseModule } from '../firebase/firebase.module';
 import { ObjectStorageModule } from '../object-storage/object-storage.module';
 import { NotificationsModule } from 'src/core/notifications/notifications.module';
+import { InvoiceProcessor } from './invoice/invoice.processor';
 
 @Global()
 @Module({
@@ -40,7 +41,7 @@ import { NotificationsModule } from 'src/core/notifications/notifications.module
       })),
     ),
   ],
-  providers: [UploadProcessor, NotificationProcessor],
+  providers: [UploadProcessor, NotificationProcessor, InvoiceProcessor],
   exports: [BullModule],
 })
 export class QueueModule {}

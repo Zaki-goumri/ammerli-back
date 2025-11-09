@@ -39,6 +39,7 @@ export class InvoiceService {
 
     const pdfBuffer =
       await this.invoiceGeneratorService.generateInvoicePDF(invoiceData);
+       );
 
     invoice = this.invoiceRepository.create({
       orderId,
@@ -61,6 +62,8 @@ export class InvoiceService {
       filename: '',
       path: '',
     };
+ this.logger.debug(
+      `Generated PDF for invoice ${invoiceData.invoiceNumber}, size: ${pdfBuffer.length} bytes`,
 
     await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
       file,
@@ -119,7 +122,9 @@ export class InvoiceService {
     if (!invoice.pdfUrl) {
       throw new NotFoundException('PDF not available for this invoice.');
     }
-    const objectName = this.objectStorageService.getFileNameFromUrl(invoice.pdfUrl);
+    const objectName = this.objectStorageService.getFileNameFromUrl(
+      invoice.pdfUrl,
+    );
     return this.objectStorageService.getFile(objectName);
   }
 

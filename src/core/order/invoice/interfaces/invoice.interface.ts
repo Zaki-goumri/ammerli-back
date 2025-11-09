@@ -26,8 +26,5 @@ export interface InvoiceData {
   products: InvoiceProduct[];
 
   subtotal: string; // Formatted currency string
-  deliveryCost: string; // Formatted currency string
   totalAmount: string; // Formatted currency string
-  amountPaid: string; // Formatted currency string
-  remainingAmount: string; // Formatted currency string
 }

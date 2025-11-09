@@ -16,6 +16,7 @@ import { TrackingService } from './services/tracking.service';
 import { TrackingController } from './tracking.controller';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { QueueModule } from 'src/infrastructure/queue/queue.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     UserModule,
     NotificationsModule,
     EventEmitterModule,
+    QueueModule,
   ],
   controllers: [OrderController, TrackingController],
   providers: [OrderService, CheckoutService, TrackingService],

@@ -1,23 +1,15 @@
 # syntax=docker/dockerfile:1
-ARG NODE_VERSION=22.15.1
-ARG PNPM_VERSION=10.10.0
 
-################################################################################
-# Use node image for base image for all stages.
-FROM node:${NODE_VERSION}-alpine AS base
+# Use the custom pre-built base image which includes Node, pnpm, and Chromium.
+# Build it once with: docker build -t 3ammerli-base:latest -f Dockerfile.base .
+FROM 3ammerli-base:latest
 
-# Set working directory for all build stages.
+# Set working directory.
 WORKDIR /usr/src/app
 
-# Install pnpm.
-RUN --mount=type=cache,target=/root/.npm \
-  npm install -g pnpm@${PNPM_VERSION}
-
-RUN npm install -g @nestjs/cli 
-
-################################################################################
-# Development stage
-FROM base AS development
+# Install nestjs/cli (this is specific to the project's dev tooling)
+# pnpm is already installed in the base image.
+RUN pnpm add -g @nestjs/cli
 
 # Copy package files
 COPY package.json pnpm-lock.yaml ./

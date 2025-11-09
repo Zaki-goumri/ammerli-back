@@ -4,6 +4,11 @@ import { RoleGuard } from '../authentication/guards/role.guard';
 import { Roles } from '../authentication/decorators/role.decorator';
 import { USER_ROLES } from 'src/common/enums/user-role.enum';
 import { OrderForAdminListItemDto } from './dtos/order-for-admin-list-item.dto';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { QUEUE_NAME } from 'src/common/constants/queues';
+import { INVOICE_JOBS } from 'src/common/constants/jobs';
+import { GenerateInvoiceDto } from 'src/infrastructure/queue/invoice/dto/generate-invoice.dto';
 
 /**
  * @fileoverview This file contains the controller for handling order-related requests.
@@ -104,6 +109,7 @@ export class OrderController {
     private readonly notificationService: NotificationsService,
     private readonly eventEmitter: EventEmitter2,
     private readonly redisService: RedisService,
+    @InjectQueue(QUEUE_NAME.INVOICE) private readonly invoiceQueue: Queue<GenerateInvoiceDto>,
   ) {}
   logger = new Logger(OrderController.name);
 
@@ -194,6 +200,10 @@ export class OrderController {
         finalDataForClient,
         3600,
       );
+      // Add job to invoice queue
+      await this.invoiceQueue.add(INVOICE_JOBS.GENERATE_INVOICE, {
+        orderId: orderId as number,
+      });
       this.eventEmitter.emit('order.paid', orderId);
       return res.send({ received: true });
     } else {

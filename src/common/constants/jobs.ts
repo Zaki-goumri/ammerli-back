@@ -13,12 +13,16 @@ export const SEARACH_JOB_NAME = {
 } as const;
 export const NOTIFICATION_JOBS = {
   SEND_NOTIFICATION: 'send-notification',
-};
+} as const;
 
 export const UPLOAD_JOBS = {
   UPLOAD_FILE: 'upload-file',
   DELETE_FILE: 'delete-file',
   DELETE_FILES_BULK: 'delete-files-bulk',
   UPLOAD_FILES_BULK: 'upload-files-bulk',
-};
+} as const;
+
+export const INVOICE_JOBS = {
+  GENERATE_INVOICE: 'generate-invoice',
+} as const;
 

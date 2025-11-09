@@ -1,0 +1,21 @@
+# syntax=docker/dockerfile:1
+ARG NODE_VERSION=22.15.1
+ARG PNPM_VERSION=10.10.0
+FROM node:${NODE_VERSION}-alpine
+
+# Install pnpm.
+RUN --mount=type=cache,target=/root/.npm \
+  npm install -g pnpm@${PNPM_VERSION}
+
+# Install chromium for puppeteer
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+
+# Set puppeteer env variables
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser

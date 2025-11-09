@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facture {{invoiceNumber}}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            font-size: 12pt;
+            line-height: 1.4;
+            color: #333;
+            padding: 1cm;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5cm;
+        }
+        
+        .header-left {
+            width: 60%;
+        }
+        
+        .company-name {
+            font-size: 24pt;
+            font-weight: bold;
+        }
+        
+        .header-right {
+            width: 35%;
+            text-align: right;
+            font-size: 10pt;
+            line-height: 1.6;
+        }
+        
+        .title-section {
+            text-align: center;
+            margin: 0.5cm 0 0.3cm 0;
+        }
+        
+        .title {
+            font-size: 20pt;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+        
+        .title-line {
+            width: 70%;
+            height: 2px;
+            background-color: #333;
+            margin: 0.3cm auto;
+        }
+        
+        .invoice-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5cm;
+            font-size: 11pt;
+        }
+        
+        .client-info {
+            margin-bottom: 0.6cm;
+            font-size: 11pt;
+            line-height: 1.8;
+        }
+        
+        .client-info strong {
+            display: inline-block;
+            width: 150px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.3cm 0 0.6cm 0;
+        }
+        
+        table th {
+            background-color: #f5f5f5;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: bold;
+            border: 1px solid #333;
+        }
+        
+        table td {
+            padding: 10px 8px;
+            border: 1px solid #333;
+        }
+        
+        table td:nth-child(3),
+        table td:nth-child(4),
+        table td:nth-child(5),
+        table th:nth-child(3),
+        table th:nth-child(4),
+        table th:nth-child(5) {
+            text-align: center;
+        }
+        
+        .summary {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 0.6cm;
+        }
+        
+        .summary-table {
+            width: 350px;
+        }
+        
+        .summary-table table {
+            margin: 0;
+        }
+        
+        .summary-table td {
+            border: none;
+            padding: 8px 12px;
+        }
+        
+        .summary-table .total-row {
+            border-top: 2px solid #333;
+            font-weight: bold;
+            font-size: 13pt;
+        }
+        
+        .delivery-info {
+            margin-bottom: 0.5cm;
+            font-size: 11pt;
+            line-height: 1.8;
+        }
+        
+        .bank-info {
+            margin-bottom: 0.6cm;
+            font-size: 11pt;
+            line-height: 1.8;
+        }
+        
+        .footer {
+            position: fixed;
+            bottom: 1cm;
+            left: 1cm;
+            right: 1cm;
+            text-align: center;
+        }
+        
+        .footer-line {
+            width: 60%;
+            height: 1px;
+            background-color: #333;
+            margin: 0 auto 0.3cm auto;
+        }
+        
+        .footer-text {
+            font-style: italic;
+            font-size: 10pt;
+            color: #666;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-left">
+            <img src="{{logo}}" alt="Company Logo" style="width: 150px; height: auto;">
+            <div class="company-name">AMERLI</div>
+        </div>
+        <div class="header-right">
+            <strong>Amerli</strong><br>
+            12 Rue des Frères Boukhalfa<br>
+            Hydra, Alger, Algérie<br>
+            Tél : +213 550 123 456<br>
+            Email : contact@amerli.dz<br>
+            NIF : 001625478953214<br>
+            RC : 16B1234567
+        </div>
+    </div>
+
+    <!-- TITLE -->
+    <div class="title-section">
+        <div class="title">FACTURE</div>
+        <div class="title-line"></div>
+    </div>
+
+    <!-- INVOICE INFO -->
+    <div class="invoice-info">
+        <div>
+            <strong>Numéro de facture :</strong> {{invoiceNumber}}
+        </div>
+        <div>
+            <strong>Date :</strong> {{invoiceDate}}
+        </div>
+    </div>
+    <div style="margin-bottom: 0.5cm;">
+        <strong>Date de livraison prévue :</strong> {{deliveryDate}}
+    </div>
+
+    <!-- CLIENT INFO -->
+    <div class="client-info">
+        <div><strong>Client :</strong> {{clientName}}</div>
+        <div><strong>Adresse :</strong> {{clientAddress}}</div>
+        <div><strong>Téléphone :</strong> {{clientPhone}}</div>
+        <div><strong>Mode de paiement :</strong> {{paymentMethod}}</div>
+    </div>
+
+    <!-- PRODUCTS TABLE -->
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 35%;">Désignation du produit</th>
+                <th style="width: 20%;">Marque</th>
+                <th style="width: 10%;">Qté</th>
+                <th style="width: 15%;">P.U. (DZD)</th>
+                <th style="width: 20%;">Total (DZD)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#each products}}
+            <tr>
+                <td>{{this.name}}</td>
+                <td>{{this.brand}}</td>
+                <td>{{this.quantity}}</td>
+                <td>{{this.unitPrice}}</td>
+                <td>{{this.total}}</td>
+            </tr>
+            {{/each}}
+        </tbody>
+    </table>
+
+    <!-- SUMMARY -->
+    <div class="summary">
+        <div class="summary-table">
+            <table>
+                <tr>
+                    <td><strong>Sous-total :</strong></td>
+                    <td style="text-align: right;">{{subtotal}} DZD</td>
+                </tr>
+                <tr class="total-row">
+                    <td><strong>Montant total :</strong></td>
+                    <td style="text-align: right;"><strong>{{totalAmount}} DZD</strong></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- DELIVERY INFO -->
+    <div class="delivery-info">
+        <strong>Livraison :</strong> sous 48h ouvrables à l'adresse du client.<br>
+        Transport assuré par <strong>Amerli</strong>.
+    </div>
+
+    <!-- BANK INFO -->
+    <div class="bank-info">
+        <strong>Coordonnées bancaires :</strong><br>
+        Banque Extérieure d'Algérie (BEA)<br>
+        IBAN : DZ58 001 000 123456789000000<br>
+        Code SWIFT : BEXADZAL
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+        <div class="footer-line"></div>
+        <div class="footer-text">Amerli – Vente de produits alimentaires en gros.</div>
+    </div>
+</body>
+</html>
