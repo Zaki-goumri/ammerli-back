@@ -7,6 +7,9 @@ FROM node:${NODE_VERSION}-alpine
 RUN --mount=type=cache,target=/root/.npm \
   npm install -g pnpm@${PNPM_VERSION}
 
+# Configure pnpm to use a standard bin directory
+RUN pnpm config set global-bin-dir /usr/local/bin
+
 # Install chromium for puppeteer
 RUN apk add --no-cache \
     chromium \
@@ -16,6 +19,5 @@ RUN apk add --no-cache \
     ca-certificates \
     ttf-freefont
 
-# Set puppeteer env variables
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+  PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser

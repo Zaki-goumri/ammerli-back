@@ -26,7 +26,7 @@ export class InvoiceGeneratorService implements OnModuleInit {
   ) {
     this.templatePath = path.join(
       process.cwd(),
-      'src/core/order/invoice/templates/invoice.template.hbs',
+      'src/core/invoice/templates/invoice.template.hbs',
     );
   }
 
@@ -45,21 +45,20 @@ export class InvoiceGeneratorService implements OnModuleInit {
     }
   }
 
-  async generateInvoice(orderId: number): Promise<{ invoicePath: string; buyerId: number }> {
+  async generateInvoice(
+    orderId: number,
+  ): Promise<{ invoicePath: string; buyerId: number }> {
     const order = await this.orderService.findOneForInvoice(orderId);
     const invoiceData = this.prepareInvoiceData(order);
     const pdfBuffer = await this.generateInvoicePDF(invoiceData);
 
     const invoiceFileName = `invoice-${orderId}-${Date.now()}.pdf`;
-    const invoicePath = await this.objectService.uploadFile(
-      {
-        buffer: pdfBuffer,
-        originalname: invoiceFileName,
-        mimetype: 'application/pdf',
-        size: pdfBuffer.length,
-      },
-      { folder: 'invoices' },
-    );
+    const invoicePath = await this.objectService.uploadFile({
+      buffer: pdfBuffer,
+      originalname: invoiceFileName,
+      mimetype: 'application/pdf',
+      size: pdfBuffer.length,
+    });
 
     return { invoicePath: invoicePath.fileUrl, buyerId: order.buyer.id };
   }
@@ -178,7 +177,7 @@ export class InvoiceGeneratorService implements OnModuleInit {
     try {
       const logoPath = path.join(
         process.cwd(),
-        'src/core/order/invoice/templates/assets/logo.svg',
+        'src/core/invoice/templates/assets/logo.svg',
       );
       const file = await fs.readFile(logoPath);
       return `data:image/svg+xml;base64,${file.toString('base64')}`;
@@ -216,10 +215,7 @@ export class InvoiceGeneratorService implements OnModuleInit {
       paymentMethod: 'CIB',
       products,
       subtotal: this.formatCurrency(250.5),
-      deliveryCost: this.formatCurrency(20),
       totalAmount: this.formatCurrency(270.5),
-      amountPaid: this.formatCurrency(0),
-      remainingAmount: this.formatCurrency(270.5),
     };
   }
 }

@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, forwardRef } from '@nestjs/common';
 import { OrderController } from './order.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Order } from './entities/order.entity';
@@ -17,6 +17,7 @@ import { TrackingController } from './tracking.controller';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { QueueModule } from 'src/infrastructure/queue/queue.module';
+import { InfrastructureModule } from 'src/infrastructure/infrastructure.module';
 
 @Module({
   imports: [
@@ -26,7 +27,6 @@ import { QueueModule } from 'src/infrastructure/queue/queue.module';
     UserModule,
     NotificationsModule,
     EventEmitterModule,
-    QueueModule,
   ],
   controllers: [OrderController, TrackingController],
   providers: [OrderService, CheckoutService, TrackingService],

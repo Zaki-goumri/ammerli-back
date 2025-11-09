@@ -11,14 +11,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { InvoiceService } from './services/invoice.service';
-import { UpdateInvoiceStatusDto } from './dto/update-invoice-status.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Response } from 'express';
-import { InvoiceGeneratorService } from './services/invoice-generator.service';
 import { USER_ROLES } from 'src/common/enums/user-role.enum';
 import { Roles } from 'src/core/authentication/decorators/role.decorator';
 import { AccessTokenGuard } from 'src/core/authentication/guards/access-token.guard';
 import { RoleGuard } from 'src/core/authentication/guards/role.guard';
+import { InvoiceGeneratorService } from './services/invoice-generator.service';
 
 @ApiTags('invoices')
 @Controller('invoices')
@@ -97,16 +96,16 @@ export class InvoiceController {
     return this.invoiceService.regenerateInvoice(id);
   }
 
-  @Patch(':id/status')
-  @UseGuards(AccessTokenGuard, RoleGuard)
-  @Roles(USER_ROLES.ADMIN)
-  @ApiOperation({ summary: 'Update the status of an invoice' })
-  updateStatus(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateInvoiceStatusDto: UpdateInvoiceStatusDto,
-  ) {
-    return this.invoiceService.updateStatus(id, updateInvoiceStatusDto.status);
-  }
+  // @Patch(':id/status')
+  // @UseGuards(AccessTokenGuard, RoleGuard)
+  // @Roles(USER_ROLES.ADMIN)
+  // @ApiOperation({ summary: 'Update the status of an invoice' })
+  // updateStatus(
+  //   @Param('id', ParseIntPipe) id: number,
+  //   @Body() updateInvoiceStatusDto: updateInvoiceStatusDto,
+  // ) {
+  //   return this.invoiceService.updateStatus(id, updateInvoiceStatusDto.status);
+  // }
 
   @Delete(':id')
   @UseGuards(AccessTokenGuard, RoleGuard)
@@ -128,4 +127,3 @@ export class InvoiceController {
     res.send(pdfBuffer);
   }
 }
-

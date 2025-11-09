@@ -6,7 +6,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "build": "nest build && cp -r src/core/order/invoice/templates dist/core/order/invoice/templates",
+    "build": "nest build && cp -r src/core/invoice/templates dist/core/invoice/templates",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -50,6 +50,7 @@
     "cloudinary": "^2.7.0",
     "csrf-csrf": "^4.0.3",
     "dotenv": "^17.2.3",
+    "express": "^5.1.0",
     "express-session": "^1.18.1",
     "firebase-admin": "^13.5.0",
     "handlebars": "^4.7.8",

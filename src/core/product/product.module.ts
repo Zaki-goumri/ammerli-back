@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ProductService } from './services/product.service';
 import { ProductController } from './product.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -9,12 +9,12 @@ import { FavProduct } from './entities/fav-product.entity';
 import { BrandService } from './services/brand.service';
 import { CategoryService } from './services/category.service';
 import { ObjectStorageModule } from 'src/infrastructure/object-storage/object-storage.module';
-import { QueueModule } from 'src/infrastructure/queue/queue.module';
 import { ProductPicture } from './entities/product-picture.entity';
 import { ProductPictureService } from './services/product-picture.service';
 import { CategoryController } from './category.controller';
 import { BrandController } from './brand.controller';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { InfrastructureModule } from 'src/infrastructure/infrastructure.module';
 
 @Module({
   imports: [
@@ -26,11 +26,16 @@ import { NotificationsModule } from '../notifications/notifications.module';
       FavProduct,
     ]),
     ObjectStorageModule,
-    QueueModule,
+    forwardRef(() => InfrastructureModule),
     NotificationsModule,
   ],
   controllers: [ProductController, CategoryController, BrandController],
-  providers: [ProductService, BrandService, CategoryService, ProductPictureService],
+  providers: [
+    ProductService,
+    BrandService,
+    CategoryService,
+    ProductPictureService,
+  ],
   exports: [ProductService],
 })
 export class ProductModule {}

@@ -86,6 +86,9 @@ importers:
       dotenv:
         specifier: ^17.2.3
         version: 17.2.3
+      express:
+        specifier: ^5.1.0
+        version: 5.1.0
       express-session:
         specifier: ^1.18.1
         version: 1.18.2

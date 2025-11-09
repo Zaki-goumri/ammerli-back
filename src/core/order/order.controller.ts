@@ -109,7 +109,8 @@ export class OrderController {
     private readonly notificationService: NotificationsService,
     private readonly eventEmitter: EventEmitter2,
     private readonly redisService: RedisService,
-    @InjectQueue(QUEUE_NAME.INVOICE) private readonly invoiceQueue: Queue<GenerateInvoiceDto>,
+    @InjectQueue(QUEUE_NAME.INVOICE)
+    private readonly invoiceQueue: Queue<GenerateInvoiceDto>,
   ) {}
   logger = new Logger(OrderController.name);
 
@@ -300,17 +301,10 @@ export class OrderController {
         'amerli://payment/status?status=error&message=InvalidId';
       return res.redirect(genericFailureLink);
     }
-    console.log('Handling payment redirect for order ID:', orderId);
-
     const redisData = await this.redisService.get<PaymentClientData>(
       `payment:result:${orderId}`,
     );
-    console.log('Re trieved raw data from Redis:', redisData);
-
     const data: PaymentClientData | null = redisData ? redisData : null;
-
-    console.log('Retrieved payment data from Redis:', data);
-
     if (!data) {
       this.logger.error(
         `Payment token for order ${orderId} not found or expired.`,

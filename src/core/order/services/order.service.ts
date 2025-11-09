@@ -26,11 +26,8 @@ import { UserService } from 'src/core/user/user.service';
 import { CreateCheckoutRes } from '../dtos/checkout-create-res.dto';
 import { Tracking } from '../entities/tracking.entity';
 import { OrderStatus } from '../enums/delivery.enum';
-import { OrderForAdminListItemDto } from '../dtos/order-for-admin-list-item.dto'; // Import the new DTO
-import { User } from 'src/core/user/entities/user.entity'; // Import User entity
-
-import { PaymentInfoDto } from '../dtos/payment-info.dto'; // Import the new DTO
-import { Checkout } from '../entities/checkout.entity'; // Import Checkout entity
+import { OrderForAdminListItemDto } from '../dtos/order-for-admin-list-item.dto';
+import { PaymentInfoDto } from '../dtos/payment-info.dto';
 import { BuyerInfoDto } from '../dtos/buyer-info.dto';
 
 @Injectable()

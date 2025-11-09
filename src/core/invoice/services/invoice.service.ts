@@ -2,7 +2,6 @@ import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Invoice, InvoiceStatus } from '../entities/invoice.entity';
-import { InvoiceGeneratorService } from './invoice-generator.service';
 import { OrderService } from 'src/core/order/services/order.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -11,6 +10,7 @@ import { UPLOAD_JOBS } from 'src/common/constants/jobs';
 import { OnEvent } from '@nestjs/event-emitter';
 import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
 import { Readable } from 'typeorm/platform/PlatformTools';
+import { InvoiceGeneratorService } from './invoice-generator.service';
 
 @Injectable()
 export class InvoiceService {
@@ -39,7 +39,6 @@ export class InvoiceService {
 
     const pdfBuffer =
       await this.invoiceGeneratorService.generateInvoicePDF(invoiceData);
-       );
 
     invoice = this.invoiceRepository.create({
       orderId,
@@ -62,9 +61,10 @@ export class InvoiceService {
       filename: '',
       path: '',
     };
- this.logger.debug(
-      `Generated PDF for invoice ${invoiceData.invoiceNumber}, size: ${pdfBuffer.length} bytes`,
 
+    this.logger.debug(
+      `Generated PDF for invoice ${invoiceData.invoiceNumber}, size: ${pdfBuffer.length} bytes`,
+    );
     await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
       file,
       metadata: { targetId: invoice.id.toString(), targetType: 'invoice' },

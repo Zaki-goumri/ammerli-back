@@ -4,9 +4,12 @@ import { INVOICE_JOBS } from 'src/common/constants/jobs';
 import { QUEUE_NAME } from 'src/common/constants/queues';
 import { Logger } from '@nestjs/common';
 import { GenerateInvoiceDto } from './dto/generate-invoice.dto';
-import { InvoiceGeneratorService } from 'src/core/order/invoice/services/invoice-generator.service';
+import { InvoiceGeneratorService } from 'src/core/invoice/services/invoice-generator.service';
 import { NotificationsService } from 'src/core/notifications/notifications.service';
-import { NotificationType } from 'src/core/notifications/enums/notification-type.enum';
+import {
+  NOTIFICATION_TYPE,
+  NotificationType,
+} from 'src/core/notifications/enums/notification-type.enum';
 
 @Processor(QUEUE_NAME.INVOICE)
 export class InvoiceProcessor extends WorkerHost {
@@ -24,14 +27,13 @@ export class InvoiceProcessor extends WorkerHost {
     switch (job.name) {
       case INVOICE_JOBS.GENERATE_INVOICE:
         this.logger.log(`Generating invoice for order ID: ${job.data.orderId}`);
-        const { invoicePath, buyerId } = await this.invoiceGeneratorService.generateInvoice(
-          job.data.orderId,
+        const invoicePath = await this.invoiceGeneratorService.generateInvoice(
+          job.data.orderId as number,
         );
         return {
           message: 'Invoice generated successfully',
           invoicePath,
           orderId: job.data.orderId,
-          buyerId,
         };
       default:
         return Promise.resolve({
@@ -44,30 +46,41 @@ export class InvoiceProcessor extends WorkerHost {
   @OnWorkerEvent('completed')
   async onCompleted(job: Job<GenerateInvoiceDto>) {
     this.logger.log(`Invoice generation job completed: ${job.id}`);
-    const { orderId, invoicePath, buyerId } = job.returnvalue;
+    const { orderId } = job.data;
+
+    const buyerId =
+      await this.invoiceGeneratorService.getBuyerIdFromOrderId(orderId);
 
     await this.notificationsService.sendNotification(
       'Invoice Generated',
-      `Your invoice for order ${orderId} has been generated and is available at ${invoicePath}.`,
+      `Your invoice for order ${orderId} has been generated and is available.`,
       buyerId,
-      NotificationType.ORDERS,
+      NOTIFICATION_TYPE.ORDERS,
     );
-    this.logger.log(`Notification sent for invoice generation for order ${orderId}`);
+
+    this.logger.log(
+      `Notification sent for invoice generation for order ${orderId}`,
+    );
   }
 
   @OnWorkerEvent('failed')
   async onFailed(job: Job<GenerateInvoiceDto>, error: Error) {
-    this.logger.error(`Invoice generation job failed: ${job.id}, Error: ${error.message}`);
+    this.logger.error(
+      `Invoice generation job failed: ${job.id}, Error: ${error.message}`,
+    );
     const { orderId } = job.data;
 
-    const buyerId = await this.invoiceGeneratorService.getBuyerIdFromOrderId(orderId);
+    const buyerId =
+      await this.invoiceGeneratorService.getBuyerIdFromOrderId(orderId);
 
     await this.notificationsService.sendNotification(
       'Invoice Generation Failed',
       `Failed to generate invoice for order ${orderId}. Please contact support.`,
       buyerId,
-      NotificationType.ORDERS,
+      NOTIFICATION_TYPE.ORDERS,
     );
-    this.logger.log(`Failure notification sent for invoice generation for order ${orderId}`);
+    this.logger.log(
+      `Failure notification sent for invoice generation for order ${orderId}`,
+    );
   }
 }

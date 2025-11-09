@@ -7,7 +7,7 @@ import { ChargiliModule } from './chargili/chargili.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import chargiliConfig from 'src/config/chargili.config';
-import { InvoiceModule } from './order/invoice/invoice.module';
+import { InvoiceModule } from 'src/core/invoice/invoice.module';
 
 @Module({
   imports: [
