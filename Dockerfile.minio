@@ -1,0 +1,7 @@
+FROM minio/minio:latest
+
+COPY minio-init.sh /minio-init.sh
+
+RUN chmod +x /minio-init.sh
+
+ENTRYPOINT ["/bin/sh", "/minio-init.sh"]

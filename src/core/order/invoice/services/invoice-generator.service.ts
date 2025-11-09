@@ -106,7 +106,6 @@ export class InvoiceGeneratorService {
                   ),
                 );
               } finally {
-                // Clean up temporary files
                 await fs
                   .unlink(texFilePath)
                   .catch((err) =>
@@ -149,7 +148,6 @@ export class InvoiceGeneratorService {
               reject(
                 new InternalServerErrorException('LaTeX compilation failed.'),
               );
-              // Clean up temporary files even on error
               await fs
                 .unlink(texFilePath)
                 .catch((err) =>

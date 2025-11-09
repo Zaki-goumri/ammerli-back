@@ -24,7 +24,9 @@ services:
       - "traefik.http.routers.traefik.entrypoints=web"
 
   minio:
-    image: minio/minio:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.minio
     container_name: minio
     ports:
       - "9000:9000"
@@ -35,10 +37,7 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
       BUCKET_NAME: ${MINIO_BUCKET_NAME:-mybucket}
     volumes:
-      - minio-data:/data 
-      - ./minio-init.sh:/minio-init.sh:ro
-    entrypoint: /bin/sh
-    command:  ./minio-init.sh
+      - minio-data:/data
     networks:
       - proxy
       - internal
@@ -48,26 +47,21 @@ services:
       timeout: 5s
       retries: 3
     labels:
-      # Fix 1: Enable Traefik for MinIO service
+      # TODO: change the Host rules in production
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
-      
-      # MinIO Console (Web UI) on minio.localhost
       - "traefik.http.routers.minio-console.rule=Host(`minio.localhost`)"
       - "traefik.http.routers.minio-console.entrypoints=web"
-      - "traefik.http.routers.minio-console.priority=200" # High priority for specific host
+      - "traefik.http.routers.minio-console.priority=200"
       - "traefik.http.routers.minio-console.service=minio-console-svc"
-      - "traefik.http.services.minio-console-svc.loadbalancer.server.port=9001" # Port for the Console
+      - "traefik.http.services.minio-console-svc.loadbalancer.server.port=9001"
       - "traefik.http.routers.minio-console.middlewares=minio-headers"
-      
-      # MinIO API (FIXED: Use PathPrefix for single Ngrok URL) TODO: change it in production
       - "traefik.http.routers.minio-api.rule=HostRegexp(`{host:.+}`) && PathPrefix(`/minio-data`)"
       - "traefik.http.routers.minio-api.entrypoints=web"
-      - "traefik.http.routers.minio-api.priority=2000" # MUST be higher than the server router
+      - "traefik.http.routers.minio-api.priority=2000"
       - "traefik.http.routers.minio-api.service=minio-api-svc"
       - "traefik.http.services.minio-api-svc.loadbalancer.server.port=9000"
       - "traefik.http.routers.minio-api.middlewares=minio-path-strip@docker"
-      
       - "traefik.http.middlewares.minio-path-strip.stripprefix.prefixes=/minio-data"
   server:
     container_name: server
