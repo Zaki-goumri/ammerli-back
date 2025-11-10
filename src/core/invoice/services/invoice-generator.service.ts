@@ -177,10 +177,10 @@ export class InvoiceGeneratorService implements OnModuleInit {
     try {
       const logoPath = path.join(
         process.cwd(),
-        'src/core/invoice/templates/assets/logo.svg',
+        'src/core/invoice/templates/assets/logo.png',
       );
       const file = await fs.readFile(logoPath);
-      return `data:image/svg+xml;base64,${file.toString('base64')}`;
+      return `data:image/png;base64,${file.toString('base64')}`;
     } catch (err) {
       this.logger.warn('Logo file not found or failed to load');
       return '';

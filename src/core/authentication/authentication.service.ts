@@ -15,6 +15,9 @@ import { AuthResDto } from './dtos/response/refresh-token.dto';
 import { SendOtpDto } from './dtos/response/send-otp.dto';
 import { ValidateOtpDto } from './dtos/response/validate-otp.dto';
 import { BlackListService } from '../user/black-list/black-list.service';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { QUEUE_NAME } from 'src/common/constants/queues';
 
 /**
  * @class AuthenticationService
@@ -29,6 +32,7 @@ export class AuthenticationService {
     private readonly jwtService: JwtService,
     private readonly redisService: RedisService,
     private readonly blackListService: BlackListService,
+    @InjectQueue(QUEUE_NAME.SMS) private readonly smsQueue: Queue,
   ) {}
 
   /**
@@ -167,8 +171,10 @@ export class AuthenticationService {
       throw new ForbiddenException('This phone number is blacklisted.');
     }
     const otp = await this.generateAndSetOtp(phoneNumber);
-    //TODO: Send sms with OTP
-    this.logger.log(`OTP for ${phoneNumber}: ${otp}`);
+    await this.smsQueue.add('send', {
+      to: phoneNumber,
+      body: `Your OTP is: ${otp}`,
+    });
     return { message: `OTP sent to ${phoneNumber}` };
   }
 

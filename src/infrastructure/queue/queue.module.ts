@@ -11,6 +11,7 @@ import { ObjectStorageModule } from '../object-storage/object-storage.module';
 import { NotificationsModule } from 'src/core/notifications/notifications.module';
 import { InvoiceProcessor } from './invoice/invoice.processor';
 import { InvoiceModule } from 'src/core/invoice/invoice.module';
+import { SmsProcessor } from './sms/sms.processor';
 
 @Global()
 @Module({
@@ -43,7 +44,12 @@ import { InvoiceModule } from 'src/core/invoice/invoice.module';
       })),
     ),
   ],
-  providers: [UploadProcessor, NotificationProcessor, InvoiceProcessor],
+  providers: [
+    UploadProcessor,
+    NotificationProcessor,
+    InvoiceProcessor,
+    SmsProcessor,
+  ],
   exports: [BullModule],
 })
 export class QueueModule {}
