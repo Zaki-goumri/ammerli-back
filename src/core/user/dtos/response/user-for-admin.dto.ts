@@ -13,4 +13,10 @@ export class UserForAdminDto {
 
   @ApiProperty({ description: 'The role of the user', enum: USER_ROLES })
   role: UserRole;
+
+  @ApiProperty({ 
+    description: 'Whether the user is blacklisted',
+    example: false,
+  })
+  isBlacklisted: boolean;
 }

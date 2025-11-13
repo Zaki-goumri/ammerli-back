@@ -87,6 +87,14 @@ export class User extends BaseEntity {
   @DeleteDateColumn()
   deletedAt?: Date;
 
+  @ApiPropertyOptional({
+    description: 'The timestamp when the user was blacklisted.',
+    type: 'string',
+    format: 'date-time',
+  })
+  @Column({ type: 'timestamp', nullable: true, default: null })
+  blackListedAt?: Date;
+
   @OneToMany(() => Token, (token) => token.user)
   tokens?: Token[];
 }

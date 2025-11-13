@@ -1,35 +1,22 @@
-import {
-  forwardRef,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   PaginationQueryDto,
   PaginationResponseDto,
 } from 'src/common/dtos/pagination.dto';
-import { Repository } from 'typeorm';
-import { UserService } from '../user.service';
+import { In, IsNull, Not, Repository } from 'typeorm';
+import { User } from '../entities/user.entity';
 import { BlackListDto } from './dtos/black-list.dto';
 import { GetBlackListedUserDto } from './dtos/get-black-listed-user.dto';
-import { BlackList } from './entities/black-list.entity';
-import { User } from '../entities/user.entity';
 import { RedisService } from 'nestjs-redis-client';
 import { ConfigService } from '@nestjs/config';
+import { UserRole } from 'src/common/enums/user-role.enum';
 
-/**
- * @class BlackListService
- * @description Manages operations related to blacklisting users, including adding, retrieving,
- *              restoring, and checking the blacklist status of phone numbers.
- */
 @Injectable()
 export class BlackListService {
   constructor(
-    @InjectRepository(BlackList)
-    private readonly blackListRepository: Repository<BlackList>,
-    @Inject(forwardRef(() => UserService))
-    private readonly userService: UserService,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
     private readonly redisService: RedisService,
     private readonly configService: ConfigService,
   ) {}
@@ -42,72 +29,42 @@ export class BlackListService {
     return `${this.CACHE_KEY_PREFIX}:${phoneNumber}`;
   }
 
-  /**
-   * @method create
-   * @description Adds a user to the blacklist and soft-deletes their user account.
-   * @param {number} userId - The ID of the user to blacklist.
-   * @returns {Promise<BlackListDto>} The DTO of the newly created blacklist entry.
-   */
   async create(userId: number): Promise<BlackListDto> {
-    const user = await this.userService.findUserEntityById(userId); // Fetch user to get phone number for cache invalidation
-    const blackListItem = this.blackListRepository.create({ userId });
-    const savedItem = await this.blackListRepository.save(blackListItem);
-    await this.userService.deleteUser(userId);
-    await this.redisService.del(BlackListService.getCacheKey(user.phoneNumber)); // Invalidate cache
+    const user = await this.userRepo.findOneBy({ id: userId });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found.`);
+    }
+    user.blackListedAt = new Date();
+    const savedUser = await this.userRepo.save(user);
+    await this.redisService.del(BlackListService.getCacheKey(user.phoneNumber));
     return {
-      id: savedItem.id,
-      userId: savedItem.userId,
+      id: savedUser.id,
+      userId: savedUser.id,
     };
   }
 
-  /**
-   * @method getManyWithPagination
-   * @description Retrieves a paginated list of blacklisted users with their details.
-   * @param {PaginationQueryDto} paginationQuery - Pagination parameters (limit, page).
-   * @returns {Promise<PaginationResponseDto<GetBlackListedUserDto>>} A paginated list of blacklisted user DTOs.
-   */
   async getManyWithPagination(
     paginationQuery: PaginationQueryDto,
   ): Promise<PaginationResponseDto<GetBlackListedUserDto>> {
     const { limit, page } = paginationQuery;
 
-    const [blackList, total] = await this.blackListRepository.findAndCount({
-      order: { createdAt: 'DESC' },
+    const [users, total] = await this.userRepo.findAndCount({
+      where: {
+        blackListedAt: Not(IsNull()),
+        deletedAt: IsNull(),
+      },
+      order: { blackListedAt: 'DESC' },
       take: limit,
       skip: (page - 1) * limit,
     });
 
-    if (blackList.length === 0) {
-      return {
-        meta: {
-          total,
-          page,
-          limit,
-          totalPages: 0,
-          hasNextPage: false,
-        },
-        data: [],
-      };
-    }
-
-    const userIds = blackList.map((bl) => bl.userId);
-    const users = await this.blackListRepository.manager
-      .createQueryBuilder(User, 'user')
-      .where('user.id IN (:...ids)', { ids: userIds })
-      .withDeleted()
-      .getMany();
-
-    const userMap = new Map(users.map((u) => [u.id, u]));
-
-    const blackListDtos: GetBlackListedUserDto[] = blackList.map((item) => {
-      const user = userMap.get(item.userId);
-      return {
-        id: item.id,
-        userId: item.userId,
-        name: user?.name as string,
-        phoneNumber: user?.phoneNumber as string,
-      };
-    });
+    const blackListDtos: GetBlackListedUserDto[] = users.map((user) => ({
+      id: user.id,
+      userId: user.id,
+      name: user.name as string,
+      role: user.role as UserRole,
+      phoneNumber: user.phoneNumber,
+    }));
 
     return {
       meta: {
@@ -121,33 +78,25 @@ export class BlackListService {
     };
   }
 
-  /**
-   * @method restore
-   * @description Removes a user from the blacklist and restores their soft-deleted user account.
-   * @param {number} userId - The ID of the user to restore.
-   * @returns {Promise<{ message: string }>} A success message.
-   * @throws {NotFoundException} If the user is not found in the blacklist.
-   */
   async restore(userId: number): Promise<{ message: string }> {
-    const blackListEntry = await this.blackListRepository.findOneBy({ userId });
-    if (!blackListEntry) {
+    const user = await this.userRepo.findOne({
+      where: {
+        id: userId,
+        blackListedAt: Not(IsNull()),
+        deletedAt: IsNull(),
+      },
+    });
+    if (!user) {
       throw new NotFoundException(
-        `User with ID ${userId} is not in the blacklist.`,
+        `Blacklisted user with ID ${userId} not found or already deleted.`,
       );
     }
-    const user = await this.userService.findUserEntityById(userId); // Fetch user to get phone number for cache invalidation
-    await this.blackListRepository.delete({ userId });
-    await this.userService.restoreUser(userId);
-    await this.redisService.del(BlackListService.getCacheKey(user.phoneNumber)); // Invalidate cache
-    return { message: 'User restored and removed from blacklist successfully' };
+    user.blackListedAt = undefined;
+    await this.userRepo.save(user);
+    await this.redisService.del(BlackListService.getCacheKey(user.phoneNumber));
+    return { message: 'User removed from blacklist successfully' };
   }
 
-  /**
-   * @method isPhoneNumberBlacklisted
-   * @description Checks if a given phone number belongs to a blacklisted user.
-   * @param {string} phoneNumber - The phone number to check.
-   * @returns {Promise<boolean>} True if the phone number is blacklisted, false otherwise.
-   */
   async isPhoneNumberBlacklisted(phoneNumber: string): Promise<boolean> {
     const cachedStatus = await this.redisService.get<boolean>(
       BlackListService.getCacheKey(phoneNumber),
@@ -156,25 +105,48 @@ export class BlackListService {
       return cachedStatus;
     }
 
-    const user =
-      await this.userService.findUserByPhoneNumberWithDeleted(phoneNumber);
-    if (!user) {
-      await this.redisService.set(
-        BlackListService.getCacheKey(phoneNumber),
-        false,
-        this.CACHE_TTL,
-      );
-      return false;
-    }
-    const count = await this.blackListRepository.count({
-      where: { userId: user.id },
+    const user = await this.userRepo.findOne({
+      where: { phoneNumber },
     });
-    const isBlacklisted = count > 0;
+
+    const isBlacklisted = !!user && !!user?.blackListedAt && !user?.deletedAt;
+
     await this.redisService.set(
       BlackListService.getCacheKey(phoneNumber),
       isBlacklisted,
       this.CACHE_TTL,
     );
     return isBlacklisted;
+  }
+
+  async bulkDelete(userIds: number[]): Promise<{ deletedCount: number }> {
+    const users = await this.userRepo.find({
+      where: {
+        id: In(userIds),
+        blackListedAt: Not(IsNull()),
+        deletedAt: IsNull(),
+      },
+    });
+
+    if (users.length === 0) {
+      throw new NotFoundException(
+        'No blacklisted users found with the provided IDs.',
+      );
+    }
+
+    const currentDate = new Date();
+    users.forEach((user) => {
+      user.deletedAt = currentDate;
+    });
+
+    await this.userRepo.save(users);
+
+    await Promise.allSettled(
+      users.map((user) =>
+        this.redisService.del(BlackListService.getCacheKey(user.phoneNumber)),
+      ),
+    );
+
+    return { deletedCount: users.length };
   }
 }

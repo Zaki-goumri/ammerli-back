@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
@@ -28,6 +29,8 @@ import { MessageDto } from 'src/core/user/dtos/response/message.dto';
 import { BlackListService } from './black-list.service';
 import { BlackListDto } from './dtos/black-list.dto';
 import { GetBlackListedUserDto } from './dtos/get-black-listed-user.dto';
+import { BulkDeleteBlacklistedUsersDto } from './dtos/bulk-delete-blacklisted-users.dto';
+import { BulkDeleteResponseDto } from './dtos/bulk-delete-response.dto';
 
 @ApiTags('User-Black-List')
 @ApiBearerAuth()
@@ -82,12 +85,33 @@ export class BlackListController {
     summary: 'Restore a user and remove them from the blacklist',
   })
   @ApiOkResponse({
-    description: 'User restored and removed from blacklist successfully',
+    description: 'User removed from blacklist successfully',
     type: MessageDto,
   })
   restore(
     @Param('userId', ParseIntPipe) userId: number,
   ): Promise<{ message: string }> {
     return this.blackListService.restore(userId);
+  }
+
+  /**
+   * @method bulkDelete
+   * @description Soft-deletes multiple blacklisted users at once.
+   * @param {BulkDeleteBlacklistedUsersDto} dto - Array of user IDs to soft-delete.
+   * @returns {Promise<BulkDeleteResponseDto>} The count of successfully deleted users.
+   */
+  @Delete('bulk')
+  @ApiOperation({
+    summary: 'Soft-delete multiple blacklisted users',
+    description: 'Soft-deletes (sets deletedAt) for multiple blacklisted users. Only works on users who are blacklisted and not already deleted.',
+  })
+  @ApiOkResponse({
+    description: 'Blacklisted users soft-deleted successfully',
+    type: BulkDeleteResponseDto,
+  })
+  bulkDelete(
+    @Body() dto: BulkDeleteBlacklistedUsersDto,
+  ): Promise<BulkDeleteResponseDto> {
+    return this.blackListService.bulkDelete(dto.userIds);
   }
 }

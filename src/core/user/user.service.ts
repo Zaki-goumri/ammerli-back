@@ -13,7 +13,7 @@ import {
   PaginationResponseDto,
 } from 'src/common/dtos/pagination.dto';
 import { User } from './entities/user.entity';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { Address } from './entities/address.entity';
 import { RedisService } from 'nestjs-redis-client';
 import { QUEUE_NAME } from 'src/common/constants/queues';
@@ -31,11 +31,15 @@ import { UpdateUserDto } from './dtos/update-user.dto';
 import { UserDto } from './dtos/response/user.dto';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { OnEvent } from '@nestjs/event-emitter';
-import { UserRole } from 'src/common/enums/user-role.enum';
+import { USER_ROLES, UserRole } from 'src/common/enums/user-role.enum';
 import { UserDetailForAdminDto } from './dtos/response/user-detail-for-admin.dto';
 import { ConfigService } from '@nestjs/config';
-import { BlackListService } from './black-list/black-list.service';
 import { plainToInstance } from 'class-transformer';
+import { NotificationsService } from '../notifications/notifications.service';
+import { forkJoin, from, lastValueFrom, Observable, of } from 'rxjs';
+import { catchError, map, retry } from 'rxjs/operators';
+import { NOTIFICATION_TYPE } from '../notifications/enums/notification-type.enum';
+import { MessageDto } from './dtos/response/message.dto';
 
 /**
  * @class UserService
@@ -54,8 +58,8 @@ export class UserService {
     @InjectQueue(QUEUE_NAME.UPLOAD)
     private readonly uploadQueue: Queue,
     private readonly objectService: ObjectService,
-    private readonly blackListService: BlackListService,
     private readonly configService: ConfigService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   private readonly logger = new Logger(UserService.name);
@@ -87,12 +91,6 @@ export class UserService {
    * @throws {ConflictException} If a user with the provided phone number already exists.
    */
   async create(dto: CreateUserDto): Promise<User> {
-    const isBlacklisted = await this.blackListService.isPhoneNumberBlacklisted(
-      dto.phoneNumber,
-    );
-    if (isBlacklisted) {
-      throw new ForbiddenException('This phone number is blacklisted.');
-    }
     return this.entityManager.transaction(async (em) => {
       const userRepo = em.getRepository(User);
 
@@ -254,6 +252,7 @@ export class UserService {
     const user = await this.userRepo.findOneOrFail({
       where: { id: userId },
       relations: ['addresses'],
+      withDeleted: true,
       order: {
         addresses: {
           createdAt: 'DESC',
@@ -426,6 +425,114 @@ export class UserService {
   }
 
   /**
+   * @method deleteBulk
+   * @description Soft-deletes multiple users by their IDs, handles associated profile pictures, and notifies on partial failures.
+   * @param {number[]} userIds - An array of user IDs to soft-delete.
+   * @param {number} currentAdminId - The ID of the admin initiating the bulk delete.
+   * @returns {Promise<MessageDto>} A message summarizing the bulk delete operation.
+   * @throws {NotFoundException} If no valid users are found for deletion.
+   * @throws {ForbiddenException} If the operation would result in zero administrators.
+   */
+  async deleteBulk(
+    userIds: number[],
+    currentAdminId: number,
+  ): Promise<MessageDto> {
+    const filteredUserIds = userIds.filter((id) => id !== currentAdminId);
+    if (filteredUserIds.length === 0 && userIds.length > 0) {
+      return { message: 'Admin cannot delete their own account.' };
+    }
+
+    const usersToDelete = await this.userRepo.find({
+      where: { id: In(filteredUserIds) },
+    });
+
+    if (usersToDelete.length === 0) {
+      throw new NotFoundException('No valid users found for deletion.');
+    }
+
+    // 2. "At least one admin" check
+    const adminsToDeleteCount = usersToDelete.filter(
+      (user) => user.role === USER_ROLES.ADMIN,
+    ).length;
+    const totalAdminsCount = await this.userRepo.count({
+      where: { role: USER_ROLES.ADMIN },
+    });
+
+    if (totalAdminsCount - adminsToDeleteCount < 1) {
+      throw new ForbiddenException('Cannot delete all admins in the system.');
+    }
+
+    // 3. Object Storage Deletion with RxJS
+    const profilePicsToDelete = usersToDelete
+      .map((user) => user.profilePic)
+      .filter((pic): pic is string => !!pic);
+
+    if (profilePicsToDelete.length > 0) {
+      const deleteJobs$: Observable<any>[] = profilePicsToDelete.map((pic) =>
+        from(
+          this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILE, {
+            objectName: pic,
+          }),
+        ).pipe(retry(3)),
+      );
+      await lastValueFrom(forkJoin(deleteJobs$));
+      this.logger.log(
+        `Queued ${profilePicsToDelete.length} profile pictures for deletion.`,
+      );
+    }
+
+    const deletionObservables = usersToDelete.map((user) =>
+      from(this.userRepo.softDelete(user.id)).pipe(
+        retry(3),
+        map(() => ({ id: user.id, status: 'fulfilled' })),
+        catchError((error) => {
+          this.logger.error(
+            `Failed to delete user ${user.id} after 3 retries`,
+            error,
+          );
+          return of({ id: user.id, status: 'rejected' });
+        }),
+      ),
+    );
+
+    const results = await lastValueFrom(forkJoin(deletionObservables));
+
+    const successfulDeletes: number[] = [];
+    const failedDeletes: number[] = [];
+
+    results.forEach((result) => {
+      if (result.status === 'fulfilled') {
+        successfulDeletes.push(result.id);
+      } else {
+        failedDeletes.push(result.id);
+      }
+    });
+
+    const cacheKeys = successfulDeletes.flatMap((id) => [
+      UserService.getCacheKey(id, 'id'),
+      UserService.getCacheKey(id, 'admin-details'),
+    ]);
+    if (cacheKeys.length > 0) {
+      Promise.allSettled(cacheKeys.map((key) => this.redisService.del(key)));
+    }
+
+    if (failedDeletes.length > 0) {
+      await this.notificationsService.sendNotification(
+        'Bulk Deletion Partially Failed',
+        `Failed to delete the following user IDs: ${failedDeletes.join(
+          ', ',
+        )}. Please check the logs.`,
+        currentAdminId,
+        NOTIFICATION_TYPE.ADMIN_ALERTS,
+      );
+    }
+
+    return {
+      message: `Bulk delete process completed. Successfully deleted: ${successfulDeletes.length}. Failed: ${failedDeletes.length}.`,
+    };
+  }
+
+  /**
    * @method restoreUser
    * @description Restores a soft-deleted user by their ID.
    * @param {number} id - The ID of the user to restore.
@@ -590,7 +697,10 @@ export class UserService {
    * @returns {Promise<{ message: string }>} A success message.
    * @throws {BadRequestException} If the user attempts to delete their only address.
    */
-  async deleteAddress(userId: number, addressId: number) {
+  async deleteAddress(
+    userId: number,
+    addressId: number,
+  ): Promise<{ message: string }> {
     const userAddressesCount = await this.addressRepo.count({
       where: { userId },
     });
@@ -640,7 +750,14 @@ export class UserService {
       .createQueryBuilder('user')
       .where('user.id != :currentUserId', { currentUserId })
       .andWhere('user.deletedAt IS NULL')
-      .select(['user.id', 'user.name', 'user.phoneNumber', 'user.role'])
+      .select([
+        'user.id',
+        'user.name',
+        'user.phoneNumber',
+        'user.role',
+        'user.createdAt',
+        'user.blackListedAt',
+      ])
       .orderBy('user.createdAt', 'DESC')
       .take(limit)
       .skip((page - 1) * limit);
@@ -655,6 +772,7 @@ export class UserService {
       name: user?.name ?? '',
       phoneNumber: user?.phoneNumber,
       role: user?.role as UserRole,
+      isBlacklisted: !!user?.blackListedAt,
     }));
 
     return {

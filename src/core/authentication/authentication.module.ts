@@ -14,8 +14,10 @@ import { DefaultOtpStrategy } from './strategies/otp/default-otp.strategy';
 import { SmsSakOtpStrategy } from './strategies/otp/smssak-otp.strategy';
 import { ConfigService } from '@nestjs/config';
 
+import { BlackListModule } from '../user/black-list/black-list.module';
+
 @Module({
-  imports: [UserModule, JwtModule, PassportModule, QueueModule],
+  imports: [UserModule, JwtModule, PassportModule, QueueModule, BlackListModule],
   controllers: [AuthenticationController],
   providers: [
     AuthenticationService,
@@ -33,8 +35,8 @@ import { ConfigService } from '@nestjs/config';
         smsSakStrategy: SmsSakOtpStrategy,
       ) => {
         const provider = configService.get<string>('OTP_PROVIDER');
-
-        if (provider === 'SMSSAK') {
+        //TODO: change 'SMSSAK' to the actual value you want to use to select the SmsSak strategy
+        if (provider !== 'SMSSAK') {
           return smsSakStrategy;
         }
         return defaultStrategy;

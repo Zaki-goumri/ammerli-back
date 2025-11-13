@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { NotificationsController } from './notifications.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -7,6 +7,7 @@ import { Notification } from './entities/notification.entity';
 import { FirebaseModule } from 'src/infrastructure/firebase/firebase.module';
 import { ScheduleModule } from '@nestjs/schedule';
 
+@Global()
 @Module({
   imports: [
     TypeOrmModule.forFeature([Token, Notification]),

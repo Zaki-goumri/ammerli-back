@@ -1,6 +1,4 @@
 import { USER_ROLES } from '../common/enums/user-role.enum';
-import { ORDER_STATUS } from 'src/core/order/enums/delivery.enum';
-import { PAYMENT_WAY } from 'src/core/order/enums/payment-way.enum';
 import { ORDER_PAYMENT_METHOD } from 'src/core/order/enums/order-payment-method.enum';
 
 export const users = [
@@ -10,6 +8,7 @@ export const users = [
     supermarketName: 'Admin Market',
     role: USER_ROLES.ADMIN,
     isRegistered: true,
+    countryCode: '+213',
   },
   {
     phoneNumber: '0557654321',
@@ -17,6 +16,7 @@ export const users = [
     supermarketName: 'Wholesaler Market',
     role: USER_ROLES.WHOLESELLER,
     isRegistered: true,
+    countryCode: '+213',
   },
   {
     phoneNumber: '0551122334',
@@ -24,6 +24,7 @@ export const users = [
     supermarketName: 'Supermarket A',
     role: USER_ROLES.SUPERMARKET,
     isRegistered: true,
+    countryCode: '+213',
   },
 ];
 
@@ -52,21 +53,23 @@ export const brands = [
 ];
 
 export const categories = [
-  { label: 'Beverages', pictureUrl: 'https://example.com/beverages.jpg' },
-  { label: 'Snacks', pictureUrl: 'https://example.com/snacks.jpg' },
-  { label: 'Dairy', pictureUrl: 'https://example.com/dairy.jpg' },
+  { label: 'Beverages', pictureUrl: 'categories/beverages.jpg' },
+  { label: 'Snacks', pictureUrl: 'categories/snacks.jpg' },
+  { label: 'Dairy', pictureUrl: 'categories/dairy.jpg' },
 ];
 
 export const products = [
   {
     name: 'Coca-Cola 1L',
     description: 'A refreshing carbonated soft drink.',
-    price: 1.5,
+    price: 150.0,
     quantity: 100,
     quantityPerBatch: 10,
+    specification: ['Volume: 1L', 'Carbonated', 'Refrigerate after opening'],
+    expirationDate: new Date('2025-12-31'),
     pictures: [
       {
-        url: 'https://example.com/coca-cola.jpg',
+        url: 'products/coca-cola-1l.jpg',
         isMain: true,
         status: 'completed',
       },
@@ -75,12 +78,14 @@ export const products = [
   {
     name: 'Lays Chips',
     description: 'Classic salted potato chips.',
-    price: 0.75,
+    price: 75.0,
     quantity: 200,
     quantityPerBatch: 20,
+    specification: ['Weight: 150g', 'Flavor: Classic Salted', 'Crispy texture'],
+    expirationDate: new Date('2025-06-30'),
     pictures: [
       {
-        url: 'https://example.com/lays.jpg',
+        url: 'products/lays-chips.jpg',
         isMain: true,
         status: 'completed',
       },
@@ -89,12 +94,14 @@ export const products = [
   {
     name: 'Ifri Gazouz 1L',
     description: 'A popular Algerian carbonated soft drink.',
-    price: 1.25,
+    price: 125.0,
     quantity: 150,
     quantityPerBatch: 15,
+    specification: ['Volume: 1L', 'Made in Algeria', 'Natural flavors'],
+    expirationDate: new Date('2025-11-30'),
     pictures: [
       {
-        url: 'https://example.com/ifri.jpg',
+        url: 'products/ifri-gazouz-1l.jpg',
         isMain: true,
         status: 'completed',
       },
@@ -104,7 +111,7 @@ export const products = [
 
 export const orders = [
   {
-    paymentWay: PAYMENT_WAY.CIB,
+    paymentWay: ORDER_PAYMENT_METHOD.EPAYMENT,
     items: [
       { productName: 'Coca-Cola 1L', quantity: 2 },
       { productName: 'Lays Chips', quantity: 1 },

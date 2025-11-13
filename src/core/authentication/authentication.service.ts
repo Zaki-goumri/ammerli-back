@@ -21,7 +21,6 @@ import { RegistrationTokenPayload } from './interfaces/access-token-payload.inte
 import { UserDto } from '../user/dtos/response/user.dto';
 import { plainToInstance } from 'class-transformer';
 import { OtpStrategy } from './strategies/otp/otp.strategy';
-import { SmsSakOtpStrategy } from './strategies/otp/smssak-otp.strategy';
 
 /**
  * @class AuthenticationService
@@ -36,7 +35,7 @@ export class AuthenticationService {
     private readonly jwtService: JwtService,
     private readonly firebaseService: FirebaseService,
     private readonly blackListService: BlackListService,
-    private readonly otpStrategy: SmsSakOtpStrategy,
+    private readonly otpStrategy: OtpStrategy,
   ) {}
 
   /**
@@ -49,11 +48,13 @@ export class AuthenticationService {
   async validateOtp(dto: OtpValidationDto): Promise<ValidateOtpDto> {
     const { phoneNumber, otp } = dto;
 
+    await this.checkBlacklistAndThrow(phoneNumber);
+
     const isValid = await this.otpStrategy.verify(phoneNumber, otp);
     if (!isValid) {
       throw new UnauthorizedException('Invalid or expired OTP');
     }
-    await this.checkBlacklistAndThrow(phoneNumber);
+
     const user =
       await this.userService.findByPhoneNumberWithoutException(phoneNumber);
     if (!user) {
@@ -84,6 +85,7 @@ export class AuthenticationService {
       );
 
     const phoneNumber = transformPhoneNumber(decodedToken.phone_number);
+    await this.checkBlacklistAndThrow(phoneNumber);
     const user =
       await this.userService.findByPhoneNumberWithoutException(phoneNumber);
 
@@ -173,11 +175,7 @@ export class AuthenticationService {
    * @returns {Promise<{ message: string }>} A confirmation message.
    */
   async sendVerificationCode(phoneNumber: string): Promise<SendOtpDto> {
-    const isBlacklisted =
-      await this.blackListService.isPhoneNumberBlacklisted(phoneNumber);
-    if (isBlacklisted) {
-      throw new ForbiddenException('This phone number is blacklisted.');
-    }
+    await this.checkBlacklistAndThrow(phoneNumber);
     await this.otpStrategy.send(phoneNumber);
     return { message: `OTP sent to ${phoneNumber}` };
   }

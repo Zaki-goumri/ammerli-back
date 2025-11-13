@@ -51,6 +51,7 @@ import {
   PaginationResponseDto,
 } from 'src/common/dtos/pagination.dto'; // Import pagination DTOs
 import { UserDetailForAdminDto } from './dtos/response/user-detail-for-admin.dto';
+import { BulkDeleteUserDto } from './dtos/bulk-delete.dto';
 
 @ApiTags('User')
 @ApiBearerAuth()
@@ -279,13 +280,37 @@ export class UserController {
     return this.userService.getUserDetailsForAdmin(userId);
   }
 
+  // ... (inside UserController class)
+
+  /**
+   * @method deleteBulkUsersByAdmin
+   * @description Soft-deletes multiple user accounts by an administrator.
+   * @param {BulkDeleteUserDto} dto - The DTO containing the user IDs to delete.
+   * @param {number} currentAdminId - The ID of the admin performing the action.
+   * @returns {Promise<MessageDto>} A confirmation message.
+   */
+  @Delete('/admin/bulk')
+  @ApiOperation({ summary: 'Bulk delete users by admin' })
+  @ApiOkResponse({
+    description: 'Successfully initiated bulk deletion of users.',
+    type: MessageDto,
+  })
+  @UseGuards(RoleGuard)
+  @Roles(USER_ROLES.ADMIN)
+  deleteBulkUsersByAdmin(
+    @Query() dto: BulkDeleteUserDto,
+    @USER('id') currentAdminId: number,
+  ): Promise<MessageDto> {
+    return this.userService.deleteBulk(dto.userIds, currentAdminId);
+  }
+
   /**
    * @method deleteUserByAdmin
    * @description Soft-deletes a specific user account by an administrator.
    * @param {number} userId - The ID of the user to delete.
    * @returns {Promise<MessageDto>} A confirmation message.
    */
-  @Delete('/admin/user/:id')
+  @Delete('/admin/:id')
   @ApiOperation({ summary: 'Delete user by admin' })
   @ApiOkResponse({
     description: 'Successfully delete user for admin',

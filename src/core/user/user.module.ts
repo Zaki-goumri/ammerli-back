@@ -11,10 +11,9 @@ import { InfrastructureModule } from 'src/infrastructure/infrastructure.module';
   imports: [
     TypeOrmModule.forFeature([User, Address]),
     forwardRef(() => InfrastructureModule),
-    forwardRef(() => BlackListModule),
   ],
   controllers: [UserController],
   providers: [UserService],
-  exports: [UserService, BlackListModule],
+  exports: [UserService],
 })
 export class UserModule {}

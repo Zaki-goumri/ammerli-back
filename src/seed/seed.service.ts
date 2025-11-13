@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../core/user/entities/user.entity';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Brand } from '../core/product/entities/brand.entity';
 import { Category } from '../core/product/entities/category.entity';
 import { Product } from '../core/product/entities/product.entity';
@@ -53,17 +53,36 @@ export class SeedService {
     private readonly trackingRepository: Repository<Tracking>,
     @InjectRepository(Address)
     private readonly addressRepository: Repository<Address>,
+    private readonly dataSource: DataSource,
   ) {}
 
+  async clearDatabase() {
+    console.log('Clearing existing data...');
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+
+    try {
+      await queryRunner.query(
+        'TRUNCATE TABLE "checkouts", "trackings", "order_products", "orders", "product_pictures", "products", "addresses", "categories", "brands", "users" RESTART IDENTITY CASCADE',
+      );
+      console.log('Database cleared successfully!');
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
   async seedUsers() {
+    console.log('Seeding users...');
     for (const userData of users) {
       const user = this.userRepository.create(userData);
       const savedUser = await this.userRepository.save(user);
       this.createdUsers.push(savedUser);
     }
+    console.log(`Created ${this.createdUsers.length} users`);
   }
 
   async seedAddresses() {
+    console.log('Seeding addresses...');
     for (let i = 0; i < addresses.length; i++) {
       const addressData = addresses[i];
       const user = this.createdUsers[i % this.createdUsers.length];
@@ -74,25 +93,31 @@ export class SeedService {
       const savedAddress = await this.addressRepository.save(address);
       this.createdAddresses.push(savedAddress);
     }
+    console.log(`Created ${this.createdAddresses.length} addresses`);
   }
 
   async seedBrands() {
+    console.log('Seeding brands...');
     for (const brandData of brands) {
       const brand = this.brandRepository.create(brandData);
       const savedBrand = await this.brandRepository.save(brand);
       this.createdBrands.push(savedBrand);
     }
+    console.log(`Created ${this.createdBrands.length} brands`);
   }
 
   async seedCategories() {
+    console.log('Seeding categories...');
     for (const categoryData of categories) {
       const category = this.categoryRepository.create(categoryData);
       const savedCategory = await this.categoryRepository.save(category);
       this.createdCategories.push(savedCategory);
     }
+    console.log(`Created ${this.createdCategories.length} categories`);
   }
 
   async seedProducts() {
+    console.log('Seeding products...');
     const wholesaler = this.createdUsers.find(
       (u) => u.role === USER_ROLES.WHOLESELLER,
     );
@@ -107,8 +132,9 @@ export class SeedService {
       const category =
         this.createdCategories[i % this.createdCategories.length];
 
+      const { pictures, ...productFields } = productData;
       const product = this.productRepository.create({
-        ...productData,
+        ...productFields,
         sellerId: wholesaler.id,
         brandId: brand.id,
         categoryId: category.id,
@@ -116,18 +142,22 @@ export class SeedService {
 
       const savedProduct = await this.productRepository.save(product);
 
-      for (const pictureData of productData.pictures) {
-        const picture = this.productPictureRepository.create({
-          ...pictureData,
-          productId: savedProduct.id,
-        });
-        await this.productPictureRepository.save(picture);
+      if (pictures && pictures.length > 0) {
+        for (const pictureData of pictures) {
+          const picture = this.productPictureRepository.create({
+            ...pictureData,
+            productId: savedProduct.id,
+          });
+          await this.productPictureRepository.save(picture);
+        }
       }
       this.createdProducts.push(savedProduct);
     }
+    console.log(`Created ${this.createdProducts.length} products`);
   }
 
   async seedOrders() {
+    console.log('Seeding orders...');
     const supermarket = this.createdUsers.find(
       (u) => u.role === USER_ROLES.SUPERMARKET,
     );
@@ -182,20 +212,27 @@ export class SeedService {
         orderId: savedOrder.id,
         chargiliCheckoutId: `chk_${Math.random().toString(36).substring(7)}`,
         isPaid: i % 2 === 0,
-        paymentWay: orderData.paymentWay as PaymentWay,
-        fees: 0.5,
+        paymentWay:
+          i % 2 === 0
+            ? ((i % 3 === 0 ? 'EDAHABIA' : 'CIB') as PaymentWay)
+            : undefined,
+        fees: i % 2 === 0 ? 0.5 : undefined,
         paidAt: i % 2 === 0 ? new Date() : undefined,
       });
       await this.checkoutRepository.save(checkout);
     }
+    console.log(`Created ${orders.length} orders with related data`);
   }
 
   async seedAll() {
+    console.log('Starting database seeding...');
+    await this.clearDatabase();
     await this.seedUsers();
     await this.seedAddresses();
     await this.seedBrands();
     await this.seedCategories();
     await this.seedProducts();
     await this.seedOrders();
+    console.log('Database seeding completed successfully!');
   }
 }

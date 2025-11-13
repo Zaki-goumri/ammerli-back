@@ -18,7 +18,6 @@ import { SmsProcessor } from './sms/sms.processor';
   imports: [
     EventEmitterModule,
     ObjectStorageModule,
-    NotificationsModule,
     FirebaseModule,
     InvoiceModule, // Re-adding forwardRef for InvoiceModule
     BullModule.forRootAsync({

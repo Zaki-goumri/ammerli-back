@@ -5,6 +5,7 @@ export const NOTIFICATION_TYPE = {
   LOW_STOCK: 'Low Stock',
   STATUS_UPDATE: 'Status Update',
   EXPIRING_SOON: 'Expiring Soon',
+  ADMIN_ALERTS: 'Admin Alerts',
 } as const;
 
 export type NotificationType =
