@@ -248,4 +248,60 @@ export class AnalyticsService {
 
     return formattedRaws;
   }
+
+  // Test methods
+  async getTestAnalytics() {
+    return {
+      orders: { count: 150, percentageChange: 15 },
+      revenue: { turnover: 25000 },
+      supermarkets: { todayActiveSuperMarkets: 50, percentageChange: 5 },
+      deliveredOrders: { count: 120, percentageChange: 10 },
+    };
+  }
+
+  async getTestMontlyTurnover() {
+    return [
+      { month: 'May', turnover: 3500 },
+      { month: 'Jun', turnover: 4200 },
+      { month: 'Jul', turnover: 5000 },
+      { month: 'Aug', turnover: 7500 },
+      { month: 'Sep', turnover: 5800 },
+      { month: 'Oct', turnover: 6200 },
+    ];
+  }
+
+  async getTestTopSellingProducts() {
+    return [
+      {
+        productId: 1,
+        totalQuantity: 120,
+        productImage:
+          'https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=800&auto=format&fit=crop',
+      },
+      {
+        productId: 2,
+        totalQuantity: 95,
+        productImage:
+          'https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=800&auto=format&fit=crop',
+      },
+      {
+        productId: 3,
+        totalQuantity: 80,
+        productImage:
+          'https://images.unsplash.com/photo-1580910051074-3eb694886505?q=80&w=800&auto=format&fit=crop',
+      },
+      {
+        productId: 4,
+        totalQuantity: 75,
+        productImage:
+          'https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=800&auto=format&fit=crop',
+      },
+      {
+        productId: 5,
+        totalQuantity: 60,
+        productImage:
+          'https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=800&auto=format&fit=crop',
+      },
+    ];
+  }
 }

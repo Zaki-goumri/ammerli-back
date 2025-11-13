@@ -1,30 +1,9 @@
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { RedisService } from 'nestjs-redis-client';
-import { RoleGuard } from '../authentication/guards/role.guard';
-import { Roles } from '../authentication/decorators/role.decorator';
-import { USER_ROLES } from 'src/common/enums/user-role.enum';
-import { OrderForAdminListItemDto } from './dtos/order-for-admin-list-item.dto';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
-import { QUEUE_NAME } from 'src/common/constants/queues';
-import { INVOICE_JOBS } from 'src/common/constants/jobs';
-import { GenerateInvoiceDto } from 'src/infrastructure/queue/invoice/dto/generate-invoice.dto';
-
-/**
- * @fileoverview This file contains the controller for handling order-related requests.
- * It defines routes for creating orders, handling payment webhooks, and retrieving user orders.
- * It uses decorators for routing, parameter validation, and Swagger documentation.
- *
- * @module OrderController
- */
-
 import {
   Body,
   Controller,
   HttpCode,
   Post,
   Res,
-  Req,
   Headers,
   Logger,
   Get,
@@ -44,7 +23,7 @@ import { OrderListItemDto } from './dtos/order-list-item.dto';
 import { PaginatedResponse } from 'src/common/dtos/pagination.dto';
 import { CreateOrderResDto } from './dtos/create-order.res.dto';
 import { CreateOrderDto } from './dtos/create-order.dto';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -52,15 +31,14 @@ import {
   ApiOperation,
   ApiOkResponse,
 } from '@nestjs/swagger';
-import { CheckoutService } from './services/checkout.service';
-import { PaymentWay } from './enums/payement-way.enum';
 import { CheckoutDataDto } from '../chargili/dtos/chargili-webhook.dto';
-import { extractCheckoutIdFromUrl } from './utils/extract-checkout-id.utils';
 import { AccessTokenGuard } from '../authentication/guards/access-token.guard';
 import { USER } from '../authentication/decorators/user.decorartor';
-import { NotificationsService } from '../notifications/notifications.service';
-import { NOTIFICATION_TYPE } from '../notifications/enums/notification-type.enum';
 import { PaymentInfoDto } from './dtos/payment-info.dto';
+import { USER_ROLES } from 'src/common/enums/user-role.enum';
+import { Roles } from '../authentication/decorators/role.decorator';
+import { RoleGuard } from '../authentication/guards/role.guard';
+import { OrderForAdminListItemDto } from './dtos/order-for-admin-list-item.dto';
 /**
  *
  * @class OrderController
@@ -68,50 +46,9 @@ import { PaymentInfoDto } from './dtos/payment-info.dto';
  * This controller is responsible for creating orders, handling payment webhooks, and retrieving user orders.
  * @ApiTags order
  */
-
-export type PaymentStatus =
-  | 'paid'
-  | 'failed'
-  | 'canceled'
-  | 'pending'
-  | 'error';
-export type CurrencyCode = 'dzd' | 'usd' | 'eur' | string; // Assuming 'dzd' is used, include common ones
-
-/**
- * Interface defining the minimal, essential data required by the Flutter client
- * to display the final payment result page. This data is temporarily stored in Redis.
- */
-export interface PaymentClientData {
-  /** The internal ID of the order/resource the payment belongs to. */
-  orderId: number;
-
-  /** The final status of the payment, used for routing the client to success/failure screen. */
-  status: string;
-
-  /** The amount paid (usually an integer representing cents/smallest unit). */
-  amount: number;
-
-  /** The currency code (e.g., 'dzd', 'usd'). */
-  currency: CurrencyCode;
-
-  /** The method used for payment (e.g., 'edahabia', 'cib', 'visa'). */
-  paymentMethod: string | null | undefined;
-
-  /** Optional error message/reason in case of payment failure. */
-  errorMessage?: string;
-}
-
 @Controller('order')
 export class OrderController {
-  constructor(
-    private readonly orderService: OrderService,
-    private readonly checkoutService: CheckoutService,
-    private readonly notificationService: NotificationsService,
-    private readonly eventEmitter: EventEmitter2,
-    private readonly redisService: RedisService,
-    @InjectQueue(QUEUE_NAME.INVOICE)
-    private readonly invoiceQueue: Queue<GenerateInvoiceDto>,
-  ) {}
+  constructor(private readonly orderService: OrderService) {}
   logger = new Logger(OrderController.name);
 
   /**
@@ -151,89 +88,17 @@ export class OrderController {
   async handleChargiliWebhook(
     @Body('data') data: CheckoutDataDto,
     @Headers() headers: Record<string, string>,
-    @Req() req: Request,
     @Res() res: Response,
   ) {
     this.logger.log('Received Chargili webhook');
-    const checkoutId = extractCheckoutIdFromUrl(data.checkout_url);
-    if (!checkoutId) {
-      this.logger.error(
-        `Invalid checkout URL received in webhook: ${data.checkout_url}`,
-      );
-      return res.status(400).send({ error: 'Invalid checkout URL' });
-    }
-    const isPaymentSuccessful = data.status === 'paid' ? true : false;
-    await this.checkoutService.updateCheckoutStatus(
-      checkoutId,
-      data.payment_method?.toUpperCase() as PaymentWay,
-      isPaymentSuccessful,
-      data.fees,
-      headers.authorization,
-    );
-
-    const orderId =
-      await this.checkoutService.findOrderIdByCheckoutId(checkoutId);
-    console.log('Webhook processed for order ID:', orderId);
-
-    const buyerId =
-      await this.checkoutService.findBuyerIdByCheckoutId(checkoutId);
-
-    if (isPaymentSuccessful) {
-      this.logger.log(
-        `Payment successful for checkout ID: ${checkoutId}. Order processed.`,
-      );
-      await this.notificationService.sendNotification(
-        'Payment Successful',
-        `Your payment for order with checkout ID ${checkoutId} has been received successfully.`,
-        buyerId,
-        NOTIFICATION_TYPE.ORDERS,
-      );
-
-      const finalDataForClient: PaymentClientData = {
-        orderId: orderId as number,
-        status: data.status,
-        amount: data.amount,
-        currency: data.currency,
-        paymentMethod: data.payment_method || null,
-      };
-      await this.redisService.set<PaymentClientData>(
-        `payment:result:${orderId}`,
-        finalDataForClient,
-        3600,
-      );
-      // Add job to invoice queue
-      await this.invoiceQueue.add(INVOICE_JOBS.GENERATE_INVOICE, {
-        orderId: orderId as number,
-      });
-      this.eventEmitter.emit('order.paid', orderId);
+    try {
+      console.log('Webhook data:', data);
+      await this.orderService.processWebhook(data, headers.authorization);
       return res.send({ received: true });
-    } else {
-      this.logger.warn(
-        `Payment failed for checkout ID: ${checkoutId}. Order not processed.`,
-      );
-      await this.notificationService.sendNotification(
-        'Payment Failed',
-        `Your payment for order with checkout ID ${checkoutId} has failed. Please try again.`,
-        buyerId,
-        NOTIFICATION_TYPE.ORDERS,
-      );
-
-      const finalDataForClient: PaymentClientData = {
-        orderId: orderId as number,
-        status: data.status,
-        amount: data.amount,
-        currency: data.currency,
-        paymentMethod: data.payment_method || null,
-        errorMessage: 'Payment failed or was canceled.',
-      };
-
-      await this.redisService.set<PaymentClientData>(
-        `payment:result:${orderId}`,
-        finalDataForClient,
-        3600,
-      );
-
-      return res.send({ received: true });
+    } catch (error) {
+      this.logger.error('Error processing webhook:', error);
+      // Depending on the error type, you might want to send a different status code
+      return res.status(400).send({ error: error.message });
     }
   }
 
@@ -295,39 +160,8 @@ export class OrderController {
     @Param('orderId') orderId: string,
     @Res() res: Response,
   ) {
-    if (!orderId) {
-      this.logger.error(`Redirect attempt without Order ID.`);
-      const genericFailureLink =
-        'amerli://payment/status?status=error&message=InvalidId';
-      return res.redirect(genericFailureLink);
-    }
-    const redisData = await this.redisService.get<PaymentClientData>(
-      `payment:result:${orderId}`,
-    );
-    const data: PaymentClientData | null = redisData ? redisData : null;
-    if (!data) {
-      this.logger.error(
-        `Payment token for order ${orderId} not found or expired.`,
-      );
-      const genericFailureLink =
-        'amerli://payment/status?status=error&message=SyncError';
-      return res.redirect(genericFailureLink);
-    }
-
-    const statusPath = data.status === 'paid' ? 'success' : 'failure';
-
-    const params = new URLSearchParams();
-    params.append('orderId', data?.orderId ? data.orderId.toString() : 'N/A');
-    params.append('status', data.status);
-    params.append('amount', `${data.amount} ${data.currency}`);
-    params.append('paymentMethod', data.paymentMethod as string);
-    if (data.errorMessage) {
-      params.append('errorReason', data.errorMessage);
-    }
-
-    const deepLinkUrl = `amerli://payment/${statusPath}?${params.toString()}`;
-
-    return res.redirect(deepLinkUrl);
+    const redirectUrl = await this.orderService.getPaymentRedirectUrl(orderId);
+    return res.redirect(redirectUrl);
   }
 
   /**
@@ -348,5 +182,17 @@ export class OrderController {
     @Param('orderId', ParseIntPipe) orderId: number,
   ): Promise<PaymentInfoDto> {
     return this.orderService.getPaymentInfo(orderId);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AccessTokenGuard)
+  @ApiOperation({ summary: 'Get order information for a specific order' })
+  @ApiOkResponse({
+    type: PaymentInfoDto,
+    description: 'The payment information.',
+  })
+  @Get(':orderId/infos')
+  getOrderInfos(@Param('orderId', ParseIntPipe) orderId: number): Promise<any> {
+    return this.orderService.orderInfos(orderId);
   }
 }

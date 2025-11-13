@@ -3,5 +3,5 @@ import { UploadingOptions } from 'src/infrastructure/object-storage/types/upload
 export class UploadJobDto {
   file: Express.Multer.File;
   options?: UploadingOptions;
-  metadata: { targetId: string; targetType: string; [key: string]: any };
+  metadata: { targetId: number; targetType: string; [key: string]: any };
 }

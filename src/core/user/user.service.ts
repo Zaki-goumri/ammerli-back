@@ -1,3 +1,11 @@
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserForAdminDto } from './dtos/response/user-for-admin.dto';
 import {
@@ -12,12 +20,6 @@ import { QUEUE_NAME } from 'src/common/constants/queues';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
 import { GetMeDto } from './dtos/response/get-me.dto';
 import { RegisterUserDto } from '../authentication/dtos/requests/register-user.dto';
 import { UPLOAD_JOBS } from 'src/common/constants/jobs';
@@ -31,7 +33,15 @@ import { CreateUserDto } from './dtos/create-user.dto';
 import { OnEvent } from '@nestjs/event-emitter';
 import { UserRole } from 'src/common/enums/user-role.enum';
 import { UserDetailForAdminDto } from './dtos/response/user-detail-for-admin.dto';
+import { ConfigService } from '@nestjs/config';
+import { BlackListService } from './black-list/black-list.service';
+import { plainToInstance } from 'class-transformer';
 
+/**
+ * @class UserService
+ * @description Handles all user-related business logic, including CRUD operations, address management,
+ *              profile picture uploads, and integration with caching and blacklisting services.
+ */
 @Injectable()
 export class UserService {
   constructor(
@@ -44,19 +54,45 @@ export class UserService {
     @InjectQueue(QUEUE_NAME.UPLOAD)
     private readonly uploadQueue: Queue,
     private readonly objectService: ObjectService,
+    private readonly blackListService: BlackListService,
+    private readonly configService: ConfigService,
   ) {}
 
   private readonly logger = new Logger(UserService.name);
   static CACHE_KEY_PREFIX = 'user';
-  private readonly CACHE_TTL = 60 * 10;
+  private readonly CACHE_TTL =
+    this.configService.get<number>('CACHE_TTL_SECONDS') || 60 * 10;
+
+  /**
+   * @method getCacheKey
+   * @description Generates a cache key for user data based on ID or phone number.
+   * @param {number | string} key - The user's ID or phone number.
+   * @param {'id' | 'phoneNumber'} keyType - The type of key being used ('id' or 'phoneNumber').
+   * @returns {string} The generated cache key.
+   */
   static getCacheKey(
     key: number | string,
-    keyType: 'id' | 'phoneNumber',
+    keyType: 'id' | 'phoneNumber' | 'admin-details',
   ): string {
     return `${this.CACHE_KEY_PREFIX}:${keyType}:${key}`;
   }
 
+  /**
+   * @method create
+   * @description Creates a new user in the database. Performs a blacklist check and ensures
+   *              no user with the same phone number already exists.
+   * @param {CreateUserDto} dto - The data transfer object containing user creation details.
+   * @returns {Promise<User>} The newly created user entity.
+   * @throws {ForbiddenException} If the phone number is blacklisted.
+   * @throws {ConflictException} If a user with the provided phone number already exists.
+   */
   async create(dto: CreateUserDto): Promise<User> {
+    const isBlacklisted = await this.blackListService.isPhoneNumberBlacklisted(
+      dto.phoneNumber,
+    );
+    if (isBlacklisted) {
+      throw new ForbiddenException('This phone number is blacklisted.');
+    }
     return this.entityManager.transaction(async (em) => {
       const userRepo = em.getRepository(User);
 
@@ -64,7 +100,7 @@ export class UserService {
         phoneNumber: dto.phoneNumber,
       });
       if (existingUser) {
-        throw new Error(
+        throw new ConflictException(
           `User with phone number ${dto.phoneNumber} already exists.`,
         );
       }
@@ -78,6 +114,14 @@ export class UserService {
     });
   }
 
+  /**
+   * @method findByPhoneNumber
+   * @description Retrieves a user by their phone number, utilizing Redis cache.
+   * @param {string} phoneNumber - The phone number of the user to find.
+   * @param {boolean} [isRegistered] - Optional flag to filter by registration status.
+   * @returns {Promise<User>} The found user entity.
+   * @throws {NotFoundException} If no user is found with the provided phone number.
+   */
   async findByPhoneNumber(
     phoneNumber: string,
     isRegistered?: boolean,
@@ -111,6 +155,12 @@ export class UserService {
     });
     if (!user) throw new NotFoundException('User not found');
 
+    if (user.profilePic) {
+      user.profilePic = await this.objectService.getPresignedUrl(
+        user.profilePic,
+      );
+    }
+
     await this.redisService.set(
       UserService.getCacheKey(phoneNumber, 'phoneNumber'),
       user,
@@ -119,6 +169,13 @@ export class UserService {
     return user;
   }
 
+  /**
+   * @method findById
+   * @description Retrieves a user by their ID, utilizing Redis cache.
+   * @param {number} id - The ID of the user to find.
+   * @returns {Promise<GetMeDto>} The found user's profile data.
+   * @throws {NotFoundException} If no user is found with the provided ID.
+   */
   async findById(id: number): Promise<GetMeDto> {
     const cachedUser = await this.redisService.get<GetMeDto>(
       UserService.getCacheKey(id, 'id'),
@@ -149,6 +206,12 @@ export class UserService {
     const user = await queryBuilder.getOne();
     if (!user) throw new NotFoundException('User not found');
 
+    if (user.profilePic) {
+      user.profilePic = await this.objectService.getPresignedUrl(
+        user.profilePic,
+      );
+    }
+
     await this.redisService.set(
       UserService.getCacheKey(id, 'id'),
       user,
@@ -157,6 +220,13 @@ export class UserService {
     return user as GetMeDto;
   }
 
+  /**
+   * @method findUserEntityById
+   * @description Retrieves a user entity by ID without transforming it into a DTO.
+   * @param {number} id - The ID of the user to find.
+   * @returns {Promise<User>} The found user entity.
+   * @throws {NotFoundException} If no user is found with the provided ID.
+   */
   async findUserEntityById(id: number): Promise<User> {
     const user = await this.userRepo.findOne({ where: { id } });
     if (!user) {
@@ -165,7 +235,22 @@ export class UserService {
     return user;
   }
 
+  /**
+   * @method getUserDetailsForAdmin
+   * @description Retrieves detailed information for a specific user, intended for admin view.
+   *              Transforms the user entity into `UserDetailForAdminDto`.
+   * @param {number} userId - The ID of the user whose details are to be retrieved.
+   * @returns {Promise<UserDetailForAdminDto>} The detailed user information for admin.
+   * @throws {NotFoundException} If no user is found with the provided ID.
+   */
   async getUserDetailsForAdmin(userId: number): Promise<UserDetailForAdminDto> {
+    const cacheKey = UserService.getCacheKey(userId, 'admin-details');
+    const cachedUserDetail =
+      await this.redisService.get<UserDetailForAdminDto>(cacheKey);
+    if (cachedUserDetail) {
+      return cachedUserDetail;
+    }
+
     const user = await this.userRepo.findOneOrFail({
       where: { id: userId },
       relations: ['addresses'],
@@ -182,6 +267,7 @@ export class UserService {
         createdAt: true,
         role: true,
         deletedAt: true,
+        profilePic: true,
         addresses: {
           id: true,
           street: true,
@@ -196,30 +282,37 @@ export class UserService {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
 
-    const {
-      id,
-      name,
-      supermarketName,
-      phoneNumber,
-      createdAt,
-      role,
-      addresses,
-    } = user;
+    const lastAddress =
+      user.addresses && user.addresses.length > 0 ? user.addresses[0] : null;
 
-    const lastAddress = addresses && addresses.length > 0 ? addresses[0] : null;
+    let presignedProfilePic = '';
+    if (user.profilePic) {
+      presignedProfilePic = await this.objectService.getPresignedUrl(
+        user.profilePic,
+      );
+    }
 
-    return {
-      id,
-      name: name ?? '',
-      supermarketName,
-      phoneNumber,
+    const userDetail = plainToInstance(UserDetailForAdminDto, {
+      ...user,
       lastAddress,
-      createdAt,
-      role: role as UserRole,
+      profilePic: presignedProfilePic,
       isActive: !user.deletedAt,
-    };
+    });
+
+    await this.redisService.set(cacheKey, userDetail, this.CACHE_TTL);
+    return userDetail;
   }
 
+  /**
+   * @method registerUserInfo
+   * @description Registers additional user information after initial phone number validation.
+   *              Updates the user's details and sets `isRegistered` to true.
+   * @param {RegisterUserDto} dto - The data transfer object containing registration details.
+   * @param {number} id - The ID of the user to register.
+   * @returns {Promise<User>} The updated user entity.
+   * @throws {BadRequestException} If the user is already registered.
+   * @throws {NotFoundException} If the user with the provided ID is not found.
+   */
   async registerUserInfo(dto: RegisterUserDto, id: number): Promise<User> {
     return this.entityManager.transaction(async (em) => {
       const userRepo = em.getRepository(User);
@@ -236,10 +329,19 @@ export class UserService {
       }
       await this.userRepo.save(user);
       await this.redisService.del(UserService.getCacheKey(id, 'id'));
+      await this.redisService.del(UserService.getCacheKey(id, 'admin-details')); // Invalidate admin details cache
       return user;
     });
   }
 
+  /**
+   * @method updateUser
+   * @description Updates a user's profile information.
+   * @param {number} id - The ID of the user to update.
+   * @param {UpdateUserDto} dto - The data transfer object containing user update details.
+   * @returns {Promise<UserDto>} The updated user's profile data.
+   * @throws {NotFoundException} If the user with the provided ID is not found.
+   */
   async updateUser(id: number, dto: UpdateUserDto): Promise<UserDto> {
     return this.entityManager.transaction(async (em) => {
       const userRepo = em.getRepository(User);
@@ -261,10 +363,17 @@ export class UserService {
       userRepo.merge(user, dto);
       await this.userRepo.save(user);
       await this.redisService.del(UserService.getCacheKey(id, 'id'));
+      await this.redisService.del(UserService.getCacheKey(id, 'admin-details')); // Invalidate admin details cache
       return user as UserDto;
     });
   }
 
+  /**
+   * @method findByPhoneNumberWithoutException
+   * @description Retrieves a user by their phone number without throwing an exception if not found.
+   * @param {string} phoneNumber - The phone number of the user to find.
+   * @returns {Promise<User | null>} The found user entity or null if not found.
+   */
   async findByPhoneNumberWithoutException(
     phoneNumber: string,
   ): Promise<User | null> {
@@ -275,6 +384,12 @@ export class UserService {
     });
   }
 
+  /**
+   * @method findUserByPhoneNumberWithDeleted
+   * @description Retrieves a user by their phone number, including soft-deleted users.
+   * @param {string} phoneNumber - The phone number of the user to find.
+   * @returns {Promise<User | null>} The found user entity (including deleted ones) or null if not found.
+   */
   async findUserByPhoneNumberWithDeleted(
     phoneNumber: string,
   ): Promise<User | null> {
@@ -284,6 +399,13 @@ export class UserService {
     });
   }
 
+  /**
+   * @method deleteUser
+   * @description Soft-deletes a user by their ID and queues a job to delete their profile picture.
+   * @param {number} id - The ID of the user to soft-delete.
+   * @returns {Promise<{ message: string }>} A success message.
+   * @throws {NotFoundException} If the user with the provided ID is not found.
+   */
   async deleteUser(id: number): Promise<{ message: string }> {
     const user = await this.userRepo.findOne({ where: { id } });
     if (!user) {
@@ -292,6 +414,7 @@ export class UserService {
 
     await this.userRepo.softDelete(id);
     await this.redisService.del(UserService.getCacheKey(id, 'id'));
+    await this.redisService.del(UserService.getCacheKey(id, 'admin-details')); // Invalidate admin details cache
 
     if (user.profilePic) {
       await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
@@ -302,6 +425,13 @@ export class UserService {
     return { message: 'User soft deleted successfully' };
   }
 
+  /**
+   * @method restoreUser
+   * @description Restores a soft-deleted user by their ID.
+   * @param {number} id - The ID of the user to restore.
+   * @returns {Promise<{ message: string }>} A success message.
+   * @throws {NotFoundException} If the user with the provided ID is not found or not deleted.
+   */
   async restoreUser(id: number): Promise<{ message: string }> {
     const restoreResult = await this.userRepo.restore(id);
     if (restoreResult.affected === 0) {
@@ -310,9 +440,18 @@ export class UserService {
       );
     }
     await this.redisService.del(UserService.getCacheKey(id, 'id'));
+    await this.redisService.del(UserService.getCacheKey(id, 'admin-details')); // Invalidate admin details cache
     return { message: 'User restored successfully' };
   }
 
+  /**
+   * @method updateUserProfilePic
+   * @description Uploads and updates a user's profile picture, queuing old picture for deletion.
+   * @param {number} userId - The ID of the user whose profile picture is to be updated.
+   * @param {Express.Multer.File} profilePic - The new profile picture file.
+   * @returns {Promise<ProfilePictureDto>} The updated profile picture URL.
+   * @throws {NotFoundException} If the user with the provided ID is not found.
+   */
   async updateUserProfilePic(userId: number, profilePic: Express.Multer.File) {
     const user = await this.userRepo.findOneOrFail({
       where: { id: userId },
@@ -322,8 +461,8 @@ export class UserService {
     const objectName = this.objectService.generateUniqueObjectName(
       profilePic.originalname,
     );
-    const presignedUrl = this.objectService.getFileUrl(objectName);
-    await this.userRepo.update(userId, { profilePic: presignedUrl });
+
+    await this.userRepo.update(userId, { profilePic: objectName });
 
     await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
       file: profilePic,
@@ -336,14 +475,31 @@ export class UserService {
         metadata: { targetId: userId, targetType: 'user_picture' },
       });
     await this.redisService.del(UserService.getCacheKey(userId, 'id'));
+    await this.redisService.del(
+      UserService.getCacheKey(userId, 'admin-details'),
+    ); // Invalidate admin details cache
+    const presignedUrl = await this.objectService.getPresignedUrl(objectName);
     return { profilePic: presignedUrl };
   }
 
+  /**
+   * @method setProfilePicUrlNull
+   * @description Sets a user's profile picture URL to null in the database.
+   * @param {number} userId - The ID of the user.
+   * @returns {Promise<void>}
+   */
   private async setProfilePicUrlNull(userId: number) {
     await this.userRepo.update(userId, { profilePic: undefined });
     await this.redisService.del(UserService.getCacheKey(userId, 'id'));
   }
 
+  /**
+   * @method finalizeUser
+   * @description Event listener for when a user profile picture upload fails.
+   *              Sets the user's profile picture URL to null.
+   * @param {FinalizePayloadDto} payload - The payload containing information about the failed upload.
+   * @returns {Promise<void>}
+   */
   @OnEvent('file.failed.user_picture', { async: true })
   async finalizeUser(payload: FinalizePayloadDto) {
     this.logger.log(
@@ -352,6 +508,14 @@ export class UserService {
     await this.setProfilePicUrlNull(payload.targetId);
   }
 
+  /**
+   * @method createAddress
+   * @description Creates a new address for a specified user.
+   * @param {number} userId - The ID of the user for whom to create the address.
+   * @param {CreateAddressDto} createAddressDto - The data transfer object containing address creation details.
+   * @param {EntityManager} [emGlobal] - Optional global entity manager for transactional consistency.
+   * @returns {Promise<AddressDto>} The newly created address data.
+   */
   async createAddress(
     userId: number,
     createAddressDto: CreateAddressDto,
@@ -362,11 +526,20 @@ export class UserService {
       const addressRepo = em.getRepository(Address);
       const address = addressRepo.create({ ...createAddressDto, userId });
       const created = await addressRepo.save(address);
+      await this.redisService.del(
+        UserService.getCacheKey(userId, 'admin-details'),
+      ); // Invalidate admin details cache
       const { id, street, district, city } = created;
       return { id, street, district, city } as AddressDto;
     });
   }
 
+  /**
+   * @method getAddresses
+   * @description Retrieves all addresses for a specified user.
+   * @param {number} userId - The ID of the user whose addresses are to be retrieved.
+   * @returns {Promise<AddressDto[]>} An array of address data transfer objects.
+   */
   async getAddresses(userId: number): Promise<AddressDto[]> {
     const addresses = await this.addressRepo.find({
       where: { userId },
@@ -383,6 +556,15 @@ export class UserService {
     return addresses as AddressDto[];
   }
 
+  /**
+   * @method updateAddress
+   * @description Updates an existing address for a specified user.
+   * @param {number} userId - The ID of the user who owns the address.
+   * @param {number} addressId - The ID of the address to update.
+   * @param {UpdateAddressDto} updateAddressDto - The data transfer object containing address update details.
+   * @returns {Promise<AddressDto>} The updated address data.
+   * @throws {NotFoundException} If the address with the provided ID and user ID is not found.
+   */
   async updateAddress(
     userId: number,
     addressId: number,
@@ -393,10 +575,21 @@ export class UserService {
     });
     this.addressRepo.merge(address, updateAddressDto);
     const updatedAdress = await this.addressRepo.save(address);
+    await this.redisService.del(
+      UserService.getCacheKey(userId, 'admin-details'),
+    ); // Invalidate admin details cache
     const { id, street, district, city } = updatedAdress;
     return { id, street, district, city, userId } as AddressDto;
   }
 
+  /**
+   * @method deleteAddress
+   * @description Deletes an address for a specified user. Prevents deletion if it's the user's only address.
+   * @param {number} userId - The ID of the user who owns the address.
+   * @param {number} addressId - The ID of the address to delete.
+   * @returns {Promise<{ message: string }>} A success message.
+   * @throws {BadRequestException} If the user attempts to delete their only address.
+   */
   async deleteAddress(userId: number, addressId: number) {
     const userAddressesCount = await this.addressRepo.count({
       where: { userId },
@@ -407,9 +600,18 @@ export class UserService {
       );
     }
     await this.addressRepo.delete(addressId);
+    await this.redisService.del(
+      UserService.getCacheKey(userId, 'admin-details'),
+    ); // Invalidate admin details cache
     return { message: 'Address deleted successfully' };
   }
 
+  /**
+   * @method isUserRegistered
+   * @description Checks if a user is registered based on their ID.
+   * @param {number} userId - The ID of the user to check.
+   * @returns {Promise<boolean>} True if the user is registered, false otherwise.
+   */
   async isUserRegistered(userId: number): Promise<boolean> {
     const user = await this.userRepo.findOne({
       where: { id: userId },
@@ -437,6 +639,7 @@ export class UserService {
     const queryBuilder = this.userRepo
       .createQueryBuilder('user')
       .where('user.id != :currentUserId', { currentUserId })
+      .andWhere('user.deletedAt IS NULL')
       .select(['user.id', 'user.name', 'user.phoneNumber', 'user.role'])
       .orderBy('user.createdAt', 'DESC')
       .take(limit)

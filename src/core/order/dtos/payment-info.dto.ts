@@ -1,13 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { PAYEMENT_WAY, PaymentWay } from '../enums/payement-way.enum';
+import { PaymentMethod, PaymentMethodType } from '../enums/payment-method.enum';
 import { ORDER_STATUS_VALUES, OrderStatus } from '../enums/delivery.enum';
 
 export class PaymentInfoDto {
   @ApiProperty({
     description: 'The payment way of the order',
-    enum: PAYEMENT_WAY,
+    enum: PaymentMethod,
   })
-  paymentWay: PaymentWay;
+  paymentWay: PaymentMethodType;
 
   @ApiProperty({ description: 'The total amount of the order' })
   totalAmount: number;

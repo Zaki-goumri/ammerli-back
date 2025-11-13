@@ -32,9 +32,14 @@ export class ObjectService implements ObjectStorageService {
   ) {}
 
   async uploadFile(
-    file: { buffer: Buffer | SerializedBuffer; originalname: string; mimetype: string; size: number },
+    file: {
+      buffer: Buffer | SerializedBuffer;
+      originalname: string;
+      mimetype: string;
+      size: number;
+    },
     options?: UploadingOptions,
-  ): Promise<{ message: string; fileUrl: string }> {
+  ): Promise<{ message: string; fileUrl: string; objectName: string }> {
     if (!file || !file.buffer) {
       throw new BadRequestException('File buffer is missing.');
     }
@@ -42,7 +47,7 @@ export class ObjectService implements ObjectStorageService {
     if (Buffer.isBuffer(file.buffer)) {
       fileBuffer = file.buffer;
     } else {
-      const serializedBuffer = file.buffer as SerializedBuffer;
+      const serializedBuffer = file.buffer;
       if (
         serializedBuffer.type == 'Buffer' &&
         Array.isArray(serializedBuffer.data)
@@ -59,7 +64,7 @@ export class ObjectService implements ObjectStorageService {
     this.logger.log(
       `Uploading file to MinIO: ${file.originalname} in bucket ${this.bucketName}`,
     );
-    const fileName =
+    const objectName =
       options?.objectName || this.generateUniqueObjectName(file.originalname);
 
     const metaData = {
@@ -69,20 +74,21 @@ export class ObjectService implements ObjectStorageService {
     try {
       await this.minioClient.putObject(
         options?.bucketName ?? this.bucketName,
-        fileName,
+        objectName,
         fileBuffer,
         file.size,
         metaData,
       );
 
-      const fileUrl = this.getFileUrl(fileName);
+      const fileUrl = this.getFileUrl(objectName);
       this.logger.log(`File uploaded successfully: ${fileUrl}`);
       return {
         message: 'File uploaded to MinIO successfully.',
         fileUrl,
+        objectName,
       };
     } catch (error) {
-      this.logger.error(`Error uploading file to MinIO: ${error.message}`);
+      this.logger.error(`Error uploading file to MinIO: ${error}`);
       throw new BadRequestException('Failed to upload file to MinIO.');
     }
   }
@@ -100,15 +106,12 @@ export class ObjectService implements ObjectStorageService {
         `MinIO deletion failed for object ${objectUrl}: ${error.message}`,
         error.stack,
       );
-      // Do not rethrow to allow other deletions to proceed
     }
   }
 
   async deleteBulkFiles(objectUrls: string[]): Promise<void> {
     this.logger.log(`Attempting to delete ${objectUrls.length} files in bulk.`);
-    await Promise.allSettled(
-      objectUrls.map((url) => this.deleteFile(url)),
-    );
+    await Promise.allSettled(objectUrls.map((url) => this.deleteFile(url)));
     this.logger.log('Bulk file deletion process completed.');
   }
 
@@ -125,10 +128,46 @@ export class ObjectService implements ObjectStorageService {
     return `${protocol}://${publicHost}/${this.bucketName}/${fileName}`;
   }
 
+  async getPresignedUrl(objectName: string): Promise<string> {
+    if (!objectName) {
+      return '';
+    }
+
+    try {
+      const presignedUrl = await this.minioClient.presignedGetObject(
+        this.bucketName,
+        objectName,
+        7 * 24 * 60 * 60, // 7 days
+      );
+
+      const publicHost = this.config.publicUrl;
+      const customBase = 'https://' + publicHost + '/' + this.bucketName;
+      const cleanUrl = presignedUrl.replace(
+        /https?:\/\/minio:9000\/[^/]+/,
+        customBase,
+      );
+
+      return cleanUrl;
+    } catch (error) {
+      this.logger.error(
+        `Failed to generate presigned URL for ${objectName}`,
+        error.stack,
+      );
+      throw new InternalServerErrorException(
+        'Failed to generate presigned URL.',
+      );
+    }
+  }
+
   async uploadBulkFiles(
-    files: Array<{ buffer: Buffer | SerializedBuffer; originalname: string; mimetype: string; size: number }>,
+    files: Array<{
+      buffer: Buffer | SerializedBuffer;
+      originalname: string;
+      mimetype: string;
+      size: number;
+    }>,
     options?: UploadingOptions,
-  ): Promise<Array<{ message: string; fileUrl: string }>> {
+  ): Promise<Array<{ message: string; fileUrl: string; objectName: string }>> {
     const uploadPromises = files.map((file) => this.uploadFile(file, options));
     return Promise.all(uploadPromises);
   }
@@ -139,14 +178,20 @@ export class ObjectService implements ObjectStorageService {
 
   async getFile(objectName: string): Promise<Buffer> {
     try {
-      const stream = await this.minioClient.getObject(this.bucketName, objectName);
+      const stream = await this.minioClient.getObject(
+        this.bucketName,
+        objectName,
+      );
       const chunks: Buffer[] = [];
       for await (const chunk of stream) {
         chunks.push(chunk as Buffer);
       }
       return Buffer.concat(chunks);
     } catch (error) {
-      this.logger.error(`Failed to get file ${objectName} from MinIO`, error.stack);
+      this.logger.error(
+        `Failed to get file ${objectName} from MinIO`,
+        error.stack,
+      );
       throw new InternalServerErrorException('Failed to retrieve file.');
     }
   }

@@ -15,6 +15,7 @@ import { ConfigService } from '@nestjs/config';
 import { OrderListItemDto } from '../dtos/order-list-item.dto';
 import { ProductOrderItemDto } from '../dtos/product-order-item.dto';
 import { CreateOrderResDto } from '../dtos/create-order.res.dto';
+import { CreateOrderResponseDto } from '../dtos/create-order-response.dto';
 import { CreateOrderDto } from '../dtos/create-order.dto';
 import { Product } from 'src/core/product/entities/product.entity';
 import { CheckoutService } from './checkout.service';
@@ -23,15 +24,49 @@ import {
   PaginationResponseDto,
 } from 'src/common/dtos/pagination.dto';
 import { UserService } from 'src/core/user/user.service';
+import { ORDER_PAYMENT_METHOD } from '../enums/order-payment-method.enum';
 import { CreateCheckoutRes } from '../dtos/checkout-create-res.dto';
 import { Tracking } from '../entities/tracking.entity';
 import { OrderStatus } from '../enums/delivery.enum';
 import { OrderForAdminListItemDto } from '../dtos/order-for-admin-list-item.dto';
 import { PaymentInfoDto } from '../dtos/payment-info.dto';
 import { BuyerInfoDto } from '../dtos/buyer-info.dto';
+import { TrackingService } from './tracking.service';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { QUEUE_NAME } from 'src/common/constants/queues';
+import { INVOICE_JOBS } from 'src/common/constants/jobs';
+
+import { NotificationsService } from 'src/core/notifications/notifications.service';
+import { RedisService } from 'nestjs-redis-client';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+
+import { NOTIFICATION_TYPE } from 'src/core/notifications/enums/notification-type.enum';
+import { CheckoutDataDto } from 'src/core/chargili/dtos/chargili-webhook.dto';
+import { extractCheckoutIdFromUrl } from '../utils/extract-checkout-id.utils';
+import { Logger } from '@nestjs/common';
+import { PaymentWay } from '../enums/payment-way.enum';
+
+export type PaymentStatus =
+  | 'paid'
+  | 'failed'
+  | 'canceled'
+  | 'pending'
+  | 'error';
+export type CurrencyCode = 'dzd';
+
+export interface PaymentClientData {
+  orderId: number;
+  status: string;
+  amount: number;
+  currency: CurrencyCode;
+  paymentMethod: string | null | undefined;
+  errorMessage?: string;
+}
 
 @Injectable()
 export class OrderService {
+  logger = new Logger(OrderService.name);
   constructor(
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
@@ -45,13 +80,144 @@ export class OrderService {
     private readonly userService: UserService,
     @InjectRepository(Tracking)
     private readonly trackingRepo: Repository<Tracking>,
+    private readonly trackingService: TrackingService,
+    @InjectQueue(QUEUE_NAME.INVOICE)
+    private readonly invoiceQueue: Queue,
+    private readonly notificationService: NotificationsService,
+    private readonly eventEmitter: EventEmitter2,
+    private readonly redisService: RedisService,
   ) {}
 
+  async processWebhook(
+    data: CheckoutDataDto,
+    signature: string,
+  ): Promise<void> {
+    this.logger.log('Processing Chargili webhook in service');
+    const checkoutId = extractCheckoutIdFromUrl(data.checkout_url);
+    if (!checkoutId) {
+      this.logger.error(
+        `Invalid checkout URL received in webhook: ${data.checkout_url}`,
+      );
+      throw new BadRequestException('Invalid checkout URL');
+    }
+
+    const isPaymentSuccessful = data.status === 'paid';
+    await this.CheckoutService.updateCheckoutStatus(
+      checkoutId,
+      data.payment_method?.toUpperCase() as PaymentWay,
+      isPaymentSuccessful,
+      data.fees,
+      signature,
+    );
+
+    const orderId =
+      await this.CheckoutService.findOrderIdByCheckoutId(checkoutId);
+    this.logger.log('Webhook processed for order ID:', orderId);
+
+    const buyerId =
+      await this.CheckoutService.findBuyerIdByCheckoutId(checkoutId);
+
+    const finalDataForClient: PaymentClientData = {
+      orderId: orderId,
+      status: data.status,
+      amount: data.amount,
+      currency: data.currency as CurrencyCode,
+      paymentMethod: data.payment_method || null,
+    };
+
+    if (isPaymentSuccessful) {
+      this.logger.log(
+        `Payment successful for checkout ID: ${checkoutId}. Order processed.`,
+      );
+      await this.notificationService.sendNotification(
+        'Payment Successful',
+        `Your payment for order with checkout ID ${checkoutId} has been received successfully.`,
+        buyerId,
+        NOTIFICATION_TYPE.ORDERS,
+      );
+
+      await this.invoiceQueue.add(INVOICE_JOBS.GENERATE_INVOICE, {
+        orderId: orderId,
+      });
+      this.eventEmitter.emit('order.paid', orderId);
+    } else {
+      this.logger.warn(
+        `Payment failed for checkout ID: ${checkoutId}. Order not processed.`,
+      );
+      finalDataForClient.errorMessage = 'Payment failed or was canceled.';
+      await this.notificationService.sendNotification(
+        'Payment Failed',
+        `Your payment for order with checkout ID ${checkoutId} has failed. Please try again.`,
+        buyerId,
+        NOTIFICATION_TYPE.ORDERS,
+      );
+    }
+
+    await this.redisService.set<PaymentClientData>(
+      `payment:result:${orderId}`,
+      finalDataForClient,
+      3600, // Store for 1 hour
+    );
+  }
+
+  async getPaymentRedirectUrl(orderId: string): Promise<string> {
+    if (!orderId) {
+      this.logger.error(`Redirect attempt without Order ID.`);
+      return 'amerli://payment/status?status=error&message=InvalidId';
+    }
+
+    const redisData = await this.redisService.get<PaymentClientData>(
+      `payment:result:${orderId}`,
+    );
+
+    if (!redisData) {
+      this.logger.error(
+        `Payment token for order ${orderId} not found or expired.`,
+      );
+      return 'amerli://payment/status?status=error&message=SyncError';
+    }
+
+    const statusPath = redisData.status === 'paid' ? 'success' : 'failure';
+    const params = new URLSearchParams();
+    params.append(
+      'orderId',
+      redisData?.orderId ? redisData.orderId.toString() : 'N/A',
+    );
+    params.append('status', redisData.status);
+    params.append('amount', `${redisData.amount} ${redisData.currency}`);
+    params.append('paymentMethod', redisData.paymentMethod as string);
+    if (redisData.errorMessage) {
+      params.append('errorReason', redisData.errorMessage);
+    }
+
+    return `amerli://payment/${statusPath}?${params.toString()}`;
+  }
+
   async findProductsByOrder(orderId: number) {
-    return this.orderProductRepo.find({
+    const order = await this.orderProductRepo.find({
       where: { order: { id: orderId } },
-      relations: ['product'],
+      relations: ['product', 'product.pictures'],
+      withDeleted: true,
+      select: {
+        product: {
+          id: true,
+          name: true,
+          price: true,
+          pictures: { url: true, isMain: true },
+        },
+        quantity: true,
+      },
     });
+    console.log('Order products fetched:', order);
+    const products = order.map((op) => ({
+      id: op?.product.id,
+      name: op?.product.name,
+      price: op?.product.price,
+      quantity: op?.quantity,
+      //TODO: add presigned URL generation for pictures
+      picture: op?.product?.pictures.find((pic) => pic.isMain)?.url || null,
+    }));
+    return products;
   }
 
   async findProductsByOrderId(
@@ -65,6 +231,7 @@ export class OrderService {
       .andWhere('o.buyerId = :userId', { userId })
       .leftJoin('op.product', 'p')
       .leftJoin('p.pictures', 'mainPicture', 'mainPicture.isMain = TRUE')
+      .withDeleted()
       .select([
         'p.id AS id',
         'p.name AS name',
@@ -82,7 +249,6 @@ export class OrderService {
     if (!order) {
       throw new NotFoundException(`Order with ID ${orderId} not found.`);
     }
-    // If order exists, but products are empty, it means the user is not the buyer
     throw new NotFoundException(
       `Order with ID ${orderId} not found for the current user.`,
     );
@@ -126,7 +292,7 @@ export class OrderService {
       const order = orderRepo.create({
         buyerId,
         totalAmount,
-        payementWay: dto.payementWay,
+        paymentWay: dto.paymentWay,
         addressId,
       });
       await orderRepo.save(order);
@@ -142,15 +308,26 @@ export class OrderService {
       await orderProductRepo.save(items);
       return order;
     });
-    if (dto.payementWay === 'CASH') {
-      return { order, checkoutUrl: null };
+    const orderResponse: CreateOrderResponseDto = {
+      id: order.id,
+      totalAmount: order.totalAmount,
+      paymentWay: order.paymentWay,
+      addressId: order.addressId,
+      buyerId: order.buyerId,
+    };
+    if (dto.paymentWay === 'CASH') {
+      await this.trackingService.createInitialTracking(order.id);
+      await this.invoiceQueue.add(INVOICE_JOBS.GENERATE_INVOICE, {
+        orderId: order.id,
+      });
+      return { order: orderResponse, checkoutUrl: null };
     }
     const { checkoutId, checkoutUrl } = await this.createChargilyCheckout(
       order.totalAmount,
       order.id,
     );
     await this.CheckoutService.createCheckout(order.id, checkoutId);
-    return { order, checkoutUrl };
+    return { order: orderResponse, checkoutUrl };
   }
 
   private async calculateOrderTotals(
@@ -178,7 +355,6 @@ export class OrderService {
     orderId?: number,
   ): Promise<CreateCheckoutRes> {
     const backendApiUrl = this.configService.get<string>('BACKEND_API_URL');
-    const backendBaseUrl = this.configService.get<string>('BACKEND_BASE_URL');
 
     console.log('Backend API URL:', backendApiUrl);
     const checkout = await this.chargilyService.createCheckout({
@@ -206,6 +382,7 @@ export class OrderService {
     const queryBuilder = this.orderRepo
       .createQueryBuilder('orders')
       .where('orders.buyerId = :userId', { userId })
+      .leftJoin('orders.checkouts', 'checkout')
       .leftJoin(
         (subQuery) =>
           subQuery
@@ -233,11 +410,15 @@ export class OrderService {
         'orders.totalAmount AS totalAmount',
         'orders.createdAt AS createdAt',
         'orders.updatedAt AS updatedAt',
+        'orders.paymentWay AS "orderPaymentWay"',
+        'checkout.paymentWay AS "checkoutPaymentWay"',
         'latest_tracking."latestStatus" AS status',
         'COUNT(op.id) AS productCount',
       ])
       .groupBy('orders.id')
       .addGroupBy('latest_tracking."latestStatus"')
+      .addGroupBy('checkout.paymentWay')
+      .withDeleted()
       .orderBy('orders.createdAt', 'DESC')
       .take(limit)
       .skip((page - 1) * limit);
@@ -249,9 +430,13 @@ export class OrderService {
 
     const orders: OrderListItemDto[] = data.map((d) => ({
       id: d.id,
-      totalAmount: parseFloat(d.totalAmount),
-      status: d?.status as OrderStatus,
+      totalAmount: parseFloat(d.totalamount),
+      status: (d?.status as OrderStatus) ?? 'PENDING',
       productCount: parseInt(d.productcount, 10),
+      paymentWay:
+        d?.orderPaymentWay === ORDER_PAYMENT_METHOD.CASH
+          ? ORDER_PAYMENT_METHOD.CASH
+          : (d?.checkoutpaymentway ?? 'NOT_PAYD'),
       createdAt: d.createdAt,
       updatedAt: d.updatedAt,
     })) as OrderListItemDto[];
@@ -271,6 +456,7 @@ export class OrderService {
           'op.quantity AS quantity',
           'pic.url AS picture',
         ])
+        .withDeleted()
         .getRawMany();
 
       const productsByOrderId = products.reduce(
@@ -287,7 +473,6 @@ export class OrderService {
         },
         {} as Record<number, ProductOrderItemDto[]>,
       );
-
       for (const order of orders) {
         order.products = productsByOrderId[order.id] || [];
       }
@@ -318,6 +503,7 @@ export class OrderService {
     const queryBuilder = this.orderRepo
       .createQueryBuilder('order')
       .leftJoin('order.buyer', 'user') // Assuming 'buyer' is the relation name in Order entity to User entity
+      .leftJoin('order.checkouts', 'checkout')
       .leftJoin(
         (subQuery) =>
           subQuery
@@ -342,7 +528,10 @@ export class OrderService {
         'order.id AS id',
         'user.name AS clientname',
         'latest_tracking."latestStatus" AS status',
+        'order.paymentWay AS "orderPaymentWay"',
+        'checkout.paymentWay AS "checkoutPaymentWay"',
       ])
+      .withDeleted()
       .orderBy('order.createdAt', 'DESC')
       .take(limit)
       .skip((page - 1) * limit);
@@ -351,11 +540,14 @@ export class OrderService {
       queryBuilder.getRawMany(),
       this.orderRepo.count(),
     ]);
-
     const orders: OrderForAdminListItemDto[] = data.map((d) => ({
       id: d?.id,
       clientName: d?.clientname,
-      status: d?.status as OrderStatus,
+      status: (d?.status as OrderStatus) ?? 'PENDING',
+      paymentWay:
+        d?.orderPaymentWay === ORDER_PAYMENT_METHOD.CASH
+          ? ORDER_PAYMENT_METHOD.CASH
+          : (d?.checkoutpaymentway ?? 'NOT_PAYD'),
     }));
 
     return {
@@ -390,6 +582,7 @@ export class OrderService {
         'address.district',
         'address.city',
       ])
+      .withDeleted()
       .getOne();
 
     if (!order) {
@@ -446,12 +639,14 @@ export class OrderService {
       )
       .where('order.id = :orderId', { orderId })
       .select([
-        'order.payementWay AS paymentWay',
+        'order.paymentWay AS "orderPaymentWay"',
+        'checkout.paymentWay AS "checkoutPaymentWay"',
         'order.totalAmount AS totalAmount',
         'order.createdAt AS createdAt',
         'checkout.isPaid AS isPaid',
         'latest_tracking."latestStatus" AS trackingStatus',
       ])
+      .withDeleted()
       .getRawOne();
 
     if (!order) {
@@ -459,11 +654,14 @@ export class OrderService {
     }
 
     const paymentInfo: PaymentInfoDto = {
-      paymentWay: order?.paymentway,
+      paymentWay:
+        order.orderPaymentWay === 'CASH'
+          ? ('CASH' as string)
+          : (order.checkoutPaymentWay ?? 'NOT_PAYED'),
       totalAmount: parseFloat(order?.totalamount),
       createdAt: order?.createdat,
       isPaid: order?.ispaid,
-      trackingStatus: order?.trackingstatus,
+      trackingStatus: order?.trackingstatus ?? 'PENDING',
     };
     return paymentInfo;
   }
@@ -471,14 +669,43 @@ export class OrderService {
   async findOneForInvoice(orderId: number): Promise<Order> {
     const order = await this.orderRepo.findOneOrFail({
       where: { id: orderId },
+      withDeleted: true,
       relations: [
         'buyer',
         'address',
         'orderProducts',
         'orderProducts.product',
         'orderProducts.product.brand',
+        'checkouts',
       ],
     });
     return order;
+  }
+
+  private async getBuyerInfosForOrder(orderId: number): Promise<BuyerInfoDto> {
+    const order = await this.orderRepo.findOneOrFail({
+      where: { id: orderId },
+      relations: ['buyer', 'address'],
+      withDeleted: true,
+    });
+
+    const address = order.address
+      ? `${order.address.street}, ${order.address.district}, ${order.address.city}`
+      : '';
+
+    return {
+      supermarketName: order?.buyer?.supermarketName ?? '',
+      clientName: order?.buyer?.name ?? '',
+      phoneNumber: order?.buyer?.phoneNumber ?? '',
+      address,
+    };
+  }
+
+  async orderInfos(orderId: number) {
+    const [products, buyerInfo] = await Promise.all([
+      this.findProductsByOrder(orderId),
+      this.getBuyerInfosForOrder(orderId),
+    ]);
+    return { products, buyerInfo };
   }
 }

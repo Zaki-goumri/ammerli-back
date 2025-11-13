@@ -28,7 +28,7 @@ export class InvoiceProcessor extends WorkerHost {
       case INVOICE_JOBS.GENERATE_INVOICE:
         this.logger.log(`Generating invoice for order ID: ${job.data.orderId}`);
         const invoicePath = await this.invoiceGeneratorService.generateInvoice(
-          job.data.orderId as number,
+          job.data.orderId,
         );
         return {
           message: 'Invoice generated successfully',

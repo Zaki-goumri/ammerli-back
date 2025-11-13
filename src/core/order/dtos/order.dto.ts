@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { PAYMENT_WAY_VALUES, PaymentWay } from '../enums/payement-way.enum';
+import { PAYMENT_WAY_VALUES, PaymentWay } from '../enums/payment-way.enum';
 
 export class OrderDto {
   @ApiProperty()
@@ -9,7 +9,7 @@ export class OrderDto {
   totalAmount: number;
 
   @ApiProperty({ enum: PAYMENT_WAY_VALUES })
-  payementWay: PaymentWay;
+  paymentWay: PaymentWay;
 
   @ApiProperty()
   addressId: number;

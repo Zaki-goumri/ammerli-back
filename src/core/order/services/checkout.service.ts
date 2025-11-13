@@ -2,13 +2,17 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Checkout } from '../entities/checkout.entity';
 import { Repository } from 'typeorm';
-import { PaymentWay } from '../enums/payement-way.enum';
+import { PaymentWay } from '../enums/payment-way.enum';
+import { Order } from '../entities/order.entity';
+import { ORDER_PAYMENT_METHOD } from '../enums/order-payment-method.enum';
 
 @Injectable()
 export class CheckoutService {
   constructor(
     @InjectRepository(Checkout)
     private readonly checkoutRepo: Repository<Checkout>,
+    @InjectRepository(Order)
+    private readonly orderRepo: Repository<Order>,
   ) {}
 
   async createCheckout(orderId: number, chargiliCheckoutId: string) {
@@ -26,11 +30,24 @@ export class CheckoutService {
     fees?: number,
     signature?: string,
   ) {
-    const checkout = await this.checkoutRepo.update(
+    await this.checkoutRepo.update(
       { chargiliCheckoutId },
       { isPaid, paymentWay, fees, paidAt: new Date(), signature },
     );
-    return checkout;
+
+    const checkoutRecord = await this.checkoutRepo.findOne({
+      where: { chargiliCheckoutId },
+      relations: ['order'],
+    });
+
+    if (checkoutRecord && checkoutRecord.order) {
+      if (checkoutRecord.order.paymentWay === 'EPAYMENT') {
+        await this.orderRepo.update(
+          { id: checkoutRecord.order.id },
+          { paymentWay: ORDER_PAYMENT_METHOD.EPAYMENT },
+        );
+      }
+    }
   }
   async findBuyerIdByCheckoutId(chargiliCheckoutId: string): Promise<number> {
     const { order } = await this.checkoutRepo.findOneOrFail({

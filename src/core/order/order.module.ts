@@ -18,10 +18,19 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { QueueModule } from 'src/infrastructure/queue/queue.module';
 import { InfrastructureModule } from 'src/infrastructure/infrastructure.module';
+import { User } from '../user/entities/user.entity';
+import { Address } from '../user/entities/address.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Order, OrderProduct, Checkout, Tracking]),
+    TypeOrmModule.forFeature([
+      Order,
+      OrderProduct,
+      Checkout,
+      Tracking,
+      User,
+      Address,
+    ]),
     ProductModule,
     ChargiliModule.registerAsync(chargiliConfig.asProvider()),
     UserModule,

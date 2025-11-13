@@ -14,11 +14,11 @@ export class AuthResDto {
     example:
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInBob25lTnVtYmVyIjoiMTIzNDU2Nzg5MCIsInJvbGUiOiJ1c2VyIiwidHlwZSI6InJlZnJlc2giLCJpYXQiOjE2MjU4NjQwMDAsImV4cCI6MTYyNjQ2ODgwMH0.signature',
   })
-  refreshToken?: string;
+  refreshToken: string | null;
 
   @ApiProperty({
     description: 'The user information.',
     type: () => UserDto,
   })
-  user?: UserDto;
+  user: UserDto | null;
 }

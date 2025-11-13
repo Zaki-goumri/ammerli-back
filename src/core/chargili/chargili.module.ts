@@ -13,6 +13,11 @@ import { CHARGILY_LIVE_URL, CHARGILY_TEST_URL } from './constants';
 
 @Module({})
 export class ChargiliModule extends ConfigurableModuleClass {
+  /**
+   * Registers the module synchronously with the provided options.
+   * @param {typeof OPTIONS_TYPE} options - The configuration options for the module.
+   * @returns {DynamicModule} The configured dynamic module.
+   */
   static register(options: typeof OPTIONS_TYPE): DynamicModule {
     return {
       module: ChargiliModule,
@@ -39,6 +44,11 @@ export class ChargiliModule extends ConfigurableModuleClass {
     };
   }
 
+  /**
+   * Registers the module asynchronously with the provided options.
+   * @param {typeof ASYNC_OPTIONS_TYPE} options - The asynchronous configuration options for the module.
+   * @returns {DynamicModule} The configured dynamic module.
+   */
   static registerAsync(options: typeof ASYNC_OPTIONS_TYPE): DynamicModule {
     const httpModuleOptions = {
       imports: options.imports,
@@ -100,6 +110,11 @@ export class ChargiliModule extends ConfigurableModuleClass {
     };
   }
 
+  /**
+   * Registers the module asynchronously using a configuration provider from `@nestjs/config`.
+   * @param {ReturnType<typeof import('@nestjs/config').registerAs>} configProvider - The configuration provider.
+   * @returns {DynamicModule} The configured dynamic module.
+   */
   static forRootAsync(
     configProvider: ReturnType<typeof import('@nestjs/config').registerAs>,
   ): DynamicModule {

@@ -1,19 +1,30 @@
-import { Entity, Column, ManyToOne, Relation, DeleteDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  ManyToOne,
+  Relation,
+  DeleteDateColumn,
+  Index,
+} from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseEntity } from '../../../common/entities/base.entity';
 
+@Index(['id', 'label'], {
+  unique: true,
+  where: '"deletedAt" is NULL',
+})
 @Entity('categories')
 export class Category extends BaseEntity {
   @ApiProperty({
     description: 'The label of the category',
     example: 'Electronics',
   })
-  @Column({ unique: true })
+  @Column()
   label: string;
 
   @ApiProperty({
-    description: 'The picture URL of the category',
-    example: 'https://example.com/category-picture.jpg',
+    description: 'The object name of the category picture in object storage.',
+    example: 'categories/1678886400000-random-bytes-picture.jpg',
   })
   @Column()
   pictureUrl: string;

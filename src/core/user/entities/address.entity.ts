@@ -33,7 +33,7 @@ export class Address extends BaseEntity {
   @Column()
   userId: number;
 
-  @ManyToOne(() => User, (user) => user.addresses)
+  @ManyToOne(() => User, (user) => user.addresses, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   user: User;
 }

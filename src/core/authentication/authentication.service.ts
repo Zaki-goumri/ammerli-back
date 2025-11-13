@@ -3,9 +3,9 @@ import {
   Injectable,
   Logger,
   UnauthorizedException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { RedisService } from 'nestjs-redis-client';
 import authConfig from 'src/config/auth.config';
 import { User } from '../user/entities/user.entity';
 import { UserService } from '../user/user.service';
@@ -15,9 +15,13 @@ import { AuthResDto } from './dtos/response/refresh-token.dto';
 import { SendOtpDto } from './dtos/response/send-otp.dto';
 import { ValidateOtpDto } from './dtos/response/validate-otp.dto';
 import { BlackListService } from '../user/black-list/black-list.service';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
-import { QUEUE_NAME } from 'src/common/constants/queues';
+import { FirebaseService } from 'src/infrastructure/firebase/firebase.service';
+import { transformPhoneNumber } from 'src/common/utils/authentication/phone-number.utils';
+import { RegistrationTokenPayload } from './interfaces/access-token-payload.interface';
+import { UserDto } from '../user/dtos/response/user.dto';
+import { plainToInstance } from 'class-transformer';
+import { OtpStrategy } from './strategies/otp/otp.strategy';
+import { SmsSakOtpStrategy } from './strategies/otp/smssak-otp.strategy';
 
 /**
  * @class AuthenticationService
@@ -30,55 +34,90 @@ export class AuthenticationService {
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
-    private readonly redisService: RedisService,
+    private readonly firebaseService: FirebaseService,
     private readonly blackListService: BlackListService,
-    @InjectQueue(QUEUE_NAME.SMS) private readonly smsQueue: Queue,
+    private readonly otpStrategy: SmsSakOtpStrategy,
   ) {}
 
   /**
-   * @constant {string} CACHE_KEY_PREFIX
-   * @description The prefix for OTP-related cache keys in Redis.
-   */
-  static CACHE_KEY_PREFIX = 'otp';
-
-  /**
-   * @method getCacheKey
-   * @description Generates a cache key for storing OTPs.
-   * @param {string} key - The phone number to use in the cache key.
-   * @returns {string} The generated cache key.
-   */
-  static getCacheKey(key: string): string {
-    return `${this.CACHE_KEY_PREFIX}:${key}`;
-  }
-
-  /**
    * @method validateOtp
-   * @description Validates the provided OTP for a given phone number. If valid, it either creates a new user or logs in an existing user.
+   * @description Validates the provided OTP for a given phone number using the injected OTP strategy.
    * @param {OtpValidationDto} dto - The OTP validation data.
-   * @returns {Promise<AuthResponseDto & { isRegistered: boolean }>} An object containing authentication tokens and a flag indicating if the user is registered.
+   * @returns {Promise<ValidateOtpDto>} An object containing authentication tokens and a flag indicating if the user is registered.
    * @throws {UnauthorizedException} If the OTP is invalid or expired.
    */
   async validateOtp(dto: OtpValidationDto): Promise<ValidateOtpDto> {
     const { phoneNumber, otp } = dto;
-    const cachedOtp = await this.redisService.get<string>(
-      AuthenticationService.getCacheKey(phoneNumber),
-    );
-    if (!cachedOtp || cachedOtp !== otp) {
+
+    const isValid = await this.otpStrategy.verify(phoneNumber, otp);
+    if (!isValid) {
       throw new UnauthorizedException('Invalid or expired OTP');
     }
-    await this.redisService.del(AuthenticationService.getCacheKey(phoneNumber));
+    await this.checkBlacklistAndThrow(phoneNumber);
     const user =
       await this.userService.findByPhoneNumberWithoutException(phoneNumber);
     if (!user) {
-      const newUser = await this.userService.create({ phoneNumber });
-      const accessToken = await this.issueAccessToken(newUser, false);
-      return { accessToken, isRegistered: false };
+      const registrationToken = await this.issueRegistrationToken(phoneNumber);
+      return {
+        accessToken: registrationToken,
+        isRegistered: false,
+        user: null,
+        refreshToken: null,
+      };
     }
     const tokens = await this.issueTokens(user);
-    if (!user?.isRegistered) {
-      return { accessToken: tokens.accessToken, isRegistered: false };
+
+    return {
+      user: tokens.user,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      isRegistered: !!user.isRegistered,
+    };
+  }
+
+  async validateFirebaseToken(firebaseToken: string): Promise<ValidateOtpDto> {
+    const decodedToken =
+      await this.firebaseService.verifyIdToken(firebaseToken);
+    if (!decodedToken.phone_number)
+      throw new UnauthorizedException(
+        'Firebase token does not contain a phone number',
+      );
+
+    const phoneNumber = transformPhoneNumber(decodedToken.phone_number);
+    const user =
+      await this.userService.findByPhoneNumberWithoutException(phoneNumber);
+
+    if (!user) {
+      const registrationToken = await this.issueRegistrationToken(phoneNumber);
+      return {
+        accessToken: registrationToken,
+        isRegistered: false,
+        refreshToken: null,
+        user: null,
+      };
     }
-    return { ...tokens, isRegistered: true };
+    const tokens = await this.issueTokens(user);
+
+    return {
+      user: tokens.user,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      isRegistered: !!user.isRegistered,
+    };
+  }
+
+  /**
+   * @method checkBlacklistAndThrow
+   * @description Checks if a phone number is blacklisted and throws a ForbiddenException if it is.
+   * @param {string} phoneNumber - The phone number to check.
+   * @throws {ForbiddenException} If the phone number is blacklisted.
+   */
+  private async checkBlacklistAndThrow(phoneNumber: string): Promise<void> {
+    const isBlacklisted =
+      await this.blackListService.isPhoneNumberBlacklisted(phoneNumber);
+    if (isBlacklisted) {
+      throw new ForbiddenException('This phone number is blacklisted.');
+    }
   }
 
   /**
@@ -119,67 +158,47 @@ export class AuthenticationService {
       return {
         accessToken,
         refreshToken,
-        //TODO: map user to UserDto properly
-        user: user as any,
+        user: plainToInstance(UserDto, user),
       };
     } catch (error) {
       this.logger.error('Error issuing tokens', error);
-      throw new Error('Failed to issue tokens');
+      throw new InternalServerErrorException('Failed to issue tokens');
     }
-  }
-
-  private async issueAccessToken(
-    user: User,
-    isRegistered: boolean,
-  ): Promise<string> {
-    const { id, phoneNumber } = user;
-    const accessTokenPayload = { id, phoneNumber, isRegistered };
-    const jwtConfig = authConfig().jwt;
-    const accessToken = await this.jwtService.signAsync(accessTokenPayload, {
-      expiresIn: jwtConfig.accessTokenExpiresIn,
-      secret: jwtConfig.accessTokenSecret,
-    });
-    return accessToken;
-  }
-  /**
-   * @method generateAndSetOtp
-   * @description Generates a random OTP and stores it in Redis.
-   * @param {string} phoneNumber - The phone number to associate with the OTP.
-   * @returns {Promise<string>} The generated OTP.
-   */
-  private async generateAndSetOtp(phoneNumber: string): Promise<string> {
-    const otp = Math.floor(1000 + Math.random() * 9000).toString();
-    await this.redisService.set(
-      AuthenticationService.getCacheKey(phoneNumber),
-      otp,
-      600,
-    );
-    return otp;
   }
 
   /**
    * @method sendVerificationCode
-   * @description Sends a verification code (OTP) to the user's phone number.
+   * @description Sends a verification code (OTP) to the user's phone number using the injected OTP strategy.
    * @param {string} phoneNumber - The phone number to send the OTP to.
    * @returns {Promise<{ message: string }>} A confirmation message.
    */
   async sendVerificationCode(phoneNumber: string): Promise<SendOtpDto> {
-    const isBlacklisted = await this.blackListService.isPhoneNumberBlacklisted(
-      phoneNumber,
-    );
+    const isBlacklisted =
+      await this.blackListService.isPhoneNumberBlacklisted(phoneNumber);
     if (isBlacklisted) {
       throw new ForbiddenException('This phone number is blacklisted.');
     }
-    const otp = await this.generateAndSetOtp(phoneNumber);
-    await this.smsQueue.add('send', {
-      to: phoneNumber,
-      body: `Your OTP is: ${otp}`,
-    });
+    await this.otpStrategy.send(phoneNumber);
     return { message: `OTP sent to ${phoneNumber}` };
   }
 
-  async registerUser(dto: RegisterUserDto, userId: number) {
-    const user = await this.userService.registerUserInfo(dto, userId);
+  private async issueRegistrationToken(phoneNumber: string): Promise<string> {
+    const payload: RegistrationTokenPayload = {
+      phoneNumber,
+      purpose: 'registration',
+    };
+    const jwtConfig = authConfig().jwt;
+    return this.jwtService.signAsync(payload, {
+      expiresIn: '15m', // Short-lived token
+      secret: jwtConfig.accessTokenSecret,
+    });
+  }
+
+  async registerUser(
+    dto: RegisterUserDto,
+    phoneNumber: string,
+  ): Promise<ValidateOtpDto> {
+    const user = await this.userService.create({ ...dto, phoneNumber });
     const tokens = await this.issueTokens(user);
     return { ...tokens, isRegistered: true };
   }

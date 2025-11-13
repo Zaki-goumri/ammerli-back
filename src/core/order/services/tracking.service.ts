@@ -11,6 +11,8 @@ import { Order } from '../entities/order.entity';
 import { ORDER_STATUS, OrderStatus } from '../enums/delivery.enum';
 import { OnEvent } from '@nestjs/event-emitter';
 import { SendTrackingDto } from '../dtos/send-tracking.dto';
+import { NotificationsService } from 'src/core/notifications/notifications.service';
+import { NOTIFICATION_TYPE } from 'src/core/notifications/enums/notification-type.enum';
 
 @Injectable()
 export class TrackingService {
@@ -27,6 +29,7 @@ export class TrackingService {
     private readonly trackingRepo: Repository<Tracking>,
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   @OnEvent('order.paid', { async: true })
@@ -56,6 +59,13 @@ export class TrackingService {
   }
 
   async addNextTrackingStatus(orderId: number): Promise<Tracking> {
+    const order = await this.orderRepo.findOne({
+      where: { id: orderId },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${orderId} not found.`);
+    }
     const latestTracking = await this.trackingRepo.findOne({
       where: { orderId },
       order: { createdAt: 'DESC' },
@@ -78,6 +88,15 @@ export class TrackingService {
       orderId,
       status: nextStatus,
     });
-    return this.trackingRepo.save(newTracking);
+    const savedTracking = await this.trackingRepo.save(newTracking);
+    const title = `Order Status Update`;
+    const body = `Your order #${order.id} is now ${nextStatus}.`;
+    await this.notificationsService.sendNotification(
+      title,
+      body,
+      order.buyerId,
+      NOTIFICATION_TYPE.STATUS_UPDATE,
+    );
+    return savedTracking;
   }
 }

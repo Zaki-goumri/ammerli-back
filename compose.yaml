@@ -61,7 +61,8 @@ services:
       - "traefik.http.routers.minio-api.priority=2000"
       - "traefik.http.routers.minio-api.service=minio-api-svc"
       - "traefik.http.services.minio-api-svc.loadbalancer.server.port=9000"
-      - "traefik.http.routers.minio-api.middlewares=minio-path-strip@docker"
+      - "traefik.http.routers.minio-api.middlewares=minio-path-strip@docker,minio-host@docker"
+      - "traefik.http.middlewares.minio-host.headers.customRequestHeaders.Host=minio:9000"
       - "traefik.http.middlewares.minio-path-strip.stripprefix.prefixes=/minio-data"
 
   redis:

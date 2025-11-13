@@ -28,8 +28,8 @@ export class ProductPicture extends BaseEntity {
   productId: number;
 
   @ApiProperty({
-    description: 'The URL of the product picture',
-    example: 'https://example.com/product-picture.jpg',
+    description: 'The object name of the product picture in object storage.',
+    example: 'products/1678886400000-random-bytes-picture.jpg',
   })
   @Column({ type: 'varchar', length: 500, nullable: true })
   url?: string;

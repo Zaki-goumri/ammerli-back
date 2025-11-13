@@ -23,4 +23,3 @@ export class CreateAddressDto {
   @IsString()
   district: string;
 }
-

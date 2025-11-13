@@ -2,7 +2,10 @@ import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { AccessTokenPayload } from '../interfaces/access-token-payload.interface';
+import {
+  AccessTokenPayload,
+  JwtPayload,
+} from '../interfaces/access-token-payload.interface';
 import authConfig from 'src/config/auth.config';
 
 @Injectable()
@@ -20,7 +23,7 @@ export class AccessTokenStrategy extends PassportStrategy(
     });
   }
 
-  validate(payload: AccessTokenPayload): AccessTokenPayload {
+  validate(payload: JwtPayload): JwtPayload {
     if (!payload) {
       throw new UnauthorizedException('Invalid token payload');
     }

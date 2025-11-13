@@ -1,9 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { OrderDto } from './order.dto';
+import { CreateOrderResponseDto } from './create-order-response.dto';
 
 export class CreateOrderResDto {
   @ApiProperty()
-  order: OrderDto;
+  order: CreateOrderResponseDto;
 
   @ApiProperty({ nullable: true })
   checkoutUrl: string | null;

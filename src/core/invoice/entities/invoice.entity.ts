@@ -1,4 +1,3 @@
-
 import { Entity, Column, JoinColumn, ManyToOne } from 'typeorm';
 import { BaseEntity } from 'src/common/entities/base.entity';
 import { Order } from 'src/core/order/entities/order.entity';
@@ -29,7 +28,8 @@ export class Invoice extends BaseEntity {
   invoiceNumber: string;
 
   @ApiProperty({
-    description: 'URL of the generated PDF file in object storage.',
+    description: 'Object name of the generated PDF file in object storage.',
+    example: 'invoices/2025-001.pdf',
   })
   @Column()
   pdfUrl: string;

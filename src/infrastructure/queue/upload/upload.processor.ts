@@ -61,11 +61,12 @@ export class UploadProcessor extends WorkerHost {
       data.file,
       data.options,
     );
-    this.logger.log('Uploading handled.');
+    this.logger.log('Uploading handled...');
     return {
       fileUrl: result.fileUrl,
-      targetId: parseInt(data.metadata.targetId),
-      targetType: data.metadata.targetType,
+      objectName: result.objectName,
+      targetId: data?.metadata?.targetId,
+      targetType: data?.metadata?.targetType,
     };
   }
 
@@ -80,6 +81,7 @@ export class UploadProcessor extends WorkerHost {
     this.logger.log('Bulk uploading handled.');
     return results.map((result) => ({
       fileUrl: result.fileUrl,
+      objectName: result.objectName,
       targetId: data?.metadata?.targetId ?? 0,
       targetType: data?.metadata?.targetType ?? 'unknown',
     }));
@@ -88,9 +90,8 @@ export class UploadProcessor extends WorkerHost {
   @OnWorkerEvent('completed')
   onCompleted(job: Job) {
     this.logger.log(`Job completed: ${job.id}`);
-    // Handle single file upload completion
     if (job.name === UPLOAD_JOBS.UPLOAD_FILE) {
-      const { fileUrl, targetId, targetType } =
+      const { objectName, targetId, targetType } =
         job.returnvalue as FinalizePayloadDto;
       const eventName = `file.uploaded.${targetType}`;
       this.logger.log(
@@ -98,32 +99,56 @@ export class UploadProcessor extends WorkerHost {
       );
       this.eventEmitter.emit(eventName, {
         targetId,
-        fileUrl,
+        objectName,
         jobId: job.id,
       });
     } else if (job.name === UPLOAD_JOBS.UPLOAD_FILES_BULK) {
-      // Handle bulk file upload completion
       const results = job.returnvalue as FinalizePayloadDto[];
       if (results && results.length > 0) {
-        const { targetId, targetType } = results[0]; // Assuming same target for all files in bulk
+        const { targetId, targetType } = results[0];
         const eventName = `file.uploaded.bulk.${targetType}`;
         this.logger.log(
           `Dispatching NestJS event: ${eventName} for target ID: ${targetId}`,
         );
         this.eventEmitter.emit(eventName, {
           targetId,
-          files: results.map((r) => ({ fileUrl: r.fileUrl, jobId: job.id })),
+          files: results.map((r) => ({
+            objectName: r.objectName,
+            jobId: job.id,
+          })),
         });
       }
     }
   }
 
   @OnWorkerEvent('failed')
-  onFailed(job: Job) {
+  onFailed(job: Job, error?: Error) {
     this.logger.log(`Job failed: ${job.id}`);
+    this.logger.error(`Job failure reason:`, error?.message || 'Unknown error');
+
+    // Add null checks
+    if (!job.data) {
+      this.logger.error('Job data is undefined');
+      return;
+    }
+
     // For single file upload failure
     if (job.name === UPLOAD_JOBS.UPLOAD_FILE) {
-      const { targetId, targetType } = job.data.metadata;
+      const uploadData = job.data as UploadJobDto;
+
+      // Check if metadata exists
+      if (!uploadData.metadata) {
+        this.logger.error('Upload job metadata is undefined');
+        return;
+      }
+
+      const { targetId, targetType } = uploadData.metadata;
+
+      if (!targetId || !targetType) {
+        this.logger.error('Missing targetId or targetType in metadata');
+        return;
+      }
+
       const eventName = `file.failed.${targetType}`;
       this.logger.log(
         `Dispatching NestJS event: ${eventName} for target ID: ${targetId}`,
@@ -131,21 +156,31 @@ export class UploadProcessor extends WorkerHost {
       this.eventEmitter.emit(eventName, {
         targetId,
         jobId: job.id,
+        error: error?.message,
       });
     } else if (job.name === UPLOAD_JOBS.UPLOAD_FILES_BULK) {
-      // For bulk file upload failure
-      const { metadata } = job.data as UploadFilesBulkDto;
-      if (metadata) {
-        const { targetId, targetType } = metadata;
-        const eventName = `file.failed.bulk.${targetType}`;
-        this.logger.log(
-          `Dispatching NestJS event: ${eventName} for target ID: ${targetId}`,
-        );
-        this.eventEmitter.emit(eventName, {
-          targetId,
-          jobId: job.id,
-        });
+      const bulkData = job.data as UploadFilesBulkDto;
+      if (!bulkData.metadata) {
+        this.logger.error('Bulk upload job metadata is undefined');
+        return;
       }
+
+      const { targetId, targetType } = bulkData.metadata;
+
+      if (!targetId || !targetType) {
+        this.logger.error('Missing targetId or targetType in bulk metadata');
+        return;
+      }
+
+      const eventName = `file.failed.bulk.${targetType}`;
+      this.logger.log(
+        `Dispatching NestJS event: ${eventName} for target ID: ${targetId}`,
+      );
+      this.eventEmitter.emit(eventName, {
+        targetId,
+        jobId: job.id,
+        error: error?.message,
+      });
     }
   }
 }

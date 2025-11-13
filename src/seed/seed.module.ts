@@ -37,4 +37,3 @@ import { OrderProduct } from 'src/core/order/entities/product-order.entity';
   providers: [SeedService],
 })
 export class SeedModule {}
-

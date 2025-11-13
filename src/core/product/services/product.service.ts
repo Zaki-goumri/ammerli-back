@@ -80,6 +80,7 @@ export class ProductService {
   async findManyForAdmin(
     paginationQuery: PaginationQueryDto,
     search?: string,
+    categoryIds?: number[],
   ): Promise<PaginationResponseDto<AdminProductDto>> {
     const { page, limit } = paginationQuery;
     const offset = (page - 1) * limit;
@@ -98,11 +99,17 @@ export class ProductService {
       .addGroupBy('mainPicture.url')
       .orderBy('product.createdAt', 'DESC');
 
+    if (categoryIds && categoryIds.length > 0) {
+      queryBuilder.andWhere('product.categoryId IN (:...categoryIds)', {
+        categoryIds,
+      });
+    }
     if (search) {
       queryBuilder.andWhere('(product.name ILIKE :search)', {
         search: `%${search}%`,
       });
     }
+
     const totalQueryBuilder = queryBuilder.clone();
     const total = await totalQueryBuilder.getCount();
     const productsRaw = await queryBuilder
@@ -110,8 +117,21 @@ export class ProductService {
       .take(limit)
       .getRawMany();
 
+    const preperdData = await Promise.all(
+      productsRaw.map(async (product) => {
+        product.price = parseInt(product.price, 10);
+
+        if (product.mainpicture) {
+          product.mainPicture = await this.objectService.getPresignedUrl(
+            product.mainpicture,
+          );
+        }
+        delete product.mainpicture;
+        return product;
+      }),
+    );
     return {
-      data: productsRaw,
+      data: preperdData,
       meta: {
         total,
         page,
@@ -188,7 +208,16 @@ export class ProductService {
       .take(limit)
       .getRawMany();
 
-    const formatted = productsRaw.map((p) => ({
+    const productsWithPresignedUrls = await Promise.all(
+      productsRaw.map(async (p) => {
+        if (p.picture) {
+          p.picture = await this.objectService.getPresignedUrl(p.picture);
+        }
+        return p;
+      }),
+    );
+
+    const formatted = productsWithPresignedUrls.map((p) => ({
       id: p?.id,
       name: p?.name,
       price: parseInt(p?.price || '0', 10),
@@ -216,12 +245,31 @@ export class ProductService {
       where: { id },
       relations: ['pictures', 'brand', 'category'],
     });
+
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
+
     const loveCount = await this.favProductRepo.count({
       where: { productId: id },
     });
+
+    console.debug(product);
+    let categoryPictureUrl = '';
+    if (product?.category?.pictureUrl) {
+      categoryPictureUrl = await this.objectService.getPresignedUrl(
+        product.category.pictureUrl,
+      );
+    }
+
+    const picturesUrls = await Promise.all(
+      product.pictures
+        .filter((pic) => pic.url)
+        .map(async (pic) => {
+          return this.objectService.getPresignedUrl(pic.url as string);
+        }),
+    );
+
     return {
       id: product.id,
       name: product.name,
@@ -231,11 +279,10 @@ export class ProductService {
       loveCount,
       brand: product.brand.label,
       category: {
-        label: product.category.label,
-        picture: product.category.pictureUrl,
+        label: product?.category?.label,
+        picture: categoryPictureUrl,
       },
-      pictures:
-        product.pictures.filter((pic) => pic.url).map((pic) => pic.url) ?? [],
+      pictures: picturesUrls ?? [],
     };
   }
 
@@ -259,18 +306,47 @@ export class ProductService {
         error,
       );
     });
-    return this.findOne(newProduct.id);
+    return this.findOne(productId);
   }
 
   async update(
     id: number,
     dto: UpdateProductDto,
+    sellerId: number,
+    files: Array<Express.Multer.File>,
+    uploadOptions: UploadingOptions,
   ): Promise<{ message: string }> {
-    const { affected } = await this.productRepo.update(id, dto);
-    if (affected === 0) {
+    const product = await this.productRepo.findOne({
+      where: { id, sellerId },
+    });
+
+    if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
-    return { message: 'Product successfully updated' };
+
+    // Update text/numeric fields
+    await this.productRepo.update(id, dto);
+
+    // Handle file replacement if new files are uploaded
+    if (files && files.length > 0) {
+      const queueFiles = files.map((file) => ({
+        buffer: file.buffer,
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+      }));
+
+      await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILES_BULK, {
+        files: queueFiles,
+        options: uploadOptions,
+        metadata: {
+          targetId: id,
+          targetType: 'product_picture',
+        },
+      });
+    }
+
+    return { message: 'Product update process initiated' };
   }
 
   async remove(id: number, userId: number): Promise<{ message: string }> {
@@ -376,16 +452,27 @@ export class ProductService {
       .take(limit)
       .getRawMany();
 
-    const formatted: WholesellerProductDto[] = productsRaw.map((p) => ({
-      id: p?.id,
-      name: p?.name,
-      price: p?.price,
-      brand: p?.brand,
-      picture: p?.picture,
-      category: p?.category,
-      createdAt: p?.createdAt,
-      quantity: p?.quantity,
-    }));
+    const productsWithPresignedUrls = await Promise.all(
+      productsRaw.map(async (p) => {
+        if (p.picture) {
+          p.picture = await this.objectService.getPresignedUrl(p.picture);
+        }
+        return p;
+      }),
+    );
+
+    const formatted: WholesellerProductDto[] = productsWithPresignedUrls.map(
+      (p) => ({
+        id: p?.id,
+        name: p?.name,
+        price: p?.price,
+        brand: p?.brand,
+        picture: p?.picture,
+        category: p?.category,
+        createdAt: p?.createdAt,
+        quantity: p?.quantity,
+      }),
+    );
 
     return {
       data: formatted,
@@ -446,15 +533,26 @@ export class ProductService {
       .take(limit)
       .getRawMany();
 
-    const formatted: FavoriteProductDto[] = productsRaw.map((p) => ({
-      id: p?.id,
-      productId: p?.id,
-      name: p?.name,
-      price: p?.price,
-      brand: p?.brand,
-      picture: p?.picture,
-      category: p?.category,
-    }));
+    const productsWithPresignedUrls = await Promise.all(
+      productsRaw.map(async (p) => {
+        if (p.picture) {
+          p.picture = await this.objectService.getPresignedUrl(p.picture);
+        }
+        return p;
+      }),
+    );
+
+    const formatted: FavoriteProductDto[] = productsWithPresignedUrls.map(
+      (p) => ({
+        id: p?.id,
+        productId: p?.id,
+        name: p?.name,
+        price: p?.price,
+        brand: p?.brand,
+        picture: p?.picture,
+        category: p?.category,
+      }),
+    );
 
     return {
       data: formatted,
@@ -523,7 +621,6 @@ export class ProductService {
     }
   }
 
-  //TODO: use upload bulk
   async addFilesToQueue(
     files: Array<Express.Multer.File>,
     uploadOptions: UploadingOptions,
@@ -539,12 +636,10 @@ export class ProductService {
       queueFiles.map((file) =>
         this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
           file,
-          uploadOptions: {
-            ...uploadOptions,
-            metadata: {
-              targetId: productId,
-              targetType: 'product_picture',
-            },
+          options: uploadOptions,
+          metadata: {
+            targetId: productId,
+            targetType: 'product_picture',
           },
         }),
       ),

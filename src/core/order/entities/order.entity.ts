@@ -10,9 +10,13 @@ import { ApiProperty } from '@nestjs/swagger';
 import { User } from 'src/core/user/entities/user.entity';
 import { Address } from 'src/core/user/entities/address.entity';
 import { BaseEntity } from 'src/common/entities/base.entity';
-import { PAYEMENT_WAY, PaymentWay } from '../enums/payement-way.enum';
 import { Checkout } from './checkout.entity';
 import { OrderProduct } from './product-order.entity';
+import {
+  ORDER_PAYMENT_METHOD,
+  ORDER_PAYMENT_METHOD_VALUES,
+  OrderPaymentMethodType,
+} from '../enums/order-payment-method.enum';
 
 @Entity({ name: 'orders' })
 export class Order extends BaseEntity {
@@ -25,16 +29,15 @@ export class Order extends BaseEntity {
   buyer: User;
 
   @ApiProperty({
-    enum: PAYEMENT_WAY,
-    example: PAYEMENT_WAY.CIB,
+    enum: ORDER_PAYMENT_METHOD_VALUES,
+    example: ORDER_PAYMENT_METHOD.CASH,
     description: 'Payment method used for the order',
   })
   @Column({
     type: 'enum',
-    enum: PAYEMENT_WAY,
-    default: PAYEMENT_WAY.CIB,
+    enum: ORDER_PAYMENT_METHOD_VALUES,
   })
-  payementWay: PaymentWay;
+  paymentWay: OrderPaymentMethodType;
 
   @ApiProperty({
     example: 3,

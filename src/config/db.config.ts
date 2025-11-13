@@ -13,7 +13,7 @@ export default registerAs(
     entities: [__dirname + '/../**/*.entity{.ts,.js}'],
     migrations: [__dirname + '/../migrations/*{.ts,.js}'],
     synchronize: process.env.NODE_ENV !== 'prod',
-    logging: process.env.NODE_ENV !== 'production',
+    logging: process.env.NODE_ENV !== 'prod',
     poolSize: 10,
     extra: {
       max: 10,

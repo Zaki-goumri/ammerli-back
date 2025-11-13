@@ -26,3 +26,6 @@ export const INVOICE_JOBS = {
   GENERATE_INVOICE: 'generate-invoice',
 } as const;
 
+export const SMS_JOBS = {
+  SEND_SMS: 'send-sms',
+} as const;

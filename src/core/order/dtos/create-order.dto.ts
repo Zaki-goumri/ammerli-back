@@ -8,13 +8,12 @@ import {
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
-import {
-  PAYEMENT_WAY,
-  PAYMENT_WAY_VALUES,
-  PaymentWay,
-} from '../enums/payement-way.enum';
 import { CreateAddressDto } from 'src/core/user/dtos/create-address.dto';
 import { Type } from 'class-transformer';
+import {
+  ORDER_PAYMENT_METHOD,
+  ORDER_PAYMENT_METHOD_VALUES,
+} from '../enums/order-payment-method.enum';
 
 export class OrderItemDto {
   @ApiProperty({
@@ -46,13 +45,13 @@ export class CreateOrderDto {
   items: OrderItemDto[];
 
   @ApiProperty({
-    description: 'payement way ID',
-    example: PAYEMENT_WAY.CIB,
-    enum: PAYMENT_WAY_VALUES,
+    description: 'Payment method for the order',
+    example: ORDER_PAYMENT_METHOD.CASH,
+    enum: ORDER_PAYMENT_METHOD_VALUES,
   })
-  @IsEnum(PAYMENT_WAY_VALUES)
+  @IsEnum(ORDER_PAYMENT_METHOD)
   @IsNotEmpty()
-  payementWay: PaymentWay;
+  paymentWay: ORDER_PAYMENT_METHOD;
 
   @ApiPropertyOptional({
     description: 'ID of the address to use for delivery',

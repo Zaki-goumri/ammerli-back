@@ -4,4 +4,3 @@ export const QUEUE_NAME = {
   INVOICE: 'invoice',
   SMS: 'sms',
 } as const;
-

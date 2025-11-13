@@ -15,6 +15,6 @@ import { InfrastructureModule } from 'src/infrastructure/infrastructure.module';
   ],
   controllers: [UserController],
   providers: [UserService],
-  exports: [UserService],
+  exports: [UserService, BlackListModule],
 })
 export class UserModule {}

@@ -9,6 +9,7 @@ import {
   Res,
   ParseIntPipe,
   UseGuards,
+  Header,
 } from '@nestjs/common';
 import { InvoiceService } from './services/invoice.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
@@ -96,17 +97,6 @@ export class InvoiceController {
     return this.invoiceService.regenerateInvoice(id);
   }
 
-  // @Patch(':id/status')
-  // @UseGuards(AccessTokenGuard, RoleGuard)
-  // @Roles(USER_ROLES.ADMIN)
-  // @ApiOperation({ summary: 'Update the status of an invoice' })
-  // updateStatus(
-  //   @Param('id', ParseIntPipe) id: number,
-  //   @Body() updateInvoiceStatusDto: updateInvoiceStatusDto,
-  // ) {
-  //   return this.invoiceService.updateStatus(id, updateInvoiceStatusDto.status);
-  // }
-
   @Delete(':id')
   @UseGuards(AccessTokenGuard, RoleGuard)
   @Roles(USER_ROLES.ADMIN)
@@ -116,14 +106,13 @@ export class InvoiceController {
   }
 
   @Get('test/sample')
+  @Header('Content-Type', 'application/pdf')
+  @Header('Content-Disposition', 'inline; filename=sample-invoice.pdf')
   @ApiOperation({ summary: 'Generate a sample PDF for testing' })
   async getSamplePdf(@Res() res: Response) {
     const sampleData = this.invoiceGeneratorService.createSampleData();
     const pdfBuffer =
       await this.invoiceGeneratorService.generateInvoicePDF(sampleData);
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'inline; filename=sample-invoice.pdf');
     res.send(pdfBuffer);
   }
 }

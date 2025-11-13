@@ -29,22 +29,46 @@ export class CategoryService {
     const categories = await this.categoryRepo.find({
       where: { parentCategoryId: IsNull() },
     });
-    return categories.map((c) => ({
-      id: c.id,
-      label: c.label,
-      pictureUrl: c.pictureUrl,
-    }));
+
+    const categoriesWithPresignedUrls = await Promise.all(
+      categories.map(async (c) => {
+        let presignedUrl = '';
+        if (c.pictureUrl) {
+          presignedUrl = await this.objectStorageService.getPresignedUrl(
+            c.pictureUrl,
+          );
+        }
+        return {
+          id: c.id,
+          label: c.label,
+          pictureUrl: presignedUrl,
+        };
+      }),
+    );
+
+    return categoriesWithPresignedUrls;
   }
 
   async getChildrenCaregories(parentId: number): Promise<CategoryResDto[]> {
     const categories = await this.categoryRepo.find({
       where: { parentCategoryId: parentId },
     });
-    return categories.map((c) => ({
-      id: c.id,
-      label: c.label,
-      pictureUrl: c.pictureUrl,
-    }));
+    const categoriesWithPresignedUrls = await Promise.all(
+      categories.map(async (c) => {
+        let presignedUrl = '';
+        if (c.pictureUrl) {
+          presignedUrl = await this.objectStorageService.getPresignedUrl(
+            c.pictureUrl,
+          );
+        }
+        return {
+          id: c.id,
+          label: c.label,
+          pictureUrl: presignedUrl,
+        };
+      }),
+    );
+    return categoriesWithPresignedUrls;
   }
 
   async create(
@@ -54,8 +78,10 @@ export class CategoryService {
     const objectName = this.objectStorageService.generateUniqueObjectName(
       picutre.originalname,
     );
-    const pictureUrl = this.objectStorageService.getFileUrl(objectName);
-    const category = this.categoryRepo.create({ ...dto, pictureUrl });
+    const category = this.categoryRepo.create({
+      ...dto,
+      pictureUrl: objectName,
+    });
     const newCategory = await this.categoryRepo.save(category);
 
     await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
@@ -63,10 +89,14 @@ export class CategoryService {
       options: { objectName },
       metadata: { targetId: newCategory.id, targetType: 'category_picture' },
     });
+
+    const presignedUrl =
+      await this.objectStorageService.getPresignedUrl(objectName);
+
     return {
       id: newCategory.id,
       label: newCategory.label,
-      pictureUrl: newCategory.pictureUrl,
+      pictureUrl: presignedUrl,
     };
   }
 
@@ -75,18 +105,30 @@ export class CategoryService {
     dto: Partial<CreateCategoryDto>,
     newPicture?: Express.Multer.File,
   ): Promise<{ message: string }> {
+    const category = await this.categoryRepo.findOne({ where: { id } });
+    if (!category) {
+      throw new NotFoundException(`Category with ID ${id} not found`);
+    }
+
     let pictureUrl: string | undefined;
     if (newPicture) {
       const objectName = this.objectStorageService.generateUniqueObjectName(
         newPicture.originalname,
       );
-      pictureUrl = this.objectStorageService.getFileUrl(objectName);
+      pictureUrl = objectName;
 
       await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
         file: newPicture,
         options: { objectName },
         metadata: { targetId: id, targetType: 'category_picture' },
       });
+
+      if (category.pictureUrl) {
+        await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
+          objectUrls: [category.pictureUrl],
+          metadata: { targetId: id, targetType: 'category_picture' },
+        });
+      }
     }
     await this.categoryRepo.update(id, {
       ...dto,
@@ -100,9 +142,7 @@ export class CategoryService {
     if (!category) {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
-
     await this.categoryRepo.softDelete(id);
-
     if (category.pictureUrl) {
       await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
         objectUrls: [category.pictureUrl],

@@ -5,6 +5,7 @@
 # Docker files dev
 compose.dev.yaml
 Dockerfile.dev
+.coderabbit.yaml
 # Logs
 logs
 *.log

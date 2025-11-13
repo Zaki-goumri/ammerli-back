@@ -37,18 +37,28 @@ import { GetBlackListedUserDto } from './dtos/get-black-listed-user.dto';
 export class BlackListController {
   constructor(private readonly blackListService: BlackListService) {}
 
+  /**
+   * @method create
+   * @description Adds a user to the blacklist by their ID.
+   * @param {number} userId - The ID of the user to blacklist.
+   * @returns {Promise<BlackListDto>} The blacklisted user's information.
+   */
   @Post(':userId')
   @ApiOperation({ summary: 'Add a user to the blacklist by ID' })
   @ApiCreatedResponse({
     description: 'User added to blacklist successfully',
     type: BlackListDto,
   })
-  create(
-    @Param('userId', ParseIntPipe) userId: number,
-  ): Promise<BlackListDto> {
+  create(@Param('userId', ParseIntPipe) userId: number): Promise<BlackListDto> {
     return this.blackListService.create(userId);
   }
 
+  /**
+   * @method getManyWithPagination
+   * @description Retrieves a paginated list of all blacklisted users.
+   * @param {PaginationQueryDto} paginationQuery - Pagination and filtering parameters.
+   * @returns {Promise<PaginationResponseDto<GetBlackListedUserDto>>} A paginated list of blacklisted users.
+   */
   @Get()
   @ApiOperation({ summary: 'Get all blacklisted users' })
   @ApiOkResponse({
@@ -61,18 +71,16 @@ export class BlackListController {
     return this.blackListService.getManyWithPagination(paginationQuery);
   }
 
-  @Delete(':id')
-  @ApiOperation({ summary: 'Remove a user from the blacklist' })
-  @ApiOkResponse({
-    description: 'User removed from blacklist successfully',
-    type: MessageDto,
-  })
-  remove(@Param('id', ParseIntPipe) id: number): Promise<{ message: string }> {
-    return this.blackListService.remove(id);
-  }
-
+  /**
+   * @method restore
+   * @description Restores a user, removing them from the blacklist.
+   * @param {number} userId - The ID of the user to restore.
+   * @returns {Promise<{ message: string }>} A confirmation message.
+   */
   @Post('restore/:userId')
-  @ApiOperation({ summary: 'Restore a user and remove them from the blacklist' })
+  @ApiOperation({
+    summary: 'Restore a user and remove them from the blacklist',
+  })
   @ApiOkResponse({
     description: 'User restored and removed from blacklist successfully',
     type: MessageDto,
@@ -83,4 +91,3 @@ export class BlackListController {
     return this.blackListService.restore(userId);
   }
 }
-

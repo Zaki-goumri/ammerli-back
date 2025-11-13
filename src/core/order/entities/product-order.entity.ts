@@ -7,18 +7,18 @@ import { Order } from './order.entity';
 @Entity('order_products')
 export class OrderProduct extends BaseEntity {
   @ApiProperty()
-  @ManyToOne(() => Product, { onDelete: 'NO ACTION', nullable: false })
+  @ManyToOne(() => Product, { onDelete: 'NO ACTION' })
   @JoinColumn({ name: 'productId' })
   product: Product;
-  @Column()
+
+  @Column({ name: 'productId' })
   productId: number;
 
-  @ApiProperty()
-  @ManyToOne(() => Order, { onDelete: 'CASCADE', nullable: false })
+  @ManyToOne(() => Order, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'orderId' })
   order: Order;
 
-  @Column()
+  @Column({ name: 'orderId' })
   orderId: number;
 
   @ApiProperty({
@@ -27,5 +27,4 @@ export class OrderProduct extends BaseEntity {
   })
   @Column({ type: 'int', default: 1 })
   quantity: number;
-
 }

@@ -27,7 +27,7 @@ export class CreateProductDto {
     example: 'This is a sample product description.',
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   description?: string;
 
   @ApiProperty({

@@ -16,6 +16,7 @@ import { Token } from 'src/core/notifications/entities/token.entity';
   unique: true,
   where: '"deletedAt" IS NULL',
 })
+//TODO: remove optional fields if not needed
 export class User extends BaseEntity {
   @ApiProperty({
     description: 'User phone number',
@@ -49,8 +50,8 @@ export class User extends BaseEntity {
   supermarketName?: string;
 
   @ApiPropertyOptional({
-    description: 'Profile picture URL',
-    example: 'https://cdn.example.com/avatars/user123.jpg',
+    description: 'Profile picture object name in object storage.',
+    example: 'avatars/1678886400000-random-bytes-user123.jpg',
   })
   @Column({ nullable: true })
   profilePic?: string;
@@ -66,6 +67,9 @@ export class User extends BaseEntity {
     default: USER_ROLES.SUPERMARKET,
   })
   role?: UserRole;
+
+  @Column({ default: '+213' })
+  countryCode: string;
 
   @ApiProperty({
     description: 'List of products added by the user (if seller)',

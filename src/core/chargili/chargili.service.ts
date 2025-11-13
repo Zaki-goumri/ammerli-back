@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import {
@@ -22,6 +22,9 @@ import {
   UpdateProductParams,
 } from './interfaces/requests';
 import { DeleteItemResponse, ListResponse } from './interfaces/responses';
+
+const DEFAULT_PER_PAGE = 10;
+const DEFAULT_PAGE = 1;
 
 /**
  * A client for interacting with Chargily's API, supporting operations for customers, products, prices, checkouts, and payment links.
@@ -104,8 +107,8 @@ export class ChargiliService {
    * @returns {Promise<ListResponse<Customer>>} - A promise that resolves to a paginated list of customers.
    */
   public async listCustomers(
-    per_page: number = 10,
-    page: number = 1,
+    per_page: number = DEFAULT_PER_PAGE,
+    page: number = DEFAULT_PAGE,
   ): Promise<ListResponse<Customer>> {
     const response = await lastValueFrom(
       this.httpService.get<ListResponse<Customer>>('/customers', {
@@ -164,8 +167,8 @@ export class ChargiliService {
    * @returns {Promise<ListResponse<Product>>} A paginated list of products.
    */
   public async listProducts(
-    per_page: number = 10,
-    page: number = 1,
+    per_page: number = DEFAULT_PER_PAGE,
+    page: number = DEFAULT_PAGE,
   ): Promise<ListResponse<Product>> {
     const response = await lastValueFrom(
       this.httpService.get<ListResponse<Product>>('/products', {
@@ -196,8 +199,8 @@ export class ChargiliService {
    */
   public async getProductPrices(
     product_id: string,
-    per_page: number = 10,
-    page: number = 1,
+    per_page: number = DEFAULT_PER_PAGE,
+    page: number = DEFAULT_PAGE,
   ): Promise<ListResponse<ProductPrice>> {
     const response = await lastValueFrom(
       this.httpService.get<ListResponse<ProductPrice>>(
@@ -216,11 +219,10 @@ export class ChargiliService {
    * @returns {Promise<Price>} The created price object.
    */
   public async createPrice(price_data: CreatePriceParams): Promise<Price> {
-    const response = this.httpService.axiosRef.post<Price>(
-      '/prices',
-      price_data,
+    const response = await lastValueFrom(
+      this.httpService.post<Price>('/prices', price_data),
     );
-    return (await response).data;
+    return response.data;
   }
 
   /**
@@ -258,8 +260,8 @@ export class ChargiliService {
    * @returns {Promise<ListResponse<Price>>} A paginated list of prices.
    */
   public async listPrices(
-    per_page: number = 10,
-    page: number = 1,
+    per_page: number = DEFAULT_PER_PAGE,
+    page: number = DEFAULT_PAGE,
   ): Promise<ListResponse<Price>> {
     const response = await lastValueFrom(
       this.httpService.get<ListResponse<Price>>('/prices', {
@@ -281,14 +283,16 @@ export class ChargiliService {
       !checkout_data.success_url.startsWith('http') &&
       !checkout_data.success_url.startsWith('https')
     ) {
-      throw new Error('Invalid success_url, it must begin with http or https.');
+      throw new BadRequestException(
+        'Invalid success_url, it must begin with http or https.',
+      );
     }
 
     if (
       !checkout_data.items &&
       (!checkout_data.amount || !checkout_data.currency)
     ) {
-      throw new Error(
+      throw new BadRequestException(
         'The items field is required when amount and currency are not present.',
       );
     }
@@ -318,8 +322,8 @@ export class ChargiliService {
    * @returns {Promise<ListResponse<Checkout>>} A paginated list of checkout sessions.
    */
   public async listCheckouts(
-    per_page: number = 10,
-    page: number = 1,
+    per_page: number = DEFAULT_PER_PAGE,
+    page: number = DEFAULT_PAGE,
   ): Promise<ListResponse<Checkout>> {
     const response = await lastValueFrom(
       this.httpService.get<ListResponse<Checkout>>('/checkouts', {
@@ -338,8 +342,8 @@ export class ChargiliService {
    */
   public async getCheckoutItems(
     checkout_id: string,
-    per_page: number = 10,
-    page: number = 1,
+    per_page: number = DEFAULT_PER_PAGE,
+    page: number = DEFAULT_PAGE,
   ): Promise<ListResponse<any>> {
     const response = await lastValueFrom(
       this.httpService.get<ListResponse<any>>(
@@ -416,8 +420,8 @@ export class ChargiliService {
    * @returns {Promise<ListResponse<PaymentLink>>} A paginated list of payment links.
    */
   public async listPaymentLinks(
-    per_page: number = 10,
-    page: number = 1,
+    per_page: number = DEFAULT_PER_PAGE,
+    page: number = DEFAULT_PAGE,
   ): Promise<ListResponse<PaymentLink>> {
     const response = await lastValueFrom(
       this.httpService.get<ListResponse<PaymentLink>>('/payment-links', {
@@ -436,8 +440,8 @@ export class ChargiliService {
    */
   public async getPaymentLinkItems(
     payment_link_id: string,
-    per_page: number = 10,
-    page: number = 1,
+    per_page: number = DEFAULT_PER_PAGE,
+    page: number = DEFAULT_PAGE,
   ): Promise<ListResponse<any>> {
     const response = await lastValueFrom(
       this.httpService.get<ListResponse<any>>(

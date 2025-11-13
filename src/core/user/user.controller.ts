@@ -65,6 +65,12 @@ import { UserDetailForAdminDto } from './dtos/response/user-detail-for-admin.dto
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  /**
+   * @method getMe
+   * @description Retrieves the profile of the currently authenticated user.
+   * @param {number} userId - The ID of the authenticated user.
+   * @returns {Promise<GetMeDto>} The user's profile information.
+   */
   @Get('/me')
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiOkResponse({
@@ -75,6 +81,13 @@ export class UserController {
     return this.userService.findById(userId);
   }
 
+  /**
+   * @method updateUserInfos
+   * @description Updates the profile information of the currently authenticated user.
+   * @param {number} userId - The ID of the authenticated user.
+   * @param {UpdateUserDto} userDto - The data to update the user's profile with.
+   * @returns {Promise<UserDto>} The updated user's profile information.
+   */
   @Put('/me')
   @ApiOperation({ summary: 'Update current user profile' })
   @ApiOkResponse({
@@ -89,6 +102,12 @@ export class UserController {
     return this.userService.updateUser(userId, userDto);
   }
 
+  /**
+   * @method deleteUser
+   * @description Soft-deletes the account of the currently authenticated user.
+   * @param {number} userId - The ID of the authenticated user.
+   * @returns {Promise<MessageDto>} A confirmation message.
+   */
   @Delete('/me')
   @ApiOperation({ summary: 'Delete current user account' })
   @ApiOkResponse({
@@ -99,6 +118,13 @@ export class UserController {
     return this.userService.deleteUser(userId);
   }
 
+  /**
+   * @method updateProfilePicture
+   * @description Uploads and sets a new profile picture for the current user.
+   * @param {number} userId - The ID of the authenticated user.
+   * @param {Express.Multer.File} file - The new profile picture file.
+   * @returns {Promise<ProfilePictureDto>} The URL of the updated profile picture.
+   */
   @Patch('/me/picture')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Upload and set new profile picture' })
@@ -133,6 +159,13 @@ export class UserController {
     return this.userService.updateUserProfilePic(userId, file);
   }
 
+  /**
+   * @method createAddress
+   * @description Creates a new address for the currently authenticated user.
+   * @param {number} userId - The ID of the authenticated user.
+   * @param {CreateAddressDto} createAddressDto - The data for the new address.
+   * @returns {Promise<AddressDto>} The newly created address.
+   */
   @Post('/address')
   @ApiOperation({ summary: 'Create a new address for the current user' })
   @ApiOkResponse({
@@ -146,6 +179,12 @@ export class UserController {
     return this.userService.createAddress(userId, createAddressDto);
   }
 
+  /**
+   * @method getAddresses
+   * @description Retrieves all addresses associated with the current user.
+   * @param {number} userId - The ID of the authenticated user.
+   * @returns {Promise<AddressDto[]>} A list of the user's addresses.
+   */
   @Get('/address')
   @ApiOperation({ summary: 'Get all addresses for the current user' })
   @ApiOkResponse({
@@ -156,6 +195,14 @@ export class UserController {
     return this.userService.getAddresses(userId);
   }
 
+  /**
+   * @method updateAddress
+   * @description Updates an existing address for the current user.
+   * @param {number} userId - The ID of the authenticated user.
+   * @param {number} addressId - The ID of the address to update.
+   * @param {UpdateAddressDto} updateAddressDto - The data to update the address with.
+   * @returns {Promise<AddressDto>} The updated address.
+   */
   @Put('/address/:id')
   @ApiOperation({ summary: 'Update an address for the current user' })
   @ApiOkResponse({
@@ -170,6 +217,13 @@ export class UserController {
     return this.userService.updateAddress(userId, addressId, updateAddressDto);
   }
 
+  /**
+   * @method deleteAddress
+   * @description Deletes an address for the current user.
+   * @param {number} userId - The ID of the authenticated user.
+   * @param {number} addressId - The ID of the address to delete.
+   * @returns {Promise<MessageDto>} A confirmation message.
+   */
   @Delete('/address/:id')
   @ApiOperation({ summary: 'Delete an address for the current user' })
   @ApiOkResponse({
@@ -183,6 +237,13 @@ export class UserController {
     return this.userService.deleteAddress(userId, addressId);
   }
 
+  /**
+   * @method getUsersForAdmin
+   * @description Retrieves a paginated list of all users for administrative purposes.
+   * @param {PaginationQueryDto} paginationQuery - Pagination and filtering parameters.
+   * @param {number} userId - The ID of the authenticated admin user.
+   * @returns {Promise<PaginationResponseDto<UserForAdminDto>>} A paginated list of users.
+   */
   @Get('/admin/all')
   @ApiOperation({ summary: 'Get all users for admin view' })
   @ApiOkResponse({
@@ -198,17 +259,43 @@ export class UserController {
     return this.userService.getUsersForAdmin(paginationQuery, userId);
   }
 
+  /**
+   * @method getUserDetailsForAdmin
+   * @description Retrieves detailed information for a specific user for administrative purposes.
+   * @param {number} userId - The ID of the user to retrieve details for.
+   * @returns {Promise<UserDetailForAdminDto>} The detailed user information.
+   */
   @Get('/admin/:id')
   @ApiOperation({ summary: 'Get user details for admin view' })
   @ApiOkResponse({
     description: 'Successfully fetched user details for admin view',
     type: UserDetailForAdminDto,
   })
-  @UseGuards(RoleGuard)
+  @UseGuards(AccessTokenGuard, RoleGuard)
   @Roles(USER_ROLES.ADMIN)
   getUserDetailsForAdmin(
     @Param('id', ParseIntPipe) userId: number,
   ): Promise<UserDetailForAdminDto> {
     return this.userService.getUserDetailsForAdmin(userId);
+  }
+
+  /**
+   * @method deleteUserByAdmin
+   * @description Soft-deletes a specific user account by an administrator.
+   * @param {number} userId - The ID of the user to delete.
+   * @returns {Promise<MessageDto>} A confirmation message.
+   */
+  @Delete('/admin/user/:id')
+  @ApiOperation({ summary: 'Delete user by admin' })
+  @ApiOkResponse({
+    description: 'Successfully delete user for admin',
+    type: MessageDto,
+  })
+  @UseGuards(AccessTokenGuard, RoleGuard)
+  @Roles(USER_ROLES.ADMIN)
+  deleteUserByAdmin(
+    @Param('id', ParseIntPipe) userId: number,
+  ): Promise<MessageDto> {
+    return this.userService.deleteUser(userId);
   }
 }

@@ -2,15 +2,10 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { apiReference } from '@scalar/nestjs-api-reference';
-import helmet from 'helmet';
-import { doubleCsrf, DoubleCsrfConfigOptions } from 'csrf-csrf';
 import { AppModule } from './app.module';
 import { LoggerInterceptor } from './monitoring/logger/logger.interceptor';
-import { ResponseFormatterInterceptor } from './common/interceptors/response-formatter.interceptor';
-import { ExtendedRequest } from './core/authentication/types/extended-req.type';
 import { DatabaseExceptionFilter } from './common/filters/db.filter';
 async function bootstrap() {
-  // the cors will be changed to the front end url  in production environnement
   const app = await NestFactory.create(AppModule, {
     cors: {
       origin: process.env.FRONTENT_URL || 'http://localhost:5372',
@@ -109,11 +104,11 @@ async function bootstrap() {
         console.log(e);
       });
   });
-  // Handle uncaught exceptions
+
   process.on('uncaughtException', (err) => {
     console.error('Uncaught Exception:', err);
   });
-  //SWAGGER DOCS BUILDER
+
   const config = new DocumentBuilder()
     .setTitle('Core Api Documentation')
     .setDescription('The Api Documentation')

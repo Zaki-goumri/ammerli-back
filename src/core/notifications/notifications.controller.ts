@@ -48,10 +48,16 @@ export class NotificationsController {
     type: SendNotificationResponseDto, // Added response type
   })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
+  /**
+   * Sends an FCM notification to a specific user.
+   * @param sendNotificationDto - The DTO containing notification details.
+   * @param userId - The ID of the user sending the notification.
+   * @returns A promise that resolves to a response indicating the notification job was added to the queue.
+   */
   sendFcmNotification(
     @Body() sendNotificationDto: SendNotificationDto,
     @USER('id') userId: number,
-  ) {
+  ): Promise<SendNotificationResponseDto> {
     const { title, body, type } = sendNotificationDto;
     return this.notificationsService.sendNotification(
       title,
@@ -70,6 +76,12 @@ export class NotificationsController {
     type: RegisterTokenResponseDto, // Added response type
   })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
+  /**
+   * Registers an FCM token for the current user.
+   * @param dto - The DTO containing the FCM token and device type.
+   * @param userId - The ID of the user registering the token.
+   * @returns A promise that resolves to a success message.
+   */
   registerToken(@Body() dto: CreateTokenDto, @USER('id') userId: number) {
     return this.notificationsService.registerToken(dto, userId);
   }
@@ -81,29 +93,45 @@ export class NotificationsController {
     description: 'Notifications retrieved successfully',
     type: [Notification], // Added response type for array of Notification
   })
+  /**
+   * Retrieves all notifications for the current user.
+   * @param paginationQuery - The pagination query parameters.
+   * @returns A promise that resolves to a list of notifications.
+   */
   findAll(@Query() paginationQuery: PaginationQueryDto) {
     return this.notificationsService.findAll(paginationQuery);
   }
 
+  /**
+   * Marks a list of notifications as read.
+   * @param dto - The DTO containing the IDs of notifications to mark as read.
+   * @returns A promise that resolves to the update result.
+   */
   @Patch('/read')
   @ApiOperation({ summary: 'Mark notifications as read' })
   @ApiBody({ type: UpdateReadNotificationsDto })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Notifications marked as read successfully',
-    type: UpdateResult, // Added response type
+    type: UpdateResult,
   })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
-  update(@Query() dto: UpdateReadNotificationsDto, @USER('id') userId: number) {
-    return this.notificationsService.updateRead(dto.ids, userId);
+  update(@Body() dto: UpdateReadNotificationsDto) {
+    return this.notificationsService.updateRead(dto.ids);
   }
 
+  /**
+   * Deletes a notification by its ID.
+   * @param id - The ID of the notification to delete.
+   * @param userId - The ID of the current user (for authorization).
+   * @returns A promise that resolves to the delete result.
+   */
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a notification' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Notification deleted successfully',
-    type: DeleteResult, // Added response type
+    type: DeleteResult,
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,

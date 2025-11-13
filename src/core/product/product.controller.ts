@@ -51,6 +51,7 @@ import { UploadingOptions } from 'src/infrastructure/object-storage/types/upload
 import { ProductDto } from './dtos/product/product.dto';
 import { DeleteProductPicturesDto } from './dtos/product/delete-product-pictures.dto';
 import { AdminProductDto } from './dtos/product/admin-product.dto';
+import { categories } from 'src/seed/seeds-data';
 /**
  * @class ProductController
  * @classdesc The main controller for handling product-related operations.
@@ -241,11 +242,99 @@ export class ProductController {
     description: 'Product successfully updated',
   })
   @ApiNotFoundResponse({ description: 'Product not found' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FilesInterceptor('pictures', 3, {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 10 * 1024 * 1024, // Per-file size limit (10MB)
+      },
+    }),
+  )
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        pictures: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+          description:
+            'Optional: New product image files (max 3). If provided, all existing images will be replaced.',
+        },
+        name: {
+          type: 'string',
+          description: 'Product name.',
+          example: 'Sample Product',
+        },
+        description: {
+          type: 'string',
+          description: 'Product description (Optional).',
+          example: 'This is an updated sample product description.',
+        },
+        price: {
+          type: 'number',
+          format: 'float',
+          description: 'Product price must be higher than 50.',
+          example: 120.5,
+        },
+        quantity: {
+          type: 'integer',
+          format: 'int32',
+          description: 'Available quantity.',
+          example: 75,
+        },
+        brandId: {
+          type: 'integer',
+          format: 'int32',
+          description: 'Brand ID.',
+          example: 1,
+        },
+        categoryId: {
+          type: 'integer',
+          format: 'int32',
+          description: 'Category ID.',
+          example: 1,
+        },
+        quantityPerBatch: {
+          type: 'integer',
+          format: 'int32',
+          description: 'The quantity of the product per batch.',
+          example: 25,
+        },
+        specifications: {
+          type: 'string',
+          description:
+            'Optional: Product specifications, submitted as a single comma-separated string.',
+          example: 'Material: Metal, Screen: 7 inch',
+        },
+        expirationDate: {
+          type: 'string',
+          format: 'date',
+          description: 'The product expiration date (YYYY-MM-DD).',
+          example: '2027-12-31',
+        },
+      },
+    },
+  })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateProductDto: UpdateProductDto,
+    @USER('id') userId: number,
+    @UploadedFiles() files: Array<Express.Multer.File>,
   ) {
-    await this.productService.update(id, updateProductDto);
+    const uploadOptions = {
+      pathPrefix: `products/${userId}/`,
+    } as UploadingOptions;
+    await this.productService.update(
+      id,
+      updateProductDto,
+      userId,
+      files,
+      uploadOptions,
+    );
     return { message: 'Product successfully updated' };
   }
 
@@ -391,6 +480,10 @@ export class ProductController {
   })
   findManyForAdmin(@Query() query: FilterProductDto) {
     const pagination = { page: query.page || 1, limit: query.limit || 10 };
-    return this.productService.findManyForAdmin(pagination, query.search);
+    return this.productService.findManyForAdmin(
+      pagination,
+      query.search,
+      query.categoryIds,
+    );
   }
 }

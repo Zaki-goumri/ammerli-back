@@ -30,6 +30,7 @@ import { SkipRegistrationCheck } from './decorators/skip-registration-check.deco
 import { SendOtpDto } from './dtos/response/send-otp.dto';
 import { ValidateOtpDto } from './dtos/response/validate-otp.dto';
 import { AuthResDto } from './dtos/response/refresh-token.dto';
+import { FirebaseTokenDto } from './dtos/requests/firebase-token.dto';
 
 @Controller('authentication')
 @ApiBadRequestResponse({ description: 'Bad request' })
@@ -40,6 +41,13 @@ import { AuthResDto } from './dtos/response/refresh-token.dto';
 @ApiInternalServerErrorResponse({ description: 'Internal server error' })
 export class AuthenticationController {
   constructor(private readonly authenticationService: AuthenticationService) {}
+  /**
+   * @method auth
+   * @description Sends an OTP to the provided phone number for user authentication.
+   * @param {AuthDto} dto - The authentication data containing the phone number.
+   * @returns {Promise<SendOtpDto>} A message indicating that the OTP has been sent.
+   */
+
   //TODO: add rate limiting
   @Post('otp/send')
   @ApiOperation({
@@ -59,6 +67,12 @@ export class AuthenticationController {
     return this.authenticationService.sendVerificationCode(dto.phoneNumber);
   }
 
+  /**
+   * @method validateOtp
+   * @description Validates the provided OTP and either registers a new user or logs in an existing one.
+   * @param {OtpValidationDto} dto - The OTP validation data.
+   * @returns {Promise<ValidateOtpDto>} Authentication tokens and user registration status.
+   */
   @ApiOperation({
     summary: 'validate otp',
     description: 'validate otp for user',
@@ -78,6 +92,35 @@ export class AuthenticationController {
     return this.authenticationService.validateOtp(dto);
   }
 
+  /**
+   * @method validateFirebaseToken
+   * @description Validates a Firebase ID token and authenticates the user.
+   * @param {FirebaseTokenDto} dto - The DTO containing the Firebase ID token.
+   * @returns {Promise<ValidateOtpDto>} Authentication tokens and user registration status.
+   */
+  @Post('firebase/validate')
+  @ApiOperation({
+    summary: 'Validate Firebase ID token',
+    description: 'Authenticates user using a Firebase ID token.',
+  })
+  @ApiBody({ type: () => FirebaseTokenDto })
+  @ApiOkResponse({
+    description: 'User authenticated successfully with Firebase token.',
+    type: () => ValidateOtpDto,
+  })
+  async validateFirebaseToken(
+    @Body() dto: FirebaseTokenDto,
+  ): Promise<ValidateOtpDto> {
+    return this.authenticationService.validateFirebaseToken(dto.firebaseToken);
+  }
+
+  /**
+   * @method registerUser
+   * @description Registers or updates user information after OTP validation.
+   * @param {string} phoneNumber - The phone number of the authenticated user from the token.
+   * @param {RegisterUserDto} dto - The user registration data.
+   * @returns {Promise<ValidateOtpDto>} Authentication tokens and user registration status.
+   */
   @UseGuards(AccessTokenGuard)
   @SkipRegistrationCheck()
   @ApiBearerAuth()
@@ -91,13 +134,19 @@ export class AuthenticationController {
     type: () => ValidateOtpDto,
   })
   @Put('register')
-  async updateUserInfos(
-    @USER('id') userId: number,
+  async registerUser(
+    @USER('phoneNumber') phoneNumber: string,
     @Body() dto: RegisterUserDto,
   ): Promise<ValidateOtpDto> {
-    return this.authenticationService.registerUser(dto, userId);
+    return this.authenticationService.registerUser(dto, phoneNumber);
   }
 
+  /**
+   * @method refreshTokens
+   * @description Refreshes access and refresh tokens using a valid refresh token.
+   * @param {User} user - The user object obtained from the refresh token.
+   * @returns {Promise<AuthResDto>} New access and refresh tokens.
+   */
   @UseGuards(RefreshTokenGuard)
   @Post('refresh')
   @ApiBearerAuth()

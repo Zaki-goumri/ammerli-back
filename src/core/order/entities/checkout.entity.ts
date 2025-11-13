@@ -4,9 +4,9 @@ import { BaseEntity } from 'src/common/entities/base.entity';
 import { Order } from './order.entity';
 import {
   PAYMENT_WAY_VALUES,
-  PAYEMENT_WAY,
+  PAYMENT_WAY,
   PaymentWay,
-} from '../enums/payement-way.enum';
+} from '../enums/payment-way.enum';
 
 @Entity({ name: 'checkouts' })
 export class Checkout extends BaseEntity {
@@ -37,13 +37,13 @@ export class Checkout extends BaseEntity {
 
   @ApiProperty({
     enum: PAYMENT_WAY_VALUES,
-    example: PAYEMENT_WAY.CIB,
+    example: PAYMENT_WAY.CIB,
     description: 'Current status of the checkout session',
   })
   @Column({
     type: 'enum',
     enum: PAYMENT_WAY_VALUES,
-    default: PAYEMENT_WAY.CASH,
+    nullable: true,
   })
   paymentWay?: PaymentWay;
 

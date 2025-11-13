@@ -9,7 +9,7 @@ export class BlackList extends BaseEntity {
     description: 'The ID of the blacklisted user.',
     example: 1,
   })
-  @Column({ unique: true })
+  @Column({ name: 'userId', unique: true })
   @Index()
   userId: number;
 

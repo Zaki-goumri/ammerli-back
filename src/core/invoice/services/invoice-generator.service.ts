@@ -8,11 +8,15 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as puppeteer from 'puppeteer';
 import * as Handlebars from 'handlebars';
-import { InvoiceData, InvoiceProduct } from '../interfaces/invoice.interface';
-import { Order } from 'src/core/order/entities/order.entity';
-import { OrderProduct } from 'src/core/order/entities/product-order.entity';
+import {
+  InvoiceData,
+  InvoiceProduct,
+  OrderForInvoice,
+} from '../interfaces/invoice.interface';
 import { OrderService } from 'src/core/order/services/order.service';
 import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
+import { PaymentMethodType } from 'src/core/order/enums/payment-method.enum';
+const DELIVERY_ESTIMATION_DAYS = 2;
 
 @Injectable()
 export class InvoiceGeneratorService implements OnModuleInit {
@@ -41,10 +45,17 @@ export class InvoiceGeneratorService implements OnModuleInit {
       this.compiledTemplate = Handlebars.compile(templateContent);
     } catch (error) {
       this.logger.error(`Failed to load template: ${this.templatePath}`, error);
-      throw new Error(`Template file not found: ${this.templatePath}`);
+      throw new InternalServerErrorException(
+        `Template file not found: ${this.templatePath}`,
+      );
     }
   }
 
+  /**
+   * Generates an invoice PDF for a given order ID, uploads it to object storage, and returns the path and buyer ID.
+   * @param orderId - The ID of the order for which to generate the invoice.
+   * @returns A promise that resolves to an object containing the invoice path and buyer ID.
+   */
   async generateInvoice(
     orderId: number,
   ): Promise<{ invoicePath: string; buyerId: number }> {
@@ -63,15 +74,25 @@ export class InvoiceGeneratorService implements OnModuleInit {
     return { invoicePath: invoicePath.fileUrl, buyerId: order.buyer.id };
   }
 
+  /**
+   * Retrieves the buyer ID associated with a given order ID.
+   * @param orderId - The ID of the order.
+   * @returns A promise that resolves to the buyer ID.
+   */
   async getBuyerIdFromOrderId(orderId: number): Promise<number> {
     const order = await this.orderService.findOneForInvoice(orderId);
     return order.buyer.id;
   }
 
+  /**
+   * Generates an invoice PDF from the provided invoice data.
+   * @param data - The data to be used for generating the invoice.
+   * @returns A promise that resolves to the PDF buffer.
+   * @throws {InternalServerErrorException} If the PDF generation fails.
+   */
   async generateInvoicePDF(data: InvoiceData): Promise<Buffer> {
     try {
       const logo = await this.getLogoBase64();
-      this.logger.debug('Generating invoice with data:', logo);
       const renderedHtml = this.compiledTemplate({ ...data, logo });
       return await this.generatePDFFromHTML(renderedHtml);
     } catch (error) {
@@ -119,6 +140,11 @@ export class InvoiceGeneratorService implements OnModuleInit {
     }
   }
 
+  /**
+   * Formats a numeric amount into a currency string (e.g., "1,234.56").
+   * @param amount - The numeric amount to format.
+   * @returns The formatted currency string.
+   */
   formatCurrency(amount: number): string {
     if (amount === null || amount === undefined) return '0.00';
     return new Intl.NumberFormat('fr-FR', {
@@ -129,13 +155,11 @@ export class InvoiceGeneratorService implements OnModuleInit {
       .replace(/,/g, ' ');
   }
 
-  prepareInvoiceData(
-    order: Order & {
-      orderProducts: (OrderProduct & {
-        product: { name: string; brand: { label: string }; price: number };
-      })[];
-    },
-  ): InvoiceData {
+  /**
+   * Prepares the invoice data from an order object.
+   * @param order - The order object containing details for the invoice.
+   */
+  prepareInvoiceData(order: OrderForInvoice): InvoiceData {
     const products: InvoiceProduct[] = order.orderProducts.map((op) => ({
       name: op?.product?.name,
       brand: op?.product?.brand?.label,
@@ -151,16 +175,21 @@ export class InvoiceGeneratorService implements OnModuleInit {
 
     const totalAmount = subtotal;
 
+    const paymentMethod =
+      order?.paymentWay === 'CASH'
+        ? 'CASH'
+        : order.checkouts[0]?.paymentWay || 'EPAYMENT';
+
     return {
       invoiceNumber: this.generateInvoiceNumber(order.id),
       invoiceDate: new Date().toLocaleDateString('fr-FR'),
       deliveryDate: new Date(
-        Date.now() + 2 * 24 * 60 * 60 * 1000,
+        Date.now() + DELIVERY_ESTIMATION_DAYS * 24 * 60 * 60 * 1000,
       ).toLocaleDateString('fr-FR'),
       clientName: `${order?.buyer?.name}`,
-      clientAddress: `${order.address.street}, ${order.address.city}, ${order.address.district}`,
+      clientAddress: `${order.address.street}, ${order.address.district}, ${order.address.city}`,
       clientPhone: order.buyer.phoneNumber,
-      paymentMethod: order.payementWay,
+      paymentMethod: paymentMethod as PaymentMethodType,
       products,
       subtotal: this.formatCurrency(subtotal),
       totalAmount: this.formatCurrency(totalAmount),
@@ -187,6 +216,10 @@ export class InvoiceGeneratorService implements OnModuleInit {
     }
   }
 
+  /**
+   * Creates sample invoice data for testing purposes.
+   * @returns Sample invoice data.
+   */
   createSampleData(): InvoiceData {
     const products: InvoiceProduct[] = [
       {

@@ -19,4 +19,19 @@ export class AnalyticsController {
   async getTopProducts() {
     return this.analyticsService.getTopSellingProducts();
   }
+
+  @Get('test/daily-stats')
+  async getTestAnalytics() {
+    return this.analyticsService.getTestAnalytics();
+  }
+
+  @Get('test/turnover')
+  async getTestTurnover() {
+    return this.analyticsService.getTestMontlyTurnover();
+  }
+
+  @Get('test/top-products')
+  async getTestTopProducts() {
+    return this.analyticsService.getTestTopSellingProducts();
+  }
 }

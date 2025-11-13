@@ -23,7 +23,6 @@ export class RefreshTokenStrategy extends PassportStrategy(
   }
 
   async validate(payload: RefreshTokenPayload): Promise<RefreshTokenPayload> {
-    
     if (!payload?.id || !payload?.phoneNumber) {
       throw new UnauthorizedException('Invalid token payload');
     }

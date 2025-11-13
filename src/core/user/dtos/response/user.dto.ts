@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import { AddressDto } from './address.dto';
 
 export class UserDto {
@@ -34,6 +35,7 @@ export class UserDto {
   })
   supermarketName: string | null;
 
+  @Type(() => AddressDto)
   @ApiProperty({
     type: () => [AddressDto],
     description: 'The list of addresses associated with the user.',

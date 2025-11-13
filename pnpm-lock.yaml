@@ -134,6 +134,9 @@ importers:
       rxjs:
         specifier: ^7.8.1
         version: 7.8.2
+      smssak:
+        specifier: ^1.0.14
+        version: 1.0.14
       typeorm:
         specifier: ^0.3.27
         version: 0.3.27(ioredis@5.8.1)(pg@8.16.3)(reflect-metadata@0.2.2)(ts-node@10.9.2(@swc/core@1.13.5)(@types/node@22.18.10)(typescript@5.9.3))
@@ -4283,6 +4286,9 @@ packages:
   smart-buffer@4.2.0:
     resolution: {integrity: sha512-94hK0Hh8rPqQl2xXc3HsaBoOXKV20MToPkcXvwbISWLEs+64sBq5kFgn2kJDHb1Pry9yrP0dxrCI9RRci7RXKg==}
     engines: {node: '>= 6.0.0', npm: '>= 3.0.0'}
+
+  smssak@1.0.14:
+    resolution: {integrity: sha512-Xusg1hCM4sxYTP6t1g5Y8AU6UQi/Kzgmt9ftO4bVSOEFN4Yw3UuVmnGWUX4WwR2Kn3ay+zdU75AyeoXW51Ad8w==}
 
   socket.io-adapter@2.5.5:
     resolution: {integrity: sha512-eLDQas5dzPgOWCk9GuuJC2lBqItuhKI4uxGgo9aIV7MYbk2h9Q6uULEh8WBzThoI7l+qU9Ast9fVUmkqPP9wYg==}
@@ -9638,6 +9644,12 @@ snapshots:
   slash@3.0.0: {}
 
   smart-buffer@4.2.0: {}
+
+  smssak@1.0.14:
+    dependencies:
+      axios: 1.12.2
+    transitivePeerDependencies:
+      - debug
 
   socket.io-adapter@2.5.5:
     dependencies:

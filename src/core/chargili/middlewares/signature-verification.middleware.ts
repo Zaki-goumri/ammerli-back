@@ -34,15 +34,26 @@ export class ChargilyWebhookMiddleware implements NestMiddleware {
       throw new Error('API key not configured');
     }
 
-    const computedSignature = crypto
-      .createHmac('sha256', apiSecretKey.trim())
-      .update(payload)
-      .digest('hex');
+    try {
+      const computedSignature = crypto
+        .createHmac('sha256', apiSecretKey.trim())
+        .update(payload)
+        .digest('hex');
 
-    if (computedSignature !== signature) {
-      this.logger.warn('Invalid webhook signature');
+      const areSignaturesEqual = crypto.timingSafeEqual(
+        Buffer.from(computedSignature),
+        Buffer.from(signature),
+      );
+
+      if (!areSignaturesEqual) {
+        this.logger.warn('Invalid webhook signature');
+        throw new ForbiddenException('Invalid webhook signature');
+      }
+    } catch (error) {
+      this.logger.error('Signature verification error:', error);
       throw new ForbiddenException('Invalid webhook signature');
     }
+
     this.logger.log('Webhook signature verified successfully');
     next();
   }
