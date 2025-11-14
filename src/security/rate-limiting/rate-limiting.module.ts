@@ -1,23 +1,23 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigType } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
-import appConfig from 'src/config/app.config';
+import throttlerConfig from 'src/config/throttler.config';
 
 @Module({
   imports: [
     ThrottlerModule.forRootAsync({
-      imports: [ConfigModule.forFeature(appConfig)],
-      inject: [appConfig.KEY],
-      useFactory: (configService: ConfigType<typeof appConfig>) => ({
+      imports: [ConfigModule.forFeature(throttlerConfig)],
+      inject: [throttlerConfig.KEY],
+      useFactory: (config: ConfigType<typeof throttlerConfig>) => ({
         throttlers: [
           {
             name: 'global',
-            limit: configService.throttler.limit,
-            ttl: configService.throttler.ttl,
-            blockDuration: configService.throttler.blockDuration,
-            ignoreUserAgents: configService.throttler.ignoreUserAgents,
+            limit: config.limit,
+            ttl: config.ttl * 1000, // Convert to milliseconds
+            blockDuration: config.blockDuration * 1000, // Convert to milliseconds
           },
         ],
+        ignoreUserAgents: config.ignoreUserAgents,
       }),
     }),
   ],

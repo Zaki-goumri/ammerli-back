@@ -28,4 +28,5 @@ export const INVOICE_JOBS = {
 
 export const SMS_JOBS = {
   SEND_SMS: 'send-sms',
+  SEND_OTP: 'send-otp',
 } as const;

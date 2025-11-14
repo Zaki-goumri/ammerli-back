@@ -58,11 +58,17 @@ export class AuthenticationController {
    * @returns {Promise<SendOtpDto>} A message indicating that the OTP has been sent.
    */
 
-  @Throttle({ default: { limit: 1, ttl: 30000 } }) // 1 request per 30 seconds
+  @Throttle({
+    default: {
+      limit: 1,
+      ttl: 30000,
+    },
+  })
   @Post('otp/send')
   @ApiOperation({
     summary: 'send OTP',
-    description: 'Send SMS OTP to user. Rate limited to 1 request per 30 seconds.',
+    description:
+      'Send SMS OTP to user. Rate limited to 1 request per 30 seconds.',
   })
   @ApiBody({ type: () => AuthDto })
   @ApiOkResponse({
@@ -75,7 +81,8 @@ export class AuthenticationController {
   })
   @ApiResponse({
     status: 429,
-    description: 'Too Many Requests. Please wait 30 seconds before requesting a new OTP.',
+    description:
+      'Too Many Requests. Please wait 30 seconds before requesting a new OTP.',
   })
   async auth(@Body() dto: AuthDto): Promise<SendOtpDto> {
     return this.authenticationService.sendVerificationCode(dto.phoneNumber);

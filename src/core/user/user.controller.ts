@@ -40,18 +40,19 @@ import { MessageDto } from './dtos/response/message.dto';
 import { ProfilePictureDto } from './dtos/response/profile-picture.dto';
 import { AddressDto } from './dtos/response/address.dto';
 import { UpdateAddressDto } from './dtos/update-address.dto';
-
-import { RoleGuard } from '../authentication/guards/role.guard'; // Import RoleGuard
-import { Roles } from '../authentication/decorators/role.decorator'; // Import Roles decorator
-import { USER_ROLES } from 'src/common/enums/user-role.enum'; // Import USER_ROLES enum
-import { UserForAdminDto } from './dtos/response/user-for-admin.dto'; // Import the new DTO
+import { RoleGuard } from '../authentication/guards/role.guard';
+import { Roles } from '../authentication/decorators/role.decorator';
+import { USER_ROLES } from 'src/common/enums/user-role.enum';
+import { UserForAdminDto } from './dtos/response/user-for-admin.dto';
 import {
   PaginationQueryDto,
   PaginatedResponse,
   PaginationResponseDto,
-} from 'src/common/dtos/pagination.dto'; // Import pagination DTOs
+} from 'src/common/dtos/pagination.dto';
 import { UserDetailForAdminDto } from './dtos/response/user-detail-for-admin.dto';
 import { BulkDeleteUserDto } from './dtos/bulk-delete.dto';
+import { PresignedUrlInterceptor } from 'src/common/interceptors/presigned-url.interceptor';
+import { ConvertToPresignedUrls } from 'src/common/decorators/convert-to-presigned-urls.decorator';
 
 @ApiTags('User')
 @ApiBearerAuth()
@@ -61,8 +62,9 @@ import { BulkDeleteUserDto } from './dtos/bulk-delete.dto';
   description: 'Too many requests (Rate limiting)',
 })
 @ApiInternalServerErrorResponse({ description: 'Internal server error' })
-@UseGuards(AccessTokenGuard)
+@UseInterceptors(PresignedUrlInterceptor)
 @Controller('user')
+@UseGuards(AccessTokenGuard)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
@@ -73,6 +75,7 @@ export class UserController {
    * @returns {Promise<GetMeDto>} The user's profile information.
    */
   @Get('/me')
+  @ConvertToPresignedUrls(['profilePic'])
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiOkResponse({
     description: 'Successfully fetched user profile',
@@ -246,6 +249,7 @@ export class UserController {
    * @returns {Promise<PaginationResponseDto<UserForAdminDto>>} A paginated list of users.
    */
   @Get('/admin/all')
+  @ConvertToPresignedUrls(['profilePic'])
   @ApiOperation({ summary: 'Get all users for admin view' })
   @ApiOkResponse({
     description: 'Successfully fetched users for admin view',
@@ -267,6 +271,7 @@ export class UserController {
    * @returns {Promise<UserDetailForAdminDto>} The detailed user information.
    */
   @Get('/admin/:id')
+  @ConvertToPresignedUrls(['profilePic'])
   @ApiOperation({ summary: 'Get user details for admin view' })
   @ApiOkResponse({
     description: 'Successfully fetched user details for admin view',

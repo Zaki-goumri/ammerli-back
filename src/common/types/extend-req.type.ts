@@ -1,6 +1,6 @@
 import { Request } from 'express';
-import { User } from 'src/core/user/entities/user.entity';
+import { JwtPayload } from 'src/core/authentication/interfaces/access-token-payload.interface';
 
 export interface extendedReq extends Request {
-  user: User;
+  user: JwtPayload;
 }

@@ -78,9 +78,6 @@ export class User extends BaseEntity {
   @OneToMany(() => Product, (product) => product.seller)
   products: Product[];
 
-  @Column({ default: false })
-  isRegistered: boolean;
-
   @OneToMany(() => Notification, (notification) => notification.receiver)
   notifications?: Notification[];
 

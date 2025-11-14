@@ -8,6 +8,7 @@ import { USER_ROLES } from 'src/common/enums/user-role.enum';
 import { Tracking } from '../order/entities/tracking.entity';
 import { ORDER_STATUS } from '../order/enums/delivery.enum';
 import { OrderProduct } from '../order/entities/product-order.entity';
+import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
 
 @Injectable()
 export class AnalyticsService {
@@ -20,6 +21,7 @@ export class AnalyticsService {
     private readonly trackingRepo: Repository<Tracking>,
     @InjectRepository(OrderProduct)
     private readonly orderProductRepo: Repository<OrderProduct>,
+    private readonly objectStorageService: ObjectService,
   ) {}
 
   async getAnalytics() {
@@ -179,7 +181,7 @@ export class AnalyticsService {
 
   async getMontlyTurnover(): Promise<any> {
     const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
     sixMonthsAgo.setDate(1);
     sixMonthsAgo.setHours(0, 0, 0, 0);
 
@@ -204,6 +206,7 @@ export class AnalyticsService {
       .addSelect('EXTRACT(MONTH FROM "order"."createdAt")', 'month_number')
       .addSelect('SUM("order"."totalAmount")', 'turnover')
       .where('"order"."createdAt" >= :sixMonthsAgo', { sixMonthsAgo })
+      .andWhere('"order"."isCancelled" = :isCancelled', { isCancelled: false })
       .groupBy('year')
       .addGroupBy('month_number')
       .orderBy('year', 'ASC')
@@ -225,6 +228,7 @@ export class AnalyticsService {
     const topProducts = await this.orderProductRepo
       .createQueryBuilder('op')
       .select('op.productId', 'productId')
+      .leftJoin('op.order', 'order')
       .leftJoin(
         'product_pictures',
         'pp',
@@ -232,6 +236,7 @@ export class AnalyticsService {
       )
       .addSelect('pp.url', 'product_image')
       .addSelect('SUM(op.quantity)', 'total_quantity')
+      .where('order.isCancelled = :isCancelled', { isCancelled: false })
       .groupBy('op.productId')
       .addGroupBy('pp.url')
       .orderBy('total_quantity', 'DESC')
@@ -243,12 +248,15 @@ export class AnalyticsService {
         product_image: string;
       }>();
 
-    console.log(topProducts);
-    const formattedRaws = topProducts.map((item) => ({
-      productId: item.productId,
-      totalQuantity: parseInt(item.total_quantity, 10),
-      productImage: item.product_image,
-    }));
+    const formattedRaws = await Promise.all(
+      topProducts.map(async (item) => ({
+        productId: item.productId,
+        totalQuantity: parseInt(item.total_quantity, 10),
+        productImage: item.product_image
+          ? await this.objectStorageService.getPresignedUrl(item.product_image)
+          : null,
+      })),
+    );
 
     return formattedRaws;
   }

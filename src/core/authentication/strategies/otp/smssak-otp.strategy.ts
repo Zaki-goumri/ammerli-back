@@ -1,7 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { OtpStrategy } from './otp.strategy';
 import { sendOtp, verifyOtp } from 'smssak';
+import { QUEUE_NAME } from 'src/common/constants/queues';
+import { SMS_JOBS } from 'src/common/constants/jobs';
 
 @Injectable()
 export class SmsSakOtpStrategy extends OtpStrategy {
@@ -12,7 +16,10 @@ export class SmsSakOtpStrategy extends OtpStrategy {
   private readonly key: string;
   private readonly type: string;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    @InjectQueue(QUEUE_NAME.SMS) private readonly smsQueue: Queue,
+  ) {
     super();
     this.country = this.configService.get<string>('sms.smssak.country')!;
     this.projectId = this.configService.get<string>('sms.smssak.projectId')!;
@@ -20,7 +27,7 @@ export class SmsSakOtpStrategy extends OtpStrategy {
     this.type = this.configService.get<string>('sms.smssak.type')!;
   }
 
-  async send(phoneNumber: string): Promise<void> {
+  async sendOtp(phoneNumber: string): Promise<void> {
     try {
       await sendOtp(
         this.country,
@@ -33,9 +40,25 @@ export class SmsSakOtpStrategy extends OtpStrategy {
     } catch (error) {
       this.logger.error(
         `Failed to send OTP via smssak to ${phoneNumber}: ${error.message}`,
+        error.stack,
       );
       throw new Error('Failed to send OTP via SMS provider');
     }
+  }
+
+  async send(phoneNumber: string): Promise<void> {
+    await this.smsQueue.add(
+      SMS_JOBS.SEND_OTP,
+      { phoneNumber },
+      {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+      },
+    );
+    this.logger.log(`OTP queued for ${phoneNumber}`);
   }
 
   async verify(phoneNumber: string, otp: string): Promise<boolean> {
@@ -46,6 +69,7 @@ export class SmsSakOtpStrategy extends OtpStrategy {
     } catch (error) {
       this.logger.error(
         `Failed to verify OTP via smssak for ${phoneNumber}: ${error.message}`,
+        error.stack,
       );
       return false;
     }

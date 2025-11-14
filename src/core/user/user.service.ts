@@ -113,6 +113,32 @@ export class UserService {
   }
 
   /**
+   * @method registerUserInfo
+   * @description Registers additional user information after initial phone number validation.
+   *              Updates the user's details and sets `isRegistered` to true.
+   * @param {RegisterUserDto} dto - The data transfer object containing registration details.
+   * @param {number} id - The ID of the user to register.
+   * @returns {Promise<User>} The updated user entity.
+   * @throws {BadRequestException} If the user is already registered.
+   * @throws {NotFoundException} If the user with the provided ID is not found.
+   */
+  async registerUserInfo(
+    dto: RegisterUserDto & { phoneNumber: string },
+  ): Promise<User> {
+    return this.entityManager.transaction(async (em) => {
+      const userRepo = em.getRepository(User);
+      const user = userRepo.create({ ...dto });
+      const { id } = await userRepo.save(user);
+      if (dto.address) {
+        await this.createAddress(id, dto.address, em);
+      }
+      await this.redisService.del(UserService.getCacheKey(id, 'id'));
+      await this.redisService.del(UserService.getCacheKey(id, 'admin-details'));
+      return user;
+    });
+  }
+
+  /**
    * @method findByPhoneNumber
    * @description Retrieves a user by their phone number, utilizing Redis cache.
    * @param {string} phoneNumber - The phone number of the user to find.
@@ -139,7 +165,6 @@ export class UserService {
         phoneNumber: true,
         id: true,
         supermarketName: true,
-        isRegistered,
         updatedAt: true,
         addresses: {
           id: true,
@@ -184,9 +209,6 @@ export class UserService {
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.addresses', 'address')
       .where('user.id = :id', { id })
-      .andWhere('user.isRegistered = :isRegistered', {
-        isRegistered: true,
-      })
       .andWhere('user.deletedAt IS NULL')
       .select([
         'user.id',
@@ -303,37 +325,6 @@ export class UserService {
   }
 
   /**
-   * @method registerUserInfo
-   * @description Registers additional user information after initial phone number validation.
-   *              Updates the user's details and sets `isRegistered` to true.
-   * @param {RegisterUserDto} dto - The data transfer object containing registration details.
-   * @param {number} id - The ID of the user to register.
-   * @returns {Promise<User>} The updated user entity.
-   * @throws {BadRequestException} If the user is already registered.
-   * @throws {NotFoundException} If the user with the provided ID is not found.
-   */
-  async registerUserInfo(dto: RegisterUserDto, id: number): Promise<User> {
-    return this.entityManager.transaction(async (em) => {
-      const userRepo = em.getRepository(User);
-      const user = await userRepo.findOneOrFail({
-        where: { id },
-        withDeleted: false,
-      });
-      if (user.isRegistered) {
-        throw new BadRequestException('User is already registered');
-      }
-      userRepo.merge(user, { ...dto, isRegistered: true });
-      if (dto.address) {
-        await this.createAddress(id, dto.address, em);
-      }
-      await this.userRepo.save(user);
-      await this.redisService.del(UserService.getCacheKey(id, 'id'));
-      await this.redisService.del(UserService.getCacheKey(id, 'admin-details')); // Invalidate admin details cache
-      return user;
-    });
-  }
-
-  /**
    * @method updateUser
    * @description Updates a user's profile information.
    * @param {number} id - The ID of the user to update.
@@ -353,7 +344,6 @@ export class UserService {
           phoneNumber: true,
           profilePic: true,
           supermarketName: true,
-          isRegistered: false,
           updatedAt: false,
           addresses: { id: true, street: true, district: true, city: true },
         },
@@ -406,14 +396,19 @@ export class UserService {
    * @throws {NotFoundException} If the user with the provided ID is not found.
    */
   async deleteUser(id: number): Promise<{ message: string }> {
-    const user = await this.userRepo.findOne({ where: { id } });
-    if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
-    }
-
-    await this.userRepo.softDelete(id);
     await this.redisService.del(UserService.getCacheKey(id, 'id'));
-    await this.redisService.del(UserService.getCacheKey(id, 'admin-details')); // Invalidate admin details cache
+    await this.redisService.del(UserService.getCacheKey(id, 'admin-details'));
+    const user = await this.entityManager.transaction(async (manager) => {
+      const u = await manager.findOne(User, { where: { id } });
+      if (!u) {
+        throw new NotFoundException(`User with ID ${id} not found`);
+      }
+
+      await manager.softDelete(User, { id });
+      await manager.softDelete(Address, { userId: id });
+
+      return u;
+    });
 
     if (user.profilePic) {
       await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
@@ -631,11 +626,17 @@ export class UserService {
     return this.entityManager.transaction(async (emLocal) => {
       const em = emGlobal || emLocal;
       const addressRepo = em.getRepository(Address);
+      const existingUser = await em
+        .getRepository(User)
+        .findOneBy({ id: userId });
+      if (!existingUser) {
+        throw new NotFoundException(`User with ID ${userId} not found`);
+      }
       const address = addressRepo.create({ ...createAddressDto, userId });
       const created = await addressRepo.save(address);
       await this.redisService.del(
         UserService.getCacheKey(userId, 'admin-details'),
-      ); // Invalidate admin details cache
+      );
       const { id, street, district, city } = created;
       return { id, street, district, city } as AddressDto;
     });
@@ -691,7 +692,7 @@ export class UserService {
 
   /**
    * @method deleteAddress
-   * @description Deletes an address for a specified user. Prevents deletion if it's the user's only address.
+   * @description Soft deletes an address for a specified user. Prevents deletion if it's the user's only address.
    * @param {number} userId - The ID of the user who owns the address.
    * @param {number} addressId - The ID of the address to delete.
    * @returns {Promise<{ message: string }>} A success message.
@@ -709,7 +710,7 @@ export class UserService {
         'Cannot delete the only address associated with the user',
       );
     }
-    await this.addressRepo.delete(addressId);
+    await this.addressRepo.softDelete(addressId);
     await this.redisService.del(
       UserService.getCacheKey(userId, 'admin-details'),
     ); // Invalidate admin details cache
@@ -725,12 +726,9 @@ export class UserService {
   async isUserRegistered(userId: number): Promise<boolean> {
     const user = await this.userRepo.findOne({
       where: { id: userId },
-      select: ['isRegistered'],
-      withDeleted: false,
     });
-    console.log('User registration status:', user?.isRegistered);
 
-    return user?.isRegistered ?? false;
+    return user ? true : false;
   }
 
   /**

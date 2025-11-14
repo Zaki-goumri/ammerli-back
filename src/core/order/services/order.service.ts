@@ -48,6 +48,7 @@ import { extractCheckoutIdFromUrl } from '../utils/extract-checkout-id.utils';
 import { Logger } from '@nestjs/common';
 import { PaymentWay } from '../enums/payment-way.enum';
 import { RefundService } from './refund.service';
+import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
 
 export type PaymentStatus =
   | 'paid'
@@ -89,6 +90,7 @@ export class OrderService {
     private readonly eventEmitter: EventEmitter2,
     private readonly redisService: RedisService,
     private readonly refundService: RefundService,
+    private readonly objectStorageService: ObjectService,
   ) {}
 
   async processWebhook(
@@ -159,7 +161,7 @@ export class OrderService {
     await this.redisService.set<PaymentClientData>(
       `payment:result:${orderId}`,
       finalDataForClient,
-      3600, // Store for 1 hour
+      300, // Store for 5 minutes
     );
   }
 
@@ -212,15 +214,23 @@ export class OrderService {
       },
     });
     console.log('Order products fetched:', order);
-    const products = order.map((op) => ({
-      id: op?.product.id,
-      name: op?.product.name,
-      price: op?.product.price,
-      quantity: op?.quantity,
-      //TODO: add presigned URL generation for pictures
-      picture: op?.product?.pictures.find((pic) => pic.isMain)?.url || null,
-    }));
-    return products;
+    const productsWithUrls = await Promise.all(
+      order.map(async (op) => {
+        const mainPicUrl = op?.product?.pictures.find((pic) => pic.isMain)?.url;
+        const presignedUrl = mainPicUrl
+          ? await this.objectStorageService.getPresignedUrl(mainPicUrl)
+          : null;
+        
+        return {
+          id: op?.product.id,
+          name: op?.product.name,
+          price: op?.product.price,
+          quantity: op?.quantity,
+          picture: presignedUrl,
+        };
+      }),
+    );
+    return productsWithUrls;
   }
 
   async findProductsByOrderId(
@@ -245,7 +255,15 @@ export class OrderService {
       .getRawMany();
 
     if (products.length > 0) {
-      return products;
+      const productsWithPresignedUrls = await Promise.all(
+        products.map(async (p) => ({
+          ...p,
+          picture: p.picture
+            ? await this.objectStorageService.getPresignedUrl(p.picture)
+            : null,
+        })),
+      );
+      return productsWithPresignedUrls;
     }
 
     const order = await this.orderRepo.findOneBy({ id: orderId });
@@ -462,16 +480,23 @@ export class OrderService {
         .withDeleted()
         .getRawMany();
 
-      const productsByOrderId = products.reduce(
+      const productsWithPresignedUrls = await Promise.all(
+        products.map(async (p) => ({
+          ...p,
+          picture: p.picture
+            ? await this.objectStorageService.getPresignedUrl(p.picture)
+            : null,
+          price: parseFloat(p.price),
+        })),
+      );
+
+      const productsByOrderId = productsWithPresignedUrls.reduce(
         (acc, p) => {
           if (!acc[p.orderId]) {
             acc[p.orderId] = [];
           }
           const { orderId, ...productData } = p;
-          acc[p.orderId].push({
-            ...productData,
-            price: parseFloat(productData.price),
-          });
+          acc[p.orderId].push(productData);
           return acc;
         },
         {} as Record<number, ProductOrderItemDto[]>,

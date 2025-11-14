@@ -5,6 +5,7 @@ import {
   JoinColumn,
   OneToMany,
   Relation,
+  DeleteDateColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from 'src/core/user/entities/user.entity';
@@ -96,4 +97,12 @@ export class Order extends BaseEntity {
 
   @OneToMany(() => Refund, (refund) => refund.order)
   refunds: Relation<Refund[]>;
+
+  @ApiProperty({
+    description: 'Timestamp when the order was soft deleted',
+    example: '2023-10-05T14:48:00.000Z',
+    nullable: true,
+  })
+  @DeleteDateColumn()
+  deletedAt?: Date;
 }

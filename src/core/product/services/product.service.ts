@@ -47,7 +47,7 @@ export class ProductService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  // Notify sellers about products expiring in the next 15 days
+  // Notify sellers about products expiring in the next 15 days - runs on 1st and 15th of each month
   @Cron('0 0 1 1,15 * *')
   async sendProductExpirationNotifications() {
     const today = new Date();
@@ -63,9 +63,10 @@ export class ProductService {
     const notificationPromises = expiringProducts.map((product) => {
       if (!product.expirationDate) return;
       const sellerId = product.sellerId;
-      const daysRemaining =
-        product?.expirationDate?.getTime() - today.getTime();
-      const message = `ur product ${product.name} will expire in ${daysRemaining} days`;
+      const daysRemaining = Math.ceil(
+        (product.expirationDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const message = `Your product "${product.name}" will expire in ${daysRemaining} days`;
       return this.notificationsService.saveNotificationRecord(
         'Product Expiration',
         message,
@@ -81,6 +82,7 @@ export class ProductService {
     paginationQuery: PaginationQueryDto,
     search?: string,
     categoryIds?: number[],
+    brandIds?: number[],
   ): Promise<PaginationResponseDto<AdminProductDto>> {
     const { page, limit } = paginationQuery;
     const offset = (page - 1) * limit;
@@ -88,6 +90,7 @@ export class ProductService {
     const queryBuilder = this.productRepo
       .createQueryBuilder('product')
       .leftJoin('product.pictures', 'mainPicture', 'mainPicture.isMain = TRUE')
+      .leftJoin('product.brand', 'brand')
       .select([
         'product.id AS id',
         'product.name AS name',
@@ -104,8 +107,13 @@ export class ProductService {
         categoryIds,
       });
     }
+    if (brandIds && brandIds.length > 0) {
+      queryBuilder.andWhere('product.brandId IN (:...brandIds)', {
+        brandIds,
+      });
+    }
     if (search) {
-      queryBuilder.andWhere('(product.name ILIKE :search)', {
+      queryBuilder.andWhere('(product.name ILIKE :search OR brand.label ILIKE :search)', {
         search: `%${search}%`,
       });
     }
@@ -147,6 +155,7 @@ export class ProductService {
     userId: number,
     search?: string,
     categoryIds?: number[],
+    brandIds?: number[],
   ): Promise<PaginationResponseDto<ProductResDto>> {
     const { page, limit } = paginationQuery;
     const offset = (page - 1) * limit;
@@ -165,7 +174,7 @@ export class ProductService {
       )
       .leftJoin('product.pictures', 'mainPicture', 'mainPicture.isMain = TRUE')
       .leftJoin('order_products', 'op', 'op.productId = product.id')
-      .leftJoin('op.order', 'order', 'order.id = op.orderId')
+      .leftJoin('op.order', 'order', 'order.id = op.orderId AND order.isCancelled = FALSE')
       .leftJoin(
         'checkouts',
         'checkout',
@@ -193,6 +202,11 @@ export class ProductService {
     if (categoryIds && categoryIds.length > 0) {
       queryBuilder.andWhere('category.id IN (:...categoryIds)', {
         categoryIds,
+      });
+    }
+    if (brandIds && brandIds.length > 0) {
+      queryBuilder.andWhere('brand.id IN (:...brandIds)', {
+        brandIds,
       });
     }
     if (search) {
@@ -352,24 +366,14 @@ export class ProductService {
   async remove(id: number, userId: number): Promise<{ message: string }> {
     const product = await this.productRepo.findOne({
       where: { id, sellerId: userId },
-      relations: ['pictures'],
     });
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
 
-    const pictureUrls = product.pictures
-      .map((pic) => pic.url)
-      .filter(Boolean) as string[];
-
+    // Soft delete keeps images for potential future restoration
     await this.productRepo.softDelete(id);
 
-    if (pictureUrls.length > 0) {
-      await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
-        objectUrls: pictureUrls,
-        metadata: { targetId: id, targetType: 'product_picture' },
-      });
-    }
     return { message: 'Product soft deleted successfully' };
   }
 
@@ -410,6 +414,7 @@ export class ProductService {
     sellerId: number,
     search?: string,
     categoryIds?: number[],
+    brandIds?: number[],
   ): Promise<PaginationResponseDto<WholesellerProductDto>> {
     const { page, limit } = paginationQuery;
     const offset = (page - 1) * limit;
@@ -436,6 +441,11 @@ export class ProductService {
     if (categoryIds && categoryIds.length > 0) {
       queryBuilder.andWhere('category.id IN (:...categoryIds)', {
         categoryIds,
+      });
+    }
+    if (brandIds && brandIds.length > 0) {
+      queryBuilder.andWhere('brand.id IN (:...brandIds)', {
+        brandIds,
       });
     }
     if (search) {
@@ -491,6 +501,7 @@ export class ProductService {
     pagination: PaginationQueryDto,
     search?: string,
     categoryIds?: number[],
+    brandIds?: number[],
   ): Promise<PaginationResponseDto<FavoriteProductDto>> {
     const { page, limit } = pagination;
     const offset = (page - 1) * limit;
@@ -516,6 +527,11 @@ export class ProductService {
     if (categoryIds && categoryIds.length > 0) {
       queryBuilder.andWhere('category.id IN (:...categoryIds)', {
         categoryIds,
+      });
+    }
+    if (brandIds && brandIds.length > 0) {
+      queryBuilder.andWhere('brand.id IN (:...brandIds)', {
+        brandIds,
       });
     }
     if (search) {

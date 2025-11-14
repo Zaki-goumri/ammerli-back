@@ -48,6 +48,8 @@ import { CreateProductDto } from './dtos/product/create.dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { UploadingOptions } from 'src/infrastructure/object-storage/types/upload-options.interface';
+import { PresignedUrlInterceptor } from 'src/common/interceptors/presigned-url.interceptor';
+import { ConvertToPresignedUrls } from 'src/common/decorators/convert-to-presigned-urls.decorator';
 import { ProductDto } from './dtos/product/product.dto';
 import { DeleteProductPicturesDto } from './dtos/product/delete-product-pictures.dto';
 import { AdminProductDto } from './dtos/product/admin-product.dto';
@@ -61,6 +63,7 @@ import { categories } from 'src/seed/seeds-data';
 @ApiTags('products')
 @ApiBearerAuth()
 @UseGuards(AccessTokenGuard, RoleGuard)
+@UseInterceptors(PresignedUrlInterceptor)
 @ApiBadRequestResponse({ description: 'Bad request' })
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
 @ApiTooManyRequestsResponse({
@@ -80,6 +83,7 @@ export class ProductController {
    */
   @Get('/all')
   @HttpCode(HttpStatus.OK)
+  @ConvertToPresignedUrls(['url', 'picture'])
   @ApiOperation({
     summary: 'Get all products with pagination, search, and filters',
   })
@@ -95,6 +99,7 @@ export class ProductController {
       userId,
       query.search,
       query.categoryIds,
+      query.brandIds,
     );
   }
 
@@ -105,6 +110,7 @@ export class ProductController {
    * @returns {Promise<Product>} The product with the specified ID.
    */
   @Get(':id')
+  @ConvertToPresignedUrls(['url', 'picture'])
   @ApiOperation({ summary: 'Get product by ID' })
   @ApiOkResponse({
     type: ProductDto,
@@ -403,6 +409,7 @@ export class ProductController {
   })
   @Roles(USER_ROLES.WHOLESELLER, USER_ROLES.ADMIN)
   @Get('wholeseller/all')
+  @ConvertToPresignedUrls(['url', 'picture'])
   getWholesellerProducts(
     @Query() query: FilterProductDto,
     @USER('id') userId: number,
@@ -413,6 +420,7 @@ export class ProductController {
       userId,
       query.search,
       query.categoryIds,
+      query.brandIds,
     );
   }
 
@@ -426,6 +434,7 @@ export class ProductController {
    * @returns {Promise<PaginatedResponse<FavProductDtoRes>>} A paginated list of favorite products.
    */
   @HttpCode(HttpStatus.OK)
+  @ConvertToPresignedUrls(['url', 'picture'])
   @ApiOperation({
     summary: 'Get all favorite products with pagination, search, and filters',
   })
@@ -437,13 +446,15 @@ export class ProductController {
   getFavoriteProducts(
     @Query() query: FilterProductDto,
     @USER('id') userId: number,
-    @Query('categoryIds') categoryIds?: number[],
-    @Query('search') search?: string,
   ) {
     const pagination = { page: query.page || 1, limit: query.limit || 10 };
-    return this.productService.getFavoriteProducts(userId, pagination, search, [
-      ...(categoryIds || []),
-    ]);
+    return this.productService.getFavoriteProducts(
+      userId, 
+      pagination, 
+      query.search, 
+      query.categoryIds,
+      query.brandIds,
+    );
   }
 
   /**
@@ -470,6 +481,7 @@ export class ProductController {
 
   @Get('admin/all')
   @HttpCode(HttpStatus.OK)
+  @ConvertToPresignedUrls(['url', 'picture'])
   @Roles(USER_ROLES.ADMIN)
   @ApiOperation({
     summary: 'Get all products for admin with pagination and search',
@@ -484,6 +496,7 @@ export class ProductController {
       pagination,
       query.search,
       query.categoryIds,
+      query.brandIds,
     );
   }
 }

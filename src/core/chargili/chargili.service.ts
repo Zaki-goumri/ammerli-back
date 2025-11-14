@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
+import { retry, catchError } from 'rxjs/operators';
 import {
   Balance,
   Checkout,
@@ -25,6 +26,7 @@ import { DeleteItemResponse, ListResponse } from './interfaces/responses';
 
 const DEFAULT_PER_PAGE = 10;
 const DEFAULT_PAGE = 1;
+const RETRY_COUNT = 3;
 
 /**
  * A client for interacting with Chargily's API, supporting operations for customers, products, prices, checkouts, and payment links.
@@ -273,6 +275,7 @@ export class ChargiliService {
 
   /**
    * Creates a new checkout session with the specified details.
+   * Retries up to 3 times on failure.
    * @param {CreateCheckoutParams} checkout_data - The details for the new checkout session.
    * @returns {Promise<Checkout>} The created checkout object.
    */
@@ -298,7 +301,9 @@ export class ChargiliService {
     }
 
     const response = await lastValueFrom(
-      this.httpService.post<Checkout>('/checkouts', checkout_data),
+      this.httpService.post<Checkout>('/checkouts', checkout_data).pipe(
+        retry(RETRY_COUNT),
+      ),
     );
     return response.data;
   }

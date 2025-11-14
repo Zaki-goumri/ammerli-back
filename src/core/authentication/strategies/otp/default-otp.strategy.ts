@@ -1,21 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { OtpStrategy } from './otp.strategy';
 import { RedisService } from 'nestjs-redis-client';
 import { InjectQueue } from '@nestjs/bullmq';
-import { QUEUE_NAME } from 'src/common/constants/queues';
 import { Queue } from 'bullmq';
-import { SMS_JOBS } from 'src/common/constants/jobs';
 
 @Injectable()
 export class DefaultOtpStrategy extends OtpStrategy {
   private static readonly CACHE_KEY_PREFIX = 'otp';
   private static readonly OTP_EXPIRATION_SECONDS = 600;
   private static readonly OTP_LENGTH = 4;
+  private readonly logger = new Logger(DefaultOtpStrategy.name);
 
-  constructor(
-    private readonly redisService: RedisService,
-    @InjectQueue(QUEUE_NAME.SMS) private readonly smsQueue: Queue,
-  ) {
+  constructor(private readonly redisService: RedisService) {
     super();
   }
 
@@ -33,11 +29,7 @@ export class DefaultOtpStrategy extends OtpStrategy {
       otp,
       DefaultOtpStrategy.OTP_EXPIRATION_SECONDS,
     );
-
-    await this.smsQueue.add(SMS_JOBS.SEND_SMS, {
-      to: phoneNumber,
-      body: `Your OTP is: ${otp}`,
-    });
+    this.logger.log(`OTP for ${phoneNumber} is ${otp}`);
   }
 
   async verify(phoneNumber: string, otp: string): Promise<boolean> {

@@ -1,5 +1,3 @@
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 import { BullModule } from '@nestjs/bullmq';
@@ -19,8 +17,11 @@ import chargiliConfig from './config/chargili.config';
 import minioConfig from './config/minio.config';
 import firebaseConfig from './config/firebase.config';
 import smsConfig from './config/sms.config';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import throttlerConfig from './config/throttler.config';
+import { AppController } from './app.controller';
+import { Module } from '@nestjs/common';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -38,14 +39,9 @@ import { APP_GUARD } from '@nestjs/core';
         dbConfig,
         chargiliConfig,
         smsConfig,
+        throttlerConfig,
       ],
     }),
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000, // 60 seconds
-        limit: 10, // 10 requests per ttl
-      },
-    ]),
     BullModule.forRootAsync({
       useFactory: (configService: ConfigService) => {
         const redisHost = configService.get<string>('redis.host');
@@ -56,7 +52,7 @@ import { APP_GUARD } from '@nestjs/core';
             host: redisHost,
             port: redisPort,
             url: redisUrl,
-            db: 3, // Default database
+            db: 3,
           },
         };
       },

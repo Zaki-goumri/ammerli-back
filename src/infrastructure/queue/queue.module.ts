@@ -9,7 +9,7 @@ import { NotificationProcessor } from './notification/notification.processor';
 import { FirebaseModule } from '../firebase/firebase.module';
 import { ObjectStorageModule } from '../object-storage/object-storage.module';
 import { InvoiceProcessor } from './invoice/invoice.processor';
-import { SmsProcessor } from './sms/sms.processor';
+import { SmsModule } from './sms/sms.module';
 import { InvoiceJobsModule } from 'src/core/invoice/invoice-jobs.module';
 
 @Global()
@@ -19,6 +19,7 @@ import { InvoiceJobsModule } from 'src/core/invoice/invoice-jobs.module';
     ObjectStorageModule,
     FirebaseModule,
     InvoiceJobsModule,
+    SmsModule,
     BullModule.forRootAsync({
       useFactory: (configService: ConfigType<typeof redisConfig>) => {
         const redisHost = configService.host;
@@ -46,7 +47,6 @@ import { InvoiceJobsModule } from 'src/core/invoice/invoice-jobs.module';
     UploadProcessor,
     NotificationProcessor,
     InvoiceProcessor,
-    SmsProcessor,
   ],
   exports: [BullModule],
 })

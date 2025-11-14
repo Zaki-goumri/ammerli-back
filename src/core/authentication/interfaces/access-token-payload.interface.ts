@@ -13,3 +13,15 @@ export interface RegistrationTokenPayload {
 }
 
 export type JwtPayload = AccessTokenPayload | RegistrationTokenPayload;
+
+export const isAccessTokenPayload = (
+  payload: JwtPayload,
+): payload is AccessTokenPayload => {
+  return (payload as AccessTokenPayload).id !== undefined;
+};
+
+export const isRegistrationTokenPayload = (
+  payload: JwtPayload,
+): payload is RegistrationTokenPayload => {
+  return (payload as RegistrationTokenPayload).purpose === 'registration';
+};

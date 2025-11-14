@@ -34,16 +34,20 @@ import { USER_ROLES } from 'src/common/enums/user-role.enum';
 import { RoleGuard } from '../authentication/guards/role.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import { PresignedUrlInterceptor } from 'src/common/interceptors/presigned-url.interceptor';
+import { ConvertToPresignedUrls } from 'src/common/decorators/convert-to-presigned-urls.decorator';
 
 @ApiTags('categories')
 @ApiBearerAuth()
 @UseGuards(AccessTokenGuard, RoleGuard)
+@UseInterceptors(PresignedUrlInterceptor)
 @Controller('categories')
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
   @Get('main-categories')
   @HttpCode(HttpStatus.OK)
+  @ConvertToPresignedUrls(['pictureUrl'])
   @ApiOperation({ summary: 'Get all categories' })
   @ApiOkResponse({
     description: 'Returns all categories',
@@ -55,6 +59,7 @@ export class CategoryController {
 
   @Get(':id/children')
   @HttpCode(HttpStatus.OK)
+  @ConvertToPresignedUrls(['pictureUrl'])
   @ApiOperation({ summary: 'Get all children categories' })
   @ApiOkResponse({
     description: 'Returns all children categories',

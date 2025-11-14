@@ -62,8 +62,6 @@ export class AuthenticationService {
       return {
         accessToken: registrationToken,
         isRegistered: false,
-        user: null,
-        refreshToken: null,
       };
     }
     const tokens = await this.issueTokens(user);
@@ -72,7 +70,7 @@ export class AuthenticationService {
       user: tokens.user,
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
-      isRegistered: !!user.isRegistered,
+      isRegistered: true,
     };
   }
 
@@ -94,8 +92,6 @@ export class AuthenticationService {
       return {
         accessToken: registrationToken,
         isRegistered: false,
-        refreshToken: null,
-        user: null,
       };
     }
     const tokens = await this.issueTokens(user);
@@ -104,7 +100,7 @@ export class AuthenticationService {
       user: tokens.user,
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
-      isRegistered: !!user.isRegistered,
+      isRegistered: true,
     };
   }
 
@@ -131,12 +127,12 @@ export class AuthenticationService {
    */
   async issueTokens(user: User): Promise<AuthResDto> {
     try {
-      const { id, phoneNumber, role, isRegistered } = user;
+      const { id, phoneNumber, role } = user;
       const accessTokenPayload = {
         id,
         phoneNumber,
         role,
-        isRegistered,
+        isRegistered: true,
       };
       const refreshTokenPayload = {
         id,
@@ -196,7 +192,10 @@ export class AuthenticationService {
     dto: RegisterUserDto,
     phoneNumber: string,
   ): Promise<ValidateOtpDto> {
-    const user = await this.userService.create({ ...dto, phoneNumber });
+    const user = await this.userService.registerUserInfo({
+      ...dto,
+      phoneNumber,
+    });
     const tokens = await this.issueTokens(user);
     return { ...tokens, isRegistered: true };
   }

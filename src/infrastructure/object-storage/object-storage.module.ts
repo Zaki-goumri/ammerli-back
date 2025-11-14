@@ -6,6 +6,6 @@ import { MinioModule } from '../minio/minio.module';
 @Module({
   imports: [MinioModule],
   providers: [ObjectService],
-  exports: [ObjectService],
+  exports: [ObjectService, MinioModule],
 })
 export class ObjectStorageModule {}

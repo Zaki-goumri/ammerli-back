@@ -12,6 +12,7 @@ import { ProductPicture } from './entities/product-picture.entity';
 import { ProductPictureService } from './services/product-picture.service';
 import { CategoryController } from './category.controller';
 import { BrandController } from './brand.controller';
+import { MinioModule } from 'src/infrastructure/minio/minio.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { BrandController } from './brand.controller';
       Category,
       FavProduct,
     ]),
+    MinioModule,
   ],
   controllers: [ProductController, CategoryController, BrandController],
   providers: [

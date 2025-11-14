@@ -21,12 +21,24 @@ export class FilterProductDto extends PaginationQueryDto {
   search?: string;
 
   @ApiPropertyOptional({
-    description: 'Filter by category ID',
-    example: 1,
+    description: 'Filter by category IDs',
+    example: [1, 2],
+    type: [Number],
   })
   @IsOptional()
   @Transform(({ value }) => parseIntArrayQueryParam(value))
   @IsInt({ each: true })
   @IsPositive({ each: true })
   categoryIds?: number[];
+
+  @ApiPropertyOptional({
+    description: 'Filter by brand IDs',
+    example: [1, 2],
+    type: [Number],
+  })
+  @IsOptional()
+  @Transform(({ value }) => parseIntArrayQueryParam(value))
+  @IsInt({ each: true })
+  @IsPositive({ each: true })
+  brandIds?: number[];
 }
