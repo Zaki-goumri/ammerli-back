@@ -17,6 +17,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiResponse,
+  ApiTags,
   ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -27,11 +28,16 @@ import { OtpValidationDto } from './dtos/requests/otp-validation.dto';
 import { AccessTokenGuard } from './guards/access-token.guard';
 import { RegisterUserDto } from './dtos/requests/register-user.dto';
 import { SkipRegistrationCheck } from './decorators/skip-registration-check.decorator';
+import { Throttle } from '@nestjs/throttler';
 import { SendOtpDto } from './dtos/response/send-otp.dto';
 import { ValidateOtpDto } from './dtos/response/validate-otp.dto';
 import { AuthResDto } from './dtos/response/refresh-token.dto';
 import { FirebaseTokenDto } from './dtos/requests/firebase-token.dto';
+import { LogoutDto } from './dtos/requests/logout.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { MessageDto } from '../user/dtos/response/message.dto';
 
+@ApiTags('Authentication')
 @Controller('authentication')
 @ApiBadRequestResponse({ description: 'Bad request' })
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -40,19 +46,23 @@ import { FirebaseTokenDto } from './dtos/requests/firebase-token.dto';
 })
 @ApiInternalServerErrorResponse({ description: 'Internal server error' })
 export class AuthenticationController {
-  constructor(private readonly authenticationService: AuthenticationService) {}
+  constructor(
+    private readonly authenticationService: AuthenticationService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
   /**
    * @method auth
    * @description Sends an OTP to the provided phone number for user authentication.
+   * Rate limited to 1 request per 30 seconds to prevent abuse.
    * @param {AuthDto} dto - The authentication data containing the phone number.
    * @returns {Promise<SendOtpDto>} A message indicating that the OTP has been sent.
    */
 
-  //TODO: add rate limiting
+  @Throttle({ default: { limit: 1, ttl: 30000 } }) // 1 request per 30 seconds
   @Post('otp/send')
   @ApiOperation({
     summary: 'send OTP',
-    description: 'send sms otp to user',
+    description: 'Send SMS OTP to user. Rate limited to 1 request per 30 seconds.',
   })
   @ApiBody({ type: () => AuthDto })
   @ApiOkResponse({
@@ -62,6 +72,10 @@ export class AuthenticationController {
   @ApiResponse({
     status: 400,
     description: 'Bad Request.error in sending',
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Too Many Requests. Please wait 30 seconds before requesting a new OTP.',
   })
   async auth(@Body() dto: AuthDto): Promise<SendOtpDto> {
     return this.authenticationService.sendVerificationCode(dto.phoneNumber);
@@ -165,5 +179,39 @@ export class AuthenticationController {
   })
   async refreshTokens(@USER() user: User): Promise<AuthResDto> {
     return this.authenticationService.issueTokens(user);
+  }
+
+  /**
+   * @method logout
+   * @description Logs out the user by removing their FCM token(s).
+   * If fcmToken is provided, removes only that device.
+   * If fcmToken is not provided, removes all devices (logout from all).
+   * @param {LogoutDto} dto -  DTO containing fcmToken to remove.
+   * @returns {Promise<MessageDto>} Success message.
+   */
+  @UseGuards(AccessTokenGuard)
+  @Post('logout')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Logout user',
+    description:
+      'Logs out the user by removing their FCM token(s). ' +
+      'If fcmToken is provided in body, removes only that device. ' +
+      'If no fcmToken is provided, logs out from all devices.',
+  })
+  @ApiOkResponse({
+    description: 'Successfully logged out.',
+    schema: {
+      example: { message: 'Logged out from device successfully' },
+    },
+  })
+  @ApiBody({ type: LogoutDto })
+  async logout(
+    @USER('id') userId: number,
+    @Body() dto: LogoutDto,
+  ): Promise<MessageDto> {
+    await this.notificationsService.deleteToken(userId, dto.fcmToken);
+    return { message: 'Logged out from device successfully' };
   }
 }

@@ -17,7 +17,13 @@ import { ConfigService } from '@nestjs/config';
 import { BlackListModule } from '../user/black-list/black-list.module';
 
 @Module({
-  imports: [UserModule, JwtModule, PassportModule, QueueModule, BlackListModule],
+  imports: [
+    UserModule,
+    JwtModule,
+    PassportModule,
+    QueueModule,
+    BlackListModule,
+  ],
   controllers: [AuthenticationController],
   providers: [
     AuthenticationService,

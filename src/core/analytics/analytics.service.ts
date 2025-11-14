@@ -52,6 +52,7 @@ export class AnalyticsService {
     const todayOrdersCount = await this.orderRepo.count({
       where: {
         createdAt: Between(startOfDay, endOfDay),
+        isCancelled: false,
       },
     });
 
@@ -63,6 +64,7 @@ export class AnalyticsService {
     const yesterdayOrdersCount = await this.orderRepo.count({
       where: {
         createdAt: Between(startOfYesterday, endOfYesterday),
+        isCancelled: false,
       },
     });
 
@@ -81,9 +83,11 @@ export class AnalyticsService {
     };
   }
 
-  //TODO: execlude cancelled orders
   private async getTurnover(): Promise<{ turnover: number }> {
-    const orders = await this.orderRepo.find({ select: ['totalAmount'] });
+    const orders = await this.orderRepo.find({
+      where: { isCancelled: false },
+      select: ['totalAmount'],
+    });
     const turnover = orders.reduce(
       (sum, order) => sum + Number(order.totalAmount),
       0,

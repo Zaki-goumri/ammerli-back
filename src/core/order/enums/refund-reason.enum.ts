@@ -1,0 +1,14 @@
+export const REFUND_REASON = {
+  ORDER_CANCELLED: 'ORDER_CANCELLED',
+  PRODUCT_ISSUE: 'PRODUCT_ISSUE',
+  DELIVERY_ISSUE: 'DELIVERY_ISSUE',
+  CUSTOMER_REQUEST: 'CUSTOMER_REQUEST',
+  DUPLICATE_PAYMENT: 'DUPLICATE_PAYMENT',
+  OTHER: 'OTHER',
+} as const;
+
+export type RefundReason = (typeof REFUND_REASON)[keyof typeof REFUND_REASON];
+
+export const REFUND_REASON_VALUES = Object.values(
+  REFUND_REASON,
+) as RefundReason[];

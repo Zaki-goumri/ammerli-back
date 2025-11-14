@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 import { Category } from '../entities/category.entity';
@@ -9,15 +14,17 @@ import { ObjectService } from 'src/infrastructure/object-storage/object-storage.
 import { UPLOAD_JOBS } from 'src/common/constants/jobs';
 import { OnEvent } from '@nestjs/event-emitter';
 import { FinalizePayloadDto } from 'src/infrastructure/queue/upload/dto/finalize-payload.dto';
-import { Logger } from '@nestjs/common';
 import { CreateCategoryDto } from '../dtos/category/create-category.dto';
 import { CategoryResDto } from '../dtos/category/category.res.dto';
+import { Product } from '../entities/product.entity';
 
 @Injectable()
 export class CategoryService {
   constructor(
     @InjectRepository(Category)
     private readonly categoryRepo: Repository<Category>,
+    @InjectRepository(Product)
+    private readonly productRepo: Repository<Product>,
     @InjectQueue(QUEUE_NAME.UPLOAD)
     private readonly uploadQueue: Queue,
     private readonly objectStorageService: ObjectService,
@@ -142,6 +149,17 @@ export class CategoryService {
     if (!category) {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
+
+    const productsCount = await this.productRepo.count({
+      where: { categoryId: id },
+    });
+
+    if (productsCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete category. ${productsCount} product(s) are linked to this category.`,
+      );
+    }
+
     await this.categoryRepo.softDelete(id);
     if (category.pictureUrl) {
       await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {

@@ -12,6 +12,7 @@ import { Address } from 'src/core/user/entities/address.entity';
 import { BaseEntity } from 'src/common/entities/base.entity';
 import { Checkout } from './checkout.entity';
 import { OrderProduct } from './product-order.entity';
+import { Refund } from './refund.entity';
 import {
   ORDER_PAYMENT_METHOD,
   ORDER_PAYMENT_METHOD_VALUES,
@@ -56,9 +57,43 @@ export class Order extends BaseEntity {
   @Column('decimal', { precision: 10, scale: 2 })
   totalAmount: number;
 
+  @ApiProperty({
+    description: 'Whether the order is cancelled',
+    example: false,
+    default: false,
+  })
+  @Column({ default: false })
+  isCancelled: boolean;
+
+  @ApiProperty({
+    description: 'Reason for order cancellation',
+    example: 'Customer requested cancellation',
+    nullable: true,
+  })
+  @Column({ nullable: true, type: 'text' })
+  cancellationReason?: string;
+
+  @ApiProperty({
+    description: 'Who cancelled the order',
+    example: 'BUYER',
+    nullable: true,
+  })
+  @Column({ nullable: true })
+  cancelledBy?: string;
+
+  @ApiProperty({
+    description: 'When the order was cancelled',
+    nullable: true,
+  })
+  @Column({ nullable: true, type: 'timestamp' })
+  cancelledAt?: Date;
+
   @OneToMany(() => Checkout, (checkout) => checkout.order)
   checkouts: Relation<Checkout[]>;
 
   @OneToMany(() => OrderProduct, (op) => op.order, { cascade: true })
   orderProducts: Relation<OrderProduct[]>;
+
+  @OneToMany(() => Refund, (refund) => refund.order)
+  refunds: Relation<Refund[]>;
 }

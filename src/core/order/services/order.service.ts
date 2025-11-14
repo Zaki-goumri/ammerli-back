@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -27,7 +28,7 @@ import { UserService } from 'src/core/user/user.service';
 import { ORDER_PAYMENT_METHOD } from '../enums/order-payment-method.enum';
 import { CreateCheckoutRes } from '../dtos/checkout-create-res.dto';
 import { Tracking } from '../entities/tracking.entity';
-import { OrderStatus } from '../enums/delivery.enum';
+import { ORDER_STATUS, OrderStatus } from '../enums/delivery.enum';
 import { OrderForAdminListItemDto } from '../dtos/order-for-admin-list-item.dto';
 import { PaymentInfoDto } from '../dtos/payment-info.dto';
 import { BuyerInfoDto } from '../dtos/buyer-info.dto';
@@ -46,6 +47,7 @@ import { CheckoutDataDto } from 'src/core/chargili/dtos/chargili-webhook.dto';
 import { extractCheckoutIdFromUrl } from '../utils/extract-checkout-id.utils';
 import { Logger } from '@nestjs/common';
 import { PaymentWay } from '../enums/payment-way.enum';
+import { RefundService } from './refund.service';
 
 export type PaymentStatus =
   | 'paid'
@@ -86,6 +88,7 @@ export class OrderService {
     private readonly notificationService: NotificationsService,
     private readonly eventEmitter: EventEmitter2,
     private readonly redisService: RedisService,
+    private readonly refundService: RefundService,
   ) {}
 
   async processWebhook(
@@ -707,5 +710,188 @@ export class OrderService {
       this.getBuyerInfosForOrder(orderId),
     ]);
     return { products, buyerInfo };
+  }
+
+  /**
+   * Cancels an order with proper validation and side effects
+   * @param orderId - Order ID to cancel
+   * @param userId - User requesting cancellation
+   * @param cancelledBy - Who is cancelling (BUYER/SELLER/ADMIN)
+   * @param reason - Cancellation reason
+   * @returns Success message
+   */
+  async cancelOrder(
+    orderId: number,
+    userId: number,
+    cancelledBy: 'BUYER' | 'SELLER' | 'ADMIN',
+    reason: string,
+  ): Promise<{ message: string }> {
+    return this.entityManager.transaction(async (manager) => {
+      const orderRepo = manager.getRepository(Order);
+      const trackingRepo = manager.getRepository(Tracking);
+      const productRepo = manager.getRepository(Product);
+
+      // 1. Find order with relations
+      const order = await orderRepo.findOne({
+        where: { id: orderId },
+        relations: ['orderProducts', 'orderProducts.product'],
+      });
+
+      if (!order) {
+        throw new NotFoundException(`Order #${orderId} not found`);
+      }
+
+      // 2. Check if already cancelled
+      if (order.isCancelled) {
+        throw new BadRequestException('Order is already cancelled');
+      }
+
+      // 3. Validate cancellation rules
+      this.validateCancellation(order, userId, cancelledBy);
+
+      // 4. Get current order status
+      const currentTracking = await trackingRepo.findOne({
+        where: { orderId },
+        order: { createdAt: 'DESC' },
+      });
+
+      // 5. Validate status for cancellation
+      if (currentTracking?.status === ORDER_STATUS.DELIVERED) {
+        throw new BadRequestException(
+          'Cannot cancel delivered order. Please contact support for returns.',
+        );
+      }
+
+      if (
+        currentTracking?.status === ORDER_STATUS.ON_DELIVERING &&
+        cancelledBy === 'BUYER'
+      ) {
+        throw new BadRequestException(
+          'Cannot cancel order while it is being delivered. Please contact seller.',
+        );
+      }
+
+      // 6. Restore inventory (return products to stock)
+      await this.restoreInventory(order.orderProducts, productRepo);
+
+      // 7. Update order status
+      order.isCancelled = true;
+      order.cancellationReason = reason;
+      order.cancelledBy = cancelledBy;
+      order.cancelledAt = new Date();
+      await orderRepo.save(order);
+
+      // 8. Create cancellation tracking
+      await trackingRepo.save({
+        orderId,
+        status: ORDER_STATUS.CANCELLED,
+      });
+
+      // 9. Send notifications
+      await this.sendCancellationNotifications(order, cancelledBy, reason);
+
+      // 10. Create refund if order was paid
+      let refundId: number | undefined;
+      if (this.refundService) {
+        const refund = await this.refundService.createRefundForCancelledOrder(
+          orderId,
+          userId,
+          cancelledBy,
+          reason,
+        );
+        if (refund) {
+          refundId = refund.id;
+        }
+      }
+
+      // 11. Invalidate cache
+      await this.redisService.del(`order:${orderId}`);
+
+      this.logger.log(
+        `Order #${orderId} cancelled by ${cancelledBy}. Reason: ${reason}`,
+      );
+
+      return {
+        message: 'Order cancelled successfully',
+        ...(refundId && { refundId, refundStatus: 'PENDING' }),
+      };
+    });
+  }
+
+  /**
+   * Validates if user can cancel the order
+   */
+  private validateCancellation(
+    order: Order,
+    userId: number,
+    cancelledBy: 'BUYER' | 'SELLER' | 'ADMIN',
+  ): void {
+    if (cancelledBy === 'BUYER' && order.buyerId !== userId) {
+      throw new ForbiddenException('You can only cancel your own orders');
+    }
+
+    if (cancelledBy === 'SELLER') {
+      //NOTE: now we only have one seller for all products VERSION 1
+      const isOrderFromThisSeller = order.orderProducts.some(
+        (op) => op?.product?.sellerId === userId,
+      );
+      if (!isOrderFromThisSeller) {
+        throw new ForbiddenException(
+          'You can only cancel orders containing your products',
+        );
+      }
+    }
+    // Admins can cancel any order (no validation needed)
+  }
+
+  /**
+   * Restores product inventory after cancellation
+   */
+  private async restoreInventory(
+    orderProducts: OrderProduct[],
+    productRepo: Repository<Product>,
+  ): Promise<void> {
+    for (const op of orderProducts) {
+      await productRepo.increment(
+        { id: op.productId },
+        'quantity',
+        op.quantity,
+      );
+      this.logger.log(
+        `Restored ${op.quantity} units to product #${op.productId}`,
+      );
+    }
+  }
+
+  /**
+   * Sends cancellation notifications to buyer and seller
+   */
+  private async sendCancellationNotifications(
+    order: Order,
+    cancelledBy: string,
+    reason: string,
+  ): Promise<void> {
+    // Notify buyer
+    await this.notificationService.sendNotification(
+      'Order Cancelled',
+      `Your order #${order.id} has been cancelled. Reason: ${reason}`,
+      order.buyerId,
+      NOTIFICATION_TYPE.ORDERS,
+    );
+
+    // Notify seller(s)
+    const sellerIds = [
+      ...new Set(order.orderProducts.map((op) => op.product.sellerId)),
+    ];
+    for (const sellerId of sellerIds) {
+      if (sellerId !== order.buyerId) {
+        await this.notificationService.sendNotification(
+          'Order Cancelled',
+          `Order #${order.id} has been cancelled by ${cancelledBy}.`,
+          sellerId,
+          NOTIFICATION_TYPE.ORDERS,
+        );
+      }
+    }
   }
 }

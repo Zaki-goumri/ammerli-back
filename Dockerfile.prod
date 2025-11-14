@@ -37,10 +37,6 @@ COPY --from=build /usr/src/app/dist ./dist
 COPY . .
 COPY firebase.config.json ./
 
-# Run the application as a non-root user.
-# TODO: Change back to node user after fixing permission issues
-# USER node
-
 # Expose the port that the application listens on.
 EXPOSE 3000
 

@@ -734,6 +734,19 @@ export class UserService {
   }
 
   /**
+   * @method findUsersByRole
+   * @description Finds all users by role
+   * @param {UserRole} role - The user role to filter by
+   * @returns {Promise<User[]>} Array of users with the specified role
+   */
+  async findUsersByRole(role: UserRole): Promise<User[]> {
+    return this.userRepo.find({
+      where: { role },
+      select: ['id', 'name', 'phoneNumber', 'role'],
+    });
+  }
+
+  /**
    * @method getUsersForAdmin
    * @description Retrieves a paginated list of users for admin view, excluding the current user.
    * @param {PaginationQueryDto} paginationQuery - Pagination parameters (page, limit).

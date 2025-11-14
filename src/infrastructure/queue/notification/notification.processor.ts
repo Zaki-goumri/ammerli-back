@@ -75,10 +75,53 @@ export class NotificationProcessor extends WorkerHost {
       },
     }));
 
-    await Promise.allSettled(
+    const results = await Promise.allSettled(
       messages.map((message) => this.sendNotificationToOneDevice(message)),
     );
+
+    // Auto-cleanup invalid FCM tokens
+    const invalidTokens: string[] = [];
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        const error = result.reason;
+        // Check if the error is related to invalid token
+        if (this.isInvalidTokenError(error)) {
+          invalidTokens.push(tokens[index]);
+          this.logger.warn(
+            `Invalid FCM token detected: ${tokens[index].substring(0, 20)}...`,
+          );
+        }
+      }
+    });
+
+    // Remove invalid tokens from database
+    if (invalidTokens.length > 0) {
+      await Promise.all(
+        invalidTokens.map((token) =>
+          this.notificationsService.revokeToken(token),
+        ),
+      );
+      this.logger.log(
+        `Auto-removed ${invalidTokens.length} invalid FCM token(s)`,
+      );
+    }
+
     this.logger.log('Sending notification handled.');
+  }
+
+  /**
+   * Checks if the error is related to an invalid FCM token.
+   * @param error - The error object from Firebase.
+   * @returns True if the error indicates an invalid token.
+   */
+  private isInvalidTokenError(error: any): boolean {
+    const errorCode = error?.code || error?.errorInfo?.code;
+    const invalidErrorCodes = [
+      'messaging/invalid-registration-token',
+      'messaging/registration-token-not-registered',
+      'messaging/invalid-argument',
+    ];
+    return invalidErrorCodes.includes(errorCode);
   }
 
   @OnWorkerEvent('completed')

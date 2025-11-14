@@ -170,6 +170,36 @@ export class NotificationsService {
     await this.tokenRepo.delete({ fcmToken: token });
   }
 
+  /**
+   * Revokes all FCM tokens for a specific user (logout all devices).
+   * @param userId - The ID of the user.
+   * @returns A promise that resolves when all tokens are deleted.
+   */
+  async revokeAllTokensForUser(userId: number): Promise<void> {
+    await this.tokenRepo.delete({ userId });
+  }
+
+  /**
+   * Handles user logout by removing FCM token(s).
+   * If fcmToken is provided, removes only that token.
+   * If fcmToken is not provided, removes all tokens for the user.
+   * @param userId - The ID of the user logging out.
+   * @param fcmToken - Optional specific FCM token to remove.
+   * @returns A promise that resolves to a success message.
+   */
+  async deleteToken(
+    userId: number,
+    fcmToken?: string,
+  ): Promise<{ message: string }> {
+    if (fcmToken) {
+      await this.revokeToken(fcmToken);
+      return { message: 'Logged out from device successfully' };
+    } else {
+      await this.revokeAllTokensForUser(userId);
+      return { message: 'Logged out from all devices successfully' };
+    }
+  }
+
   // FcmService methods
   /**
    * Adds a notification job to the queue for sending.

@@ -45,22 +45,6 @@ async function bootstrap() {
   //   }),
   // );
   //
-  // const opts: DoubleCsrfConfigOptions = {
-  //   getSecret: () => 'Secret', //TODO:generate a secret
-  //   getSessionIdentifier: (req: ExtendedRequest) => req.user.id.toString(), //TODO:figure this out    cookieName: '__Host-psifi.x-csrf-token', // The name of the cookie to be used, recommend using Host prefix.
-  //   cookieOptions: {
-  //     sameSite: 'lax', // Recommend you make this strict if posible
-  //     path: '/',
-  //     secure: false, //TODO:change in prod
-  //     httpOnly: false,
-  //   },
-  //   size: 64, // The size of the generated tokens in bits
-  //   ignoredMethods: ['GET', 'HEAD', 'OPTIONS'], // A list of request methods that will not be protected.
-  //   //getTokenFromRequest: (req) => req.headers['x-csrf-token'], // A function that returns the token from the request
-  // };
-  // const { doubleCsrfProtection } = doubleCsrf(opts);
-  // app.use(doubleCsrfProtection);
-
   //INTERCEPTORS
   app.useGlobalInterceptors(
     new LoggerInterceptor(),

@@ -1,14 +1,21 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Brand } from '../entities/brand.entity';
 import { BrandResDto } from '../dtos/brand/brand.res.dto';
+import { Product } from '../entities/product.entity';
 
 @Injectable()
 export class BrandService {
   constructor(
     @InjectRepository(Brand)
     private readonly brandRepo: Repository<Brand>,
+    @InjectRepository(Product)
+    private readonly productRepo: Repository<Product>,
   ) {}
 
   async getAll(): Promise<BrandResDto[]> {
@@ -32,7 +39,19 @@ export class BrandService {
   }
 
   async remove(id: number): Promise<void> {
-    const result = await this.brandRepo.delete(id);
-    if (result.affected === 0) throw new NotFoundException('Brand not found');
+    const brand = await this.brandRepo.findOne({ where: { id } });
+    if (!brand) throw new NotFoundException('Brand not found');
+
+    const productsCount = await this.productRepo.count({
+      where: { brandId: id },
+    });
+
+    if (productsCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete brand. ${productsCount} product(s) are linked to this brand.`,
+      );
+    }
+
+    await this.brandRepo.delete(id);
   }
 }

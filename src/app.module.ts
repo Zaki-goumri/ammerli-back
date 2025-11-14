@@ -18,6 +18,9 @@ import dbConfig from './config/db.config';
 import chargiliConfig from './config/chargili.config';
 import minioConfig from './config/minio.config';
 import firebaseConfig from './config/firebase.config';
+import smsConfig from './config/sms.config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -34,8 +37,15 @@ import firebaseConfig from './config/firebase.config';
         elasticSearchConfig,
         dbConfig,
         chargiliConfig,
+        smsConfig,
       ],
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 60 seconds
+        limit: 10, // 10 requests per ttl
+      },
+    ]),
     BullModule.forRootAsync({
       useFactory: (configService: ConfigService) => {
         const redisHost = configService.get<string>('redis.host');
@@ -64,6 +74,12 @@ import firebaseConfig from './config/firebase.config';
     CoreModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

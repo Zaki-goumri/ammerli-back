@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ProductService } from './services/product.service';
 import { ProductController } from './product.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -8,13 +8,10 @@ import { Category } from './entities/category.entity';
 import { FavProduct } from './entities/fav-product.entity';
 import { BrandService } from './services/brand.service';
 import { CategoryService } from './services/category.service';
-import { ObjectStorageModule } from 'src/infrastructure/object-storage/object-storage.module';
 import { ProductPicture } from './entities/product-picture.entity';
 import { ProductPictureService } from './services/product-picture.service';
 import { CategoryController } from './category.controller';
 import { BrandController } from './brand.controller';
-import { NotificationsModule } from '../notifications/notifications.module';
-import { InfrastructureModule } from 'src/infrastructure/infrastructure.module';
 
 @Module({
   imports: [
@@ -25,9 +22,6 @@ import { InfrastructureModule } from 'src/infrastructure/infrastructure.module';
       Category,
       FavProduct,
     ]),
-    ObjectStorageModule,
-    forwardRef(() => InfrastructureModule),
-    NotificationsModule,
   ],
   controllers: [ProductController, CategoryController, BrandController],
   providers: [

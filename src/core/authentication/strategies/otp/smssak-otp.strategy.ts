@@ -1,21 +1,27 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { OtpStrategy } from './otp.strategy';
-import { sendOtp, verifyOtp } from 'smssak'; // Assuming smssak exports these functions
+import { sendOtp, verifyOtp } from 'smssak';
 
 @Injectable()
 export class SmsSakOtpStrategy extends OtpStrategy {
   private readonly logger = new Logger(SmsSakOtpStrategy.name);
 
-  private readonly country = 'dz';
-  private readonly projectId = '3ammerli-vd9aq'; // Replace with actual project ID
-  private readonly key =
-    'd2db0df0ee7de529a1876948ba50e909:44e3362616a805908d9aa38dade474af33907f00de7fded9fe4e98f95895a47df67a3ae4dfe5edb67bf1df8038b26b7821a2d623a5596c9174ed60f04f5aaebfd78d103851feb9ee9d226adfcf69addf'; // Replace with actual API key
-  private readonly type = 'sms'; // Assuming 'sms' as default
+  private readonly country: string;
+  private readonly projectId: string;
+  private readonly key: string;
+  private readonly type: string;
+
+  constructor(private configService: ConfigService) {
+    super();
+    this.country = this.configService.get<string>('sms.smssak.country')!;
+    this.projectId = this.configService.get<string>('sms.smssak.projectId')!;
+    this.key = this.configService.get<string>('sms.smssak.key')!;
+    this.type = this.configService.get<string>('sms.smssak.type')!;
+  }
 
   async send(phoneNumber: string): Promise<void> {
     try {
-      // smssak.sendOtp does not take a custom message body.
-      // It generates and sends its own OTP message.
       await sendOtp(
         this.country,
         this.projectId,

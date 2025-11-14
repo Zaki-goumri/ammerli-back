@@ -1,5 +1,5 @@
 import { BullModule } from '@nestjs/bullmq';
-import { Global, Module, forwardRef } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { QUEUE_NAME } from 'src/common/constants/queues';
 import redisConfig from 'src/config/redis.config';
@@ -8,10 +8,9 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { NotificationProcessor } from './notification/notification.processor';
 import { FirebaseModule } from '../firebase/firebase.module';
 import { ObjectStorageModule } from '../object-storage/object-storage.module';
-import { NotificationsModule } from 'src/core/notifications/notifications.module';
 import { InvoiceProcessor } from './invoice/invoice.processor';
-import { InvoiceModule } from 'src/core/invoice/invoice.module';
 import { SmsProcessor } from './sms/sms.processor';
+import { InvoiceJobsModule } from 'src/core/invoice/invoice-jobs.module';
 
 @Global()
 @Module({
@@ -19,7 +18,7 @@ import { SmsProcessor } from './sms/sms.processor';
     EventEmitterModule,
     ObjectStorageModule,
     FirebaseModule,
-    InvoiceModule, // Re-adding forwardRef for InvoiceModule
+    InvoiceJobsModule,
     BullModule.forRootAsync({
       useFactory: (configService: ConfigType<typeof redisConfig>) => {
         const redisHost = configService.host;

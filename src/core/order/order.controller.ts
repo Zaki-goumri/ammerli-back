@@ -30,6 +30,9 @@ import {
   ApiExcludeEndpoint,
   ApiOperation,
   ApiOkResponse,
+  ApiBadRequestResponse,
+  ApiForbiddenResponse,
+  ApiTags,
 } from '@nestjs/swagger';
 import { CheckoutDataDto } from '../chargili/dtos/chargili-webhook.dto';
 import { AccessTokenGuard } from '../authentication/guards/access-token.guard';
@@ -39,6 +42,7 @@ import { USER_ROLES } from 'src/common/enums/user-role.enum';
 import { Roles } from '../authentication/decorators/role.decorator';
 import { RoleGuard } from '../authentication/guards/role.guard';
 import { OrderForAdminListItemDto } from './dtos/order-for-admin-list-item.dto';
+import { CancelOrderDto } from './dtos/cancel-order.dto';
 /**
  *
  * @class OrderController
@@ -46,6 +50,7 @@ import { OrderForAdminListItemDto } from './dtos/order-for-admin-list-item.dto';
  * This controller is responsible for creating orders, handling payment webhooks, and retrieving user orders.
  * @ApiTags order
  */
+@ApiTags('Order')
 @Controller('order')
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
@@ -194,5 +199,58 @@ export class OrderController {
   @Get(':orderId/infos')
   getOrderInfos(@Param('orderId', ParseIntPipe) orderId: number): Promise<any> {
     return this.orderService.orderInfos(orderId);
+  }
+
+  /**
+   * Cancel an order
+   * @param orderId - Order ID to cancel
+   * @param userId - Authenticated user ID
+   * @param userRole - User role
+   * @param dto - Cancellation details
+   */
+  @UseGuards(AccessTokenGuard)
+  @Post(':id/cancel')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Cancel an order',
+    description:
+      'Cancels an order if allowed. Buyers can cancel during CONFIRMATION. ' +
+      'Sellers can cancel during CONFIRMATION and PREPARATION. ' +
+      'Inventory is automatically restored.',
+  })
+  @ApiOkResponse({
+    description: 'Order cancelled successfully',
+    schema: {
+      example: {
+        message: 'Order cancelled successfully',
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Cannot cancel order (invalid status or already cancelled)',
+  })
+  @ApiForbiddenResponse({
+    description: 'You do not have permission to cancel this order',
+  })
+  async cancelOrder(
+    @Param('id', ParseIntPipe) orderId: number,
+    @USER('id') userId: number,
+    @USER('role') userRole: string,
+    @Body() dto: CancelOrderDto,
+  ): Promise<{ message: string }> {
+    const cancelledBy =
+      userRole === USER_ROLES.ADMIN
+        ? 'ADMIN'
+        : userRole === USER_ROLES.WHOLESELLER
+          ? 'SELLER'
+          : 'BUYER';
+
+    return this.orderService.cancelOrder(
+      orderId,
+      userId,
+      cancelledBy,
+      dto.reason,
+    );
   }
 }

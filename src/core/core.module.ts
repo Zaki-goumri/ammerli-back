@@ -21,5 +21,6 @@ import { InvoiceModule } from 'src/core/invoice/invoice.module';
     InvoiceModule,
   ],
   providers: [],
+  exports: [InvoiceModule],
 })
 export class CoreModule {}

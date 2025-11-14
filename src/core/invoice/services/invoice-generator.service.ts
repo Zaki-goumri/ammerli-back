@@ -13,9 +13,12 @@ import {
   InvoiceProduct,
   OrderForInvoice,
 } from '../interfaces/invoice.interface';
-import { OrderService } from 'src/core/order/services/order.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Order } from 'src/core/order/entities/order.entity';
+import { Repository } from 'typeorm';
 import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
 import { PaymentMethodType } from 'src/core/order/enums/payment-method.enum';
+
 const DELIVERY_ESTIMATION_DAYS = 2;
 
 @Injectable()
@@ -25,7 +28,8 @@ export class InvoiceGeneratorService implements OnModuleInit {
   private templatePath: string;
 
   constructor(
-    private readonly orderService: OrderService,
+    @InjectRepository(Order)
+    private readonly orderRepo: Repository<Order>,
     private readonly objectService: ObjectService,
   ) {
     this.templatePath = path.join(
@@ -59,7 +63,7 @@ export class InvoiceGeneratorService implements OnModuleInit {
   async generateInvoice(
     orderId: number,
   ): Promise<{ invoicePath: string; buyerId: number }> {
-    const order = await this.orderService.findOneForInvoice(orderId);
+    const order = await this.findOneForInvoice(orderId);
     const invoiceData = this.prepareInvoiceData(order);
     const pdfBuffer = await this.generateInvoicePDF(invoiceData);
 
@@ -80,8 +84,30 @@ export class InvoiceGeneratorService implements OnModuleInit {
    * @returns A promise that resolves to the buyer ID.
    */
   async getBuyerIdFromOrderId(orderId: number): Promise<number> {
-    const order = await this.orderService.findOneForInvoice(orderId);
+    const order = await this.findOneForInvoice(orderId);
     return order.buyer.id;
+  }
+
+  /**
+   * Finds an order with all necessary relations for invoice generation.
+   * @param orderId - The ID of the order.
+   * @returns A promise that resolves to the order with relations.
+   * @private
+   */
+  private async findOneForInvoice(orderId: number): Promise<Order> {
+    const order = await this.orderRepo.findOneOrFail({
+      where: { id: orderId },
+      withDeleted: true,
+      relations: [
+        'buyer',
+        'address',
+        'orderProducts',
+        'orderProducts.product',
+        'orderProducts.product.brand',
+        'checkouts',
+      ],
+    });
+    return order;
   }
 
   /**
