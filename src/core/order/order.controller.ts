@@ -97,7 +97,6 @@ export class OrderController {
   ) {
     this.logger.log('Received Chargili webhook');
     try {
-      console.log('Webhook data:', data);
       await this.orderService.processWebhook(data, headers.authorization);
       return res.send({ received: true });
     } catch (error) {

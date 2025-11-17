@@ -8,6 +8,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import chargiliConfig from 'src/config/chargili.config';
 import { InvoiceModule } from 'src/core/invoice/invoice.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -19,8 +20,8 @@ import { InvoiceModule } from 'src/core/invoice/invoice.module';
     NotificationsModule,
     AnalyticsModule,
     InvoiceModule,
+    SettingsModule,
   ],
-  providers: [],
   exports: [InvoiceModule],
 })
 export class CoreModule {}

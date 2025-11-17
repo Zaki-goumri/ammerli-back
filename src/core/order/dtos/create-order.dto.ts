@@ -63,7 +63,8 @@ export class CreateOrderDto {
   addressId?: number;
 
   @ApiPropertyOptional({
-    description: 'A new address to create for delivery',
+    description:
+      'A new address to create for delivery if the user does not want to use an existing one',
   })
   @IsOptional()
   @ValidateNested()

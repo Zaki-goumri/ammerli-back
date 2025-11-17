@@ -13,11 +13,13 @@ import throttlerConfig from 'src/config/throttler.config';
           {
             name: 'global',
             limit: config.limit,
-            ttl: config.ttl * 1000, // Convert to milliseconds
-            blockDuration: config.blockDuration * 1000, // Convert to milliseconds
+            ttl: config.ttl * 1000,
+            blockDuration: config.blockDuration * 1000,
           },
         ],
-        ignoreUserAgents: config.ignoreUserAgents,
+        ignoreUserAgents: config.ignoreUserAgents.map(
+          (agent) => new RegExp(agent),
+        ),
       }),
     }),
   ],

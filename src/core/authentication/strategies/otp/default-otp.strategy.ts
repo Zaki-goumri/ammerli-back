@@ -1,8 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OtpStrategy } from './otp.strategy';
 import { RedisService } from 'nestjs-redis-client';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
 
 @Injectable()
 export class DefaultOtpStrategy extends OtpStrategy {

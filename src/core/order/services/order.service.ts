@@ -400,9 +400,38 @@ export class OrderService {
   ): Promise<PaginationResponseDto<OrderListItemDto>> {
     const { limit, page } = paginationQuery;
 
-    const queryBuilder = this.orderRepo
+    // First, get paginated order IDs
+    const orderIdsQuery = this.orderRepo
       .createQueryBuilder('orders')
       .where('orders.buyerId = :userId', { userId })
+      .select('orders.id', 'id')
+      .withDeleted()
+      .orderBy('orders.createdAt', 'DESC')
+      .take(limit)
+      .skip((page - 1) * limit);
+
+    const total = await this.orderRepo.count({ where: { buyerId: userId } });
+    const paginatedIds = await orderIdsQuery.getRawMany();
+
+    if (paginatedIds.length === 0) {
+      return {
+        data: [],
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+          hasNextPage: page * limit < total,
+        },
+      };
+    }
+
+    const orderIds = paginatedIds.map((o) => o.id);
+
+    // Now fetch full data for these order IDs
+    const queryBuilder = this.orderRepo
+      .createQueryBuilder('orders')
+      .where('orders.id IN (:...orderIds)', { orderIds })
       .leftJoin('orders.checkouts', 'checkout')
       .leftJoin(
         (subQuery) =>
@@ -424,7 +453,6 @@ export class OrderService {
         'latest_tracking',
         'latest_tracking."orderId" = orders.id',
       )
-
       .leftJoin('order_products', 'op', 'op.orderId = orders.id')
       .select([
         'orders.id AS id',
@@ -440,14 +468,9 @@ export class OrderService {
       .addGroupBy('latest_tracking."latestStatus"')
       .addGroupBy('checkout.paymentWay')
       .withDeleted()
-      .orderBy('orders.createdAt', 'DESC')
-      .take(limit)
-      .skip((page - 1) * limit);
+      .orderBy('orders.createdAt', 'DESC');
 
-    const [data, total] = await Promise.all([
-      queryBuilder.getRawMany(),
-      this.orderRepo.count({ where: { buyerId: userId } }),
-    ]);
+    const data = await queryBuilder.getRawMany();
 
     const orders: OrderListItemDto[] = data.map((d) => ({
       id: d.id,
@@ -528,9 +551,37 @@ export class OrderService {
   ): Promise<PaginationResponseDto<OrderForAdminListItemDto>> {
     const { limit, page } = paginationQuery;
 
+    // First, get paginated order IDs
+    const orderIdsQuery = this.orderRepo
+      .createQueryBuilder('order')
+      .select('order.id', 'id')
+      .withDeleted()
+      .orderBy('order.createdAt', 'DESC')
+      .take(limit)
+      .skip((page - 1) * limit);
+
+    const total = await this.orderRepo.count();
+    const paginatedIds = await orderIdsQuery.getRawMany();
+
+    if (paginatedIds.length === 0) {
+      return {
+        data: [],
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+          hasNextPage: page * limit < total,
+        },
+      };
+    }
+
+    const orderIds = paginatedIds.map((o) => o.id);
+
+    // Now fetch full data for these order IDs
     const queryBuilder = this.orderRepo
       .createQueryBuilder('order')
-      .leftJoin('order.buyer', 'user') // Assuming 'buyer' is the relation name in Order entity to User entity
+      .leftJoin('order.buyer', 'user')
       .leftJoin('order.checkouts', 'checkout')
       .leftJoin(
         (subQuery) =>
@@ -552,6 +603,7 @@ export class OrderService {
         'latest_tracking',
         'latest_tracking."orderId" = order.id',
       )
+      .where('order.id IN (:...orderIds)', { orderIds })
       .select([
         'order.id AS id',
         'user.name AS clientname',
@@ -560,14 +612,10 @@ export class OrderService {
         'checkout.paymentWay AS "checkoutPaymentWay"',
       ])
       .withDeleted()
-      .orderBy('order.createdAt', 'DESC')
-      .take(limit)
-      .skip((page - 1) * limit);
+      .orderBy('order.createdAt', 'DESC');
 
-    const [data, total] = await Promise.all([
-      queryBuilder.getRawMany(),
-      this.orderRepo.count(),
-    ]);
+    const data = await queryBuilder.getRawMany();
+
     const orders: OrderForAdminListItemDto[] = data.map((d) => ({
       id: d?.id,
       clientName: d?.clientname,

@@ -1,0 +1,151 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    # Warm-up
+    - duration: 30
+      arrivalRate: 3
+      name: "Warm up"
+    # Normal payment processing
+    - duration: 120
+      arrivalRate: 8
+      name: "Normal payments"
+    # Peak payment time
+    - duration: 90
+      arrivalRate: 15
+      name: "Peak payments"
+    # Ramp down
+    - duration: 30
+      arrivalRate: 3
+      name: "Ramp down"
+  
+  ensure:
+    maxErrorRate: 2
+    p95: 1500   # Payment processing can be slower
+    p99: 3000
+
+scenarios:
+  - name: "Payment - Create Payment"
+    weight: 2
+    flow:
+      # Login as supermarket
+      - post:
+          url: "/authentication/login"
+          json:
+            phoneNumber: "+213555200001"
+            password: "supermarketPassword"
+          capture:
+            - json: "$.accessToken"
+              as: "token"
+          expect:
+            - statusCode: 200
+      
+      # Create order first
+      - post:
+          url: "/orders"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            items:
+              - productId: "{{ $randomInt(1, 50) }}"
+                quantity: 2
+            addressId: 1
+            paymentMethod: "ONLINE"
+          capture:
+            - json: "$.id"
+              as: "orderId"
+          expect:
+            - statusCode:
+                - 201
+                - 400
+      
+      # Think time
+      - think: 2
+      
+      # Create payment
+      - post:
+          url: "/payment/create"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            orderId: "{{ orderId }}"
+            amount: "{{ $randomInt(1000, 50000) }}"
+          expect:
+            - statusCode:
+                - 200
+                - 201
+                - 400
+          capture:
+            - json: "$.checkoutUrl"
+              as: "checkoutUrl"
+            - json: "$.paymentId"
+              as: "paymentId"
+      
+      # Think time (user on payment page)
+      - think: 10
+
+  - name: "Payment - Webhook Processing"
+    weight: 3  # Webhooks are frequent
+    flow:
+      # Simulate Chargily webhook
+      - post:
+          url: "/payment/webhook"
+          headers:
+            Content-Type: "application/json"
+            X-Signature: "test-signature"  # In real scenario, this is verified
+          json:
+            id: "{{ $randomString(20) }}"
+            type: "payment"
+            event: "payment.success"
+            data:
+              id: "{{ $randomString(15) }}"
+              status: "paid"
+              amount: 5000
+              customer:
+                name: "Test Customer"
+                phone: "+213555200001"
+              metadata:
+                orderId: "{{ $randomInt(1, 1000) }}"
+          expect:
+            - statusCode:
+                - 200
+                - 400
+      
+      # Webhooks come quickly in succession sometimes
+      - think: 1
+
+  - name: "Payment - Check Payment Status"
+    weight: 1
+    flow:
+      # Login
+      - post:
+          url: "/authentication/login"
+          json:
+            phoneNumber: "+213555200001"
+            password: "supermarketPassword"
+          capture:
+            - json: "$.accessToken"
+              as: "token"
+      
+      # Get order to check payment status
+      - get:
+          url: "/orders/{{ $randomInt(1, 100) }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode:
+                - 200
+                - 404
+          capture:
+            - json: "$.paymentStatus"
+              as: "paymentStatus"
+      
+      # Think time
+      - think: 3
+
+before:
+  flow:
+    - log: "Starting Payment Load Test"
+
+after:
+  flow:
+    - log: "Payment Load Test Completed"

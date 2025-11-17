@@ -5,13 +5,9 @@ import { apiReference } from '@scalar/nestjs-api-reference';
 import { AppModule } from './app.module';
 import { LoggerInterceptor } from './monitoring/logger/logger.interceptor';
 import { DatabaseExceptionFilter } from './common/filters/db.filter';
+import { AppClusterService } from './infrastructure/clustring/app.cluster';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    cors: {
-      origin: process.env.FRONTENT_URL || 'http://localhost:5372',
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-      credentials: true,
-    },
     logger: ['log', 'error', 'warn', 'debug', 'verbose'],
     snapshot: true,
   });
@@ -113,5 +109,22 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
 }
-// eslint-disable-next-line @typescript-eslint/no-floating-promises
-bootstrap();
+
+const cluserizeApp = process.env.NUM_CPUS;
+
+if (cluserizeApp) {
+  AppClusterService.clusterize(async () => {
+    await bootstrap();
+  });
+} else {
+  bootstrap()
+    .then(() => {
+      console.log(
+        `Application is running on: ${process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`}`,
+      );
+    })
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    });
+}

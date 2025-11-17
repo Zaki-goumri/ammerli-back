@@ -1,0 +1,23 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 10
+      arrivalRate: 2
+      name: "Quick test"
+
+scenarios:
+  - name: "Send OTP Test"
+    flow:
+      - post:
+          url: "/api/v1/authentication/otp/send"
+          json:
+            phoneNumber: "+213555{{ $randomInt(100000, 999999) }}"
+          expect:
+            - statusCode: 
+                - 200
+                - 201
+                - 429  # Rate limit
+          capture:
+            - json: "$.message"
+              as: "otpMessage"
+      - think: 1

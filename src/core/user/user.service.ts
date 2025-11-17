@@ -146,10 +146,7 @@ export class UserService {
    * @returns {Promise<User>} The found user entity.
    * @throws {NotFoundException} If no user is found with the provided phone number.
    */
-  async findByPhoneNumber(
-    phoneNumber: string,
-    isRegistered?: boolean,
-  ): Promise<User> {
+  async findByPhoneNumber(phoneNumber: string): Promise<User> {
     const cachedUser = await this.redisService.get<User>(
       UserService.getCacheKey(phoneNumber, 'phoneNumber'),
     );
@@ -213,6 +210,7 @@ export class UserService {
       .select([
         'user.id',
         'user.name',
+        'user.role',
         'user.phoneNumber',
         'user.profilePic',
         'user.supermarketName',
@@ -580,8 +578,7 @@ export class UserService {
     await this.redisService.del(
       UserService.getCacheKey(userId, 'admin-details'),
     ); // Invalidate admin details cache
-    const presignedUrl = await this.objectService.getPresignedUrl(objectName);
-    return { profilePic: presignedUrl };
+    return { profilePic: objectName };
   }
 
   /**

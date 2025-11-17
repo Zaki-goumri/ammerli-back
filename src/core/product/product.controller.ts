@@ -92,7 +92,6 @@ export class ProductController {
     description: 'Returns paginated products',
   })
   findAll(@Query() query: FilterProductDto, @USER('id') userId: number) {
-    console.log('Query Params:', query.categoryIds);
     const pagination = { page: query.page || 1, limit: query.limit || 10 };
     return this.productService.findManyWithPagination(
       pagination,
@@ -449,9 +448,9 @@ export class ProductController {
   ) {
     const pagination = { page: query.page || 1, limit: query.limit || 10 };
     return this.productService.getFavoriteProducts(
-      userId, 
-      pagination, 
-      query.search, 
+      userId,
+      pagination,
+      query.search,
       query.categoryIds,
       query.brandIds,
     );

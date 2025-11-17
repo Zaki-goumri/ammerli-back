@@ -1,4 +1,4 @@
-import { Entity, Column, OneToMany, DeleteDateColumn, Index } from 'typeorm';
+import { Entity, Column, OneToMany, DeleteDateColumn, Index, OneToOne } from 'typeorm';
 import { Product } from '../../product/entities/product.entity';
 import { Address } from './address.entity';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -10,6 +10,7 @@ import {
 import { BaseEntity } from '../../../common/entities/base.entity';
 import { Notification } from 'src/core/notifications/entities/notification.entity';
 import { Token } from 'src/core/notifications/entities/token.entity';
+import { Settings } from 'src/core/settings/entities/settings.entity';
 
 @Entity('users')
 @Index('IDX_UNIQUE_PHONE_ACTIVE', ['phoneNumber'], {
@@ -94,4 +95,7 @@ export class User extends BaseEntity {
 
   @OneToMany(() => Token, (token) => token.user)
   tokens?: Token[];
+
+  @OneToOne(() => Settings, (settings) => settings.user)
+  settings?: Settings;
 }

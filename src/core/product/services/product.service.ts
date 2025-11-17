@@ -64,7 +64,8 @@ export class ProductService {
       if (!product.expirationDate) return;
       const sellerId = product.sellerId;
       const daysRemaining = Math.ceil(
-        (product.expirationDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        (product.expirationDate.getTime() - today.getTime()) /
+          (1000 * 60 * 60 * 24),
       );
       const message = `Your product "${product.name}" will expire in ${daysRemaining} days`;
       return this.notificationsService.saveNotificationRecord(
@@ -87,10 +88,57 @@ export class ProductService {
     const { page, limit } = paginationQuery;
     const offset = (page - 1) * limit;
 
+    // First, get paginated product IDs
+    const productIdsQuery = this.productRepo
+      .createQueryBuilder('product')
+      .leftJoin('product.brand', 'brand')
+      .select('product.id', 'id')
+      .orderBy('product.createdAt', 'DESC');
+
+    if (categoryIds && categoryIds.length > 0) {
+      productIdsQuery.andWhere('product.categoryId IN (:...categoryIds)', {
+        categoryIds,
+      });
+    }
+    if (brandIds && brandIds.length > 0) {
+      productIdsQuery.andWhere('product.brandId IN (:...brandIds)', {
+        brandIds,
+      });
+    }
+    if (search) {
+      productIdsQuery.andWhere(
+        '(product.name ILIKE :search OR brand.label ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const total = await productIdsQuery.getCount();
+    const paginatedIds = await productIdsQuery
+      .limit(limit)
+      .offset(offset)
+      .getRawMany();
+
+    if (paginatedIds.length === 0) {
+      return {
+        data: [],
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+          hasNextPage: page * limit < total,
+        },
+      };
+    }
+
+    const productIds = paginatedIds.map((p) => p.id);
+
+    // Now fetch full data for these product IDs
     const queryBuilder = this.productRepo
       .createQueryBuilder('product')
       .leftJoin('product.pictures', 'mainPicture', 'mainPicture.isMain = TRUE')
       .leftJoin('product.brand', 'brand')
+      .where('product.id IN (:...productIds)', { productIds })
       .select([
         'product.id AS id',
         'product.name AS name',
@@ -102,28 +150,7 @@ export class ProductService {
       .addGroupBy('mainPicture.url')
       .orderBy('product.createdAt', 'DESC');
 
-    if (categoryIds && categoryIds.length > 0) {
-      queryBuilder.andWhere('product.categoryId IN (:...categoryIds)', {
-        categoryIds,
-      });
-    }
-    if (brandIds && brandIds.length > 0) {
-      queryBuilder.andWhere('product.brandId IN (:...brandIds)', {
-        brandIds,
-      });
-    }
-    if (search) {
-      queryBuilder.andWhere('(product.name ILIKE :search OR brand.label ILIKE :search)', {
-        search: `%${search}%`,
-      });
-    }
-
-    const totalQueryBuilder = queryBuilder.clone();
-    const total = await totalQueryBuilder.getCount();
-    const productsRaw = await queryBuilder
-      .skip(offset)
-      .take(limit)
-      .getRawMany();
+    const productsRaw = await queryBuilder.getRawMany();
 
     const preperdData = await Promise.all(
       productsRaw.map(async (product) => {
@@ -160,6 +187,53 @@ export class ProductService {
     const { page, limit } = paginationQuery;
     const offset = (page - 1) * limit;
 
+    // First, get paginated product IDs
+    const productIdsQuery = this.productRepo
+      .createQueryBuilder('product')
+      .leftJoin('product.brand', 'brand')
+      .leftJoin('product.category', 'category')
+      .select('product.id', 'id')
+      .orderBy('product.createdAt', 'DESC');
+
+    if (categoryIds && categoryIds.length > 0) {
+      productIdsQuery.andWhere('category.id IN (:...categoryIds)', {
+        categoryIds,
+      });
+    }
+    if (brandIds && brandIds.length > 0) {
+      productIdsQuery.andWhere('brand.id IN (:...brandIds)', {
+        brandIds,
+      });
+    }
+    if (search) {
+      productIdsQuery.andWhere(
+        '(product.name ILIKE :search OR product.description ILIKE :search OR brand.label ILIKE :search OR category.label ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const total = await productIdsQuery.getCount();
+    const paginatedIds = await productIdsQuery
+      .limit(limit)
+      .offset(offset)
+      .getRawMany();
+
+    if (paginatedIds.length === 0) {
+      return {
+        data: [],
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+          hasNextPage: page * limit < total,
+        },
+      };
+    }
+
+    const productIds = paginatedIds.map((p) => p.id);
+
+    // Now fetch full data for these product IDs
     const queryBuilder = this.productRepo
       .createQueryBuilder('product')
       .leftJoin('product.brand', 'brand')
@@ -168,18 +242,21 @@ export class ProductService {
         'product.favoritedBy',
         'fav_products',
         'fav_products.userId = :userId',
-        {
-          userId,
-        },
+        { userId },
       )
       .leftJoin('product.pictures', 'mainPicture', 'mainPicture.isMain = TRUE')
       .leftJoin('order_products', 'op', 'op.productId = product.id')
-      .leftJoin('op.order', 'order', 'order.id = op.orderId AND order.isCancelled = FALSE')
+      .leftJoin(
+        'op.order',
+        'order',
+        'order.id = op.orderId AND order.isCancelled = FALSE',
+      )
       .leftJoin(
         'checkouts',
         'checkout',
         'checkout."orderId" = order.id AND checkout.isPaid = TRUE',
       )
+      .where('product.id IN (:...productIds)', { productIds })
       .select([
         'product.id AS id',
         'product.name AS name',
@@ -192,46 +269,16 @@ export class ProductService {
         'CASE WHEN fav_products.id IS NOT NULL THEN true ELSE false END AS "isLoved"',
       ])
       .groupBy('product.id')
-      .addGroupBy('brand')
-      .addGroupBy('category')
-      .addGroupBy('picture')
+      .addGroupBy('brand.label')
+      .addGroupBy('category.label')
+      .addGroupBy('mainPicture.url')
       .addGroupBy('product.createdAt')
       .addGroupBy('fav_products.id')
       .orderBy('product.createdAt', 'DESC');
 
-    if (categoryIds && categoryIds.length > 0) {
-      queryBuilder.andWhere('category.id IN (:...categoryIds)', {
-        categoryIds,
-      });
-    }
-    if (brandIds && brandIds.length > 0) {
-      queryBuilder.andWhere('brand.id IN (:...brandIds)', {
-        brandIds,
-      });
-    }
-    if (search) {
-      queryBuilder.andWhere(
-        '(product.name ILIKE :search OR product.description ILIKE :search OR brand.label ILIKE :search OR category.label ILIKE :search)',
-        { search: `%${search}%` },
-      );
-    }
-    const totalQueryBuilder = queryBuilder.clone();
-    const total = await totalQueryBuilder.getCount();
-    const productsRaw = await queryBuilder
-      .skip(offset)
-      .take(limit)
-      .getRawMany();
+    const productsRaw = await queryBuilder.getRawMany();
 
-    const productsWithPresignedUrls = await Promise.all(
-      productsRaw.map(async (p) => {
-        if (p.picture) {
-          p.picture = await this.objectService.getPresignedUrl(p.picture);
-        }
-        return p;
-      }),
-    );
-
-    const formatted = productsWithPresignedUrls.map((p) => ({
+    const formatted = productsRaw.map((p) => ({
       id: p?.id,
       name: p?.name,
       price: parseInt(p?.price || '0', 10),
@@ -243,7 +290,6 @@ export class ProductService {
     }));
 
     return {
-      data: formatted,
       meta: {
         total,
         page,
@@ -251,6 +297,7 @@ export class ProductService {
         totalPages: Math.ceil(total / limit),
         hasNextPage: page * limit < total,
       },
+      data: formatted,
     };
   }
 
@@ -419,13 +466,61 @@ export class ProductService {
     const { page, limit } = paginationQuery;
     const offset = (page - 1) * limit;
 
-    const queryBuilder = this.productRepo
+    // First, get paginated product IDs
+    const productIdsQuery = this.productRepo
       .createQueryBuilder('product')
       .leftJoin('product.brand', 'brand')
       .leftJoin('product.category', 'category')
       .leftJoin('product.seller', 'seller')
-      .leftJoin('product.pictures', 'mainPicture', 'mainPicture.isMain = TRUE')
       .where('seller.id = :sellerId', { sellerId })
+      .select('product.id', 'id')
+      .orderBy('product.createdAt', 'DESC');
+
+    if (categoryIds && categoryIds.length > 0) {
+      productIdsQuery.andWhere('category.id IN (:...categoryIds)', {
+        categoryIds,
+      });
+    }
+    if (brandIds && brandIds.length > 0) {
+      productIdsQuery.andWhere('brand.id IN (:...brandIds)', {
+        brandIds,
+      });
+    }
+    if (search) {
+      productIdsQuery.andWhere(
+        '(product.name ILIKE :search OR product.description ILIKE :search OR brand.label ILIKE :search OR category.label ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const total = await productIdsQuery.getCount();
+    const paginatedIds = await productIdsQuery
+      .limit(limit)
+      .offset(offset)
+      .getRawMany();
+
+    if (paginatedIds.length === 0) {
+      return {
+        data: [],
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+          hasNextPage: page * limit < total,
+        },
+      };
+    }
+
+    const productIds = paginatedIds.map((p) => p.id);
+
+    // Now fetch full data for these product IDs
+    const queryBuilder = this.productRepo
+      .createQueryBuilder('product')
+      .leftJoin('product.brand', 'brand')
+      .leftJoin('product.category', 'category')
+      .leftJoin('product.pictures', 'mainPicture', 'mainPicture.isMain = TRUE')
+      .where('product.id IN (:...productIds)', { productIds })
       .select([
         'product.id AS id',
         'product.name AS name',
@@ -438,29 +533,7 @@ export class ProductService {
       ])
       .orderBy('product.createdAt', 'DESC');
 
-    if (categoryIds && categoryIds.length > 0) {
-      queryBuilder.andWhere('category.id IN (:...categoryIds)', {
-        categoryIds,
-      });
-    }
-    if (brandIds && brandIds.length > 0) {
-      queryBuilder.andWhere('brand.id IN (:...brandIds)', {
-        brandIds,
-      });
-    }
-    if (search) {
-      queryBuilder.andWhere(
-        '(product.name ILIKE :search OR product.description ILIKE :search OR brand.label ILIKE :search OR category.label ILIKE :search)',
-        { search: `%${search}%` },
-      );
-    }
-    const totalQueryBuilder = queryBuilder.clone();
-    const total = await totalQueryBuilder.getCount();
-
-    const productsRaw = await queryBuilder
-      .skip(offset)
-      .take(limit)
-      .getRawMany();
+    const productsRaw = await queryBuilder.getRawMany();
 
     const productsWithPresignedUrls = await Promise.all(
       productsRaw.map(async (p) => {
@@ -506,13 +579,62 @@ export class ProductService {
     const { page, limit } = pagination;
     const offset = (page - 1) * limit;
 
+    // First, get paginated product IDs
+    const productIdsQuery = this.favProductRepo
+      .createQueryBuilder('favProduct')
+      .leftJoin('favProduct.product', 'product')
+      .leftJoin('product.brand', 'brand')
+      .leftJoin('product.category', 'category')
+      .where('favProduct.userId = :userId', { userId })
+      .select('product.id', 'id')
+      .orderBy('product.createdAt', 'DESC');
+
+    if (categoryIds && categoryIds.length > 0) {
+      productIdsQuery.andWhere('category.id IN (:...categoryIds)', {
+        categoryIds,
+      });
+    }
+    if (brandIds && brandIds.length > 0) {
+      productIdsQuery.andWhere('brand.id IN (:...brandIds)', {
+        brandIds,
+      });
+    }
+    if (search) {
+      productIdsQuery.andWhere(
+        '(product.name ILIKE :search OR product.description ILIKE :search OR brand.label ILIKE :search OR category.label ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const total = await productIdsQuery.getCount();
+    const paginatedIds = await productIdsQuery
+      .limit(limit)
+      .offset(offset)
+      .getRawMany();
+
+    if (paginatedIds.length === 0) {
+      return {
+        data: [],
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+          hasNextPage: page * limit < total,
+        },
+      };
+    }
+
+    const productIds = paginatedIds.map((p) => p.id);
+
+    // Now fetch full data for these product IDs
     const queryBuilder = this.favProductRepo
       .createQueryBuilder('favProduct')
       .leftJoin('favProduct.product', 'product')
       .leftJoin('product.brand', 'brand')
       .leftJoin('product.category', 'category')
       .leftJoin('product.pictures', 'mainPicture', 'mainPicture.isMain = TRUE')
-      .where('favProduct.userId = :userId', { userId })
+      .where('product.id IN (:...productIds)', { productIds })
       .select([
         'product.id AS id',
         'product.name AS name',
@@ -524,30 +646,7 @@ export class ProductService {
       ])
       .orderBy('product.createdAt', 'DESC');
 
-    if (categoryIds && categoryIds.length > 0) {
-      queryBuilder.andWhere('category.id IN (:...categoryIds)', {
-        categoryIds,
-      });
-    }
-    if (brandIds && brandIds.length > 0) {
-      queryBuilder.andWhere('brand.id IN (:...brandIds)', {
-        brandIds,
-      });
-    }
-    if (search) {
-      queryBuilder.andWhere(
-        '(product.name ILIKE :search OR product.description ILIKE :search OR brand.label ILIKE :search OR category.label ILIKE :search)',
-        { search: `%${search}%` },
-      );
-    }
-
-    const totalQueryBuilder = queryBuilder.clone();
-    const total = await totalQueryBuilder.getCount();
-
-    const productsRaw = await queryBuilder
-      .skip(offset)
-      .take(limit)
-      .getRawMany();
+    const productsRaw = await queryBuilder.getRawMany();
 
     const productsWithPresignedUrls = await Promise.all(
       productsRaw.map(async (p) => {

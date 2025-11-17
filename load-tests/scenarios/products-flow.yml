@@ -1,0 +1,132 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    # Warm-up phase
+    - duration: 30
+      arrivalRate: 10
+      name: "Warm up"
+    # Normal browsing load
+    - duration: 180
+      arrivalRate: 30
+      name: "Normal browsing"
+    # Peak browsing (lunch time, evening)
+    - duration: 240
+      arrivalRate: 50
+      name: "Peak browsing"
+    # Ramp down
+    - duration: 30
+      arrivalRate: 10
+      name: "Ramp down"
+  
+  ensure:
+    maxErrorRate: 1
+    p95: 300    # Product listing should be fast
+    p99: 800
+
+scenarios:
+  - name: "Browse Products - List View"
+    weight: 3  # Most common action
+    flow:
+      # Get products with pagination
+      - get:
+          url: "/products?page={{ $randomInt(1, 10) }}&limit=20"
+          expect:
+            - statusCode: 200
+            - contentType: json
+          capture:
+            - json: "$.data[0].id"
+              as: "firstProductId"
+      
+      # Think time (user scrolling)
+      - think: 2
+      
+      # Get next page
+      - get:
+          url: "/products?page={{ $randomInt(1, 10) }}&limit=20"
+          expect:
+            - statusCode: 200
+
+  - name: "Browse Products - Product Details"
+    weight: 2
+    flow:
+      # View product detail page
+      - get:
+          url: "/products/{{ $randomInt(1, 100) }}"
+          expect:
+            - statusCode: 
+                - 200
+                - 404  # Some IDs might not exist
+          capture:
+            - json: "$.id"
+              as: "productId"
+      
+      # Think time (user reading details)
+      - think: 5
+
+  - name: "Browse Products - Search"
+    weight: 1
+    flow:
+      # Search products by name
+      - get:
+          url: "/products?search={{ $randomString(5) }}&page=1&limit=20"
+          expect:
+            - statusCode: 200
+      
+      # Think time
+      - think: 3
+
+  - name: "Browse Products - Filter by Category"
+    weight: 1
+    flow:
+      # Get products by category
+      - get:
+          url: "/products?categoryId={{ $randomInt(1, 10) }}&page=1&limit=20"
+          expect:
+            - statusCode: 200
+      
+      # Think time
+      - think: 2
+
+  - name: "Wholesaler - Create Product"
+    weight: 1
+    flow:
+      # Login as wholesaler first
+      - post:
+          url: "/authentication/login"
+          json:
+            phoneNumber: "+213555100001"  # Wholesaler test account
+            password: "wholesalerPassword"
+          capture:
+            - json: "$.accessToken"
+              as: "token"
+      
+      # Create new product
+      - post:
+          url: "/products"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            name: "Test Product {{ $randomString(5) }}"
+            description: "Load test product"
+            price: "{{ $randomInt(100, 10000) }}"
+            stock: "{{ $randomInt(10, 1000) }}"
+            brandId: "{{ $randomInt(1, 20) }}"
+            categoryId: "{{ $randomInt(1, 10) }}"
+          expect:
+            - statusCode: 
+                - 201
+                - 400  # Validation errors
+          capture:
+            - json: "$.id"
+              as: "newProductId"
+      
+      # Think time
+      - think: 5
+
+before:
+  flow:
+    - log: "Starting Products Load Test"
+
+after:
+  flow:
+    - log: "Products Load Test Completed"

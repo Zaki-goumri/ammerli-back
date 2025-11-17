@@ -5,7 +5,7 @@ export default registerAs('throttler', () => ({
   ttl: parseInt(process.env.THROTTLER_TTL!, 10) || 30, // seconds
   blockDuration: parseInt(process.env.THROTTLER_BLOCK_DURATION!, 10) || 60, // seconds
   ignoreUserAgents: process.env.THROTTLER_IGNORE_USER_AGENTS
-    ? process.env.THROTTLER_IGNORE_USER_AGENTS.split(',').map(pattern => new RegExp(pattern.trim()))
+    ? process.env.THROTTLER_IGNORE_USER_AGENTS.split(',')
     : [],
   isGlobal: true,
 }));

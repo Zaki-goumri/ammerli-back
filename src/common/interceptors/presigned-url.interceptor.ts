@@ -6,7 +6,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, switchMap } from 'rxjs/operators';
 import { Reflector } from '@nestjs/core';
 import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
 
@@ -41,17 +41,15 @@ export class PresignedUrlInterceptor implements NestInterceptor {
     }
 
     return next.handle().pipe(
-      map(async (data) => {
+      switchMap(async (data) => {
         if (!data) return data;
 
-        // Handle arrays
         if (Array.isArray(data)) {
           return Promise.all(
             data.map((item) => this.convertFields(item, fields, expiry)),
           );
         }
 
-        // Handle paginated responses
         if (data.data && Array.isArray(data.data)) {
           data.data = await Promise.all(
             data.data.map((item) => this.convertFields(item, fields, expiry)),
@@ -59,7 +57,6 @@ export class PresignedUrlInterceptor implements NestInterceptor {
           return data;
         }
 
-        // Handle single object
         return this.convertFields(data, fields, expiry);
       }),
     );
@@ -77,7 +74,6 @@ export class PresignedUrlInterceptor implements NestInterceptor {
     for (const field of fields) {
       if (field in result) {
         const value = result[field];
-
         if (typeof value === 'string' && value) {
           result[field] =
             await this.objectStorageService.getPresignedUrl(value);

@@ -19,9 +19,11 @@ import { Roles } from 'src/core/authentication/decorators/role.decorator';
 import { AccessTokenGuard } from 'src/core/authentication/guards/access-token.guard';
 import { RoleGuard } from 'src/core/authentication/guards/role.guard';
 import { InvoiceGeneratorService } from './services/invoice-generator.service';
+import { USER } from '../authentication/decorators/user.decorartor';
 
 @ApiTags('invoices')
 @Controller('invoices')
+@UseGuards(AccessTokenGuard, RoleGuard)
 export class InvoiceController {
   constructor(
     private readonly invoiceService: InvoiceService,
@@ -41,17 +43,15 @@ export class InvoiceController {
   }
 
   @Get()
-  @UseGuards(AccessTokenGuard, RoleGuard)
   @Roles(USER_ROLES.ADMIN)
   @ApiOperation({ summary: 'Get all invoices (admin)' })
   findAll() {
     return this.invoiceService.findAll();
   }
 
-  @Get('user/:userId')
-  @UseGuards(AccessTokenGuard)
+  @Get('user')
   @ApiOperation({ summary: 'Get all invoices for a specific user' })
-  findUserInvoices(@Param('userId', ParseIntPipe) userId: number) {
+  findUserInvoices(@USER('id') userId: number) {
     return this.invoiceService.getManyInvoicesForUser(userId);
   }
 
