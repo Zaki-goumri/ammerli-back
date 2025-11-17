@@ -23,6 +23,7 @@
     "migration:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/data-source.ts",
     "db:update": "npm run migration:run",
     "seed": "ts-node -r tsconfig-paths/register src/seed/seed-runner.ts",
+    "seed:prod": "node dist/seed/seed-runner.js",
     "seed:docker": "docker exec -it server pnpm run seed",
     "load-test": "./load-tests/run-tests.sh",
     "load-test:auth": "./load-tests/run-tests.sh auth-flow",
