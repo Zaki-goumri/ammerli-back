@@ -45,12 +45,11 @@ services:
       - internal
     labels:
       - "traefik.enable=true"
-      #TODO: change the Host rule in production
-      - "traefik.http.routers.server.rule=Host(`app.localhost`) || HostRegexp(`{host:.+}`)"
+      - "traefik.http.routers.server.rule=PathPrefix(`/`)"
       - "traefik.http.routers.server.entrypoints=web"
       - "traefik.http.services.server.loadbalancer.server.port=3000"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.server.priority=10"
+      - "traefik.http.routers.server.priority=1"
     env_file:
       - .env
 
@@ -86,7 +85,6 @@ services:
       - "traefik.http.routers.minio-console.priority=200"
       - "traefik.http.routers.minio-console.service=minio-console-svc"
       - "traefik.http.services.minio-console-svc.loadbalancer.server.port=9001"
-      - "traefik.http.routers.minio-console.middlewares=minio-headers"
       - "traefik.http.routers.minio-api.rule=HostRegexp(`{host:.+}`) && PathPrefix(`/minio-data`)"
       - "traefik.http.routers.minio-api.entrypoints=web"
       - "traefik.http.routers.minio-api.priority=2000"
