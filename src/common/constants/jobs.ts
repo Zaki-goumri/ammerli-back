@@ -13,6 +13,7 @@ export const SEARACH_JOB_NAME = {
 } as const;
 export const NOTIFICATION_JOBS = {
   SEND_NOTIFICATION: 'send-notification',
+  SEND_TEST_NOTIFICATION: 'send-test-notification',
 } as const;
 
 export const UPLOAD_JOBS = {
