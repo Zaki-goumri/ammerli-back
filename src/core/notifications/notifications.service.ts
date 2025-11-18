@@ -8,7 +8,10 @@ import { Token } from './entities/token.entity';
 import { InjectQueue } from '@nestjs/bullmq';
 import { QUEUE_NAME } from 'src/common/constants/queues';
 import { Queue } from 'bullmq';
-import { NOTIFICATION_TYPE, NotificationType } from './enums/notification-type.enum';
+import {
+  NOTIFICATION_TYPE,
+  NotificationType,
+} from './enums/notification-type.enum';
 import { NOTIFICATION_JOBS } from 'src/common/constants/jobs';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SendNotificationResponseDto } from './dto/send-notification-response.dto';
@@ -224,18 +227,16 @@ export class NotificationsService {
     return { success: true, message: 'Notification job added to queue' };
   }
 
-//TODO: remove it 
-  async sendOtpViaNotification(
-  fcmToken: string,
-  otp: string,
-): Promise<void> {
-  const title = 'Your Verification Code';
-  const body = `Your OTP is: ${otp}`;
+  //TODO: remove it
+  async sendOtpViaNotification(fcmToken: string, otp: string): Promise<void> {
+    const title = 'Your Verification Code';
+    const body = `Your OTP is: ${otp}`;
 
-  await this.notificationQueue.add(NOTIFICATION_JOBS.SEND_NOTIFICATION, {
-    title,
-    body,
-    fcmToken,
-    type: NOTIFICATION_TYPE.TEST,
-  });
+    await this.notificationQueue.add(NOTIFICATION_JOBS.SEND_NOTIFICATION, {
+      title,
+      body,
+      fcmToken,
+      type: NOTIFICATION_TYPE.TEST,
+    });
+  }
 }
