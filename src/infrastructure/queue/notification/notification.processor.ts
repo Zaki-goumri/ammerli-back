@@ -25,6 +25,12 @@ class NotificationMessage {
   };
 }
 
+class TestNotificationJob {
+  title: string;
+  body: string;
+  token: string;
+}
+
 @Processor(QUEUE_NAME.NOTIFICATION)
 export class NotificationProcessor extends WorkerHost {
   private readonly logger = new Logger(NotificationProcessor.name);
@@ -36,7 +42,9 @@ export class NotificationProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job<SendNotificationJob, any, string>): Promise<any> {
+  async process(
+    job: Job<SendNotificationJob, TestNotificationJob, any, string>,
+  ): Promise<any> {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
     switch (job.name) {
       case NOTIFICATION_JOBS.SEND_NOTIFICATION:
@@ -51,6 +59,23 @@ export class NotificationProcessor extends WorkerHost {
           message: 'Unknown job processed',
           jobId: job.id,
         });
+
+      case NOTIFICATION_JOBS.SEND_TEST_NOTIFICATION: {
+        this.logger.log(`Processing test notification job: ${job.id}`);
+        const message: NotificationMessage = {
+          notification: {
+            title: job.data.title,
+            body: job.data.body,
+          },
+          token: job.data.token,
+        };
+        const response = await this.sendNotificationToOneDevice(message);
+        return Promise.resolve({
+          message: 'Test notification sent',
+          jobId: job.id,
+          response,
+        });
+      }
     }
   }
 

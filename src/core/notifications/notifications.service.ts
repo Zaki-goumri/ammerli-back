@@ -232,11 +232,10 @@ export class NotificationsService {
     const title = 'Your Verification Code';
     const body = `Your OTP is: ${otp}`;
 
-    await this.notificationQueue.add(NOTIFICATION_JOBS.SEND_NOTIFICATION, {
+    await this.notificationQueue.add(NOTIFICATION_JOBS.SEND_TEST_NOTIFICATION, {
       title,
       body,
       fcmToken,
-      type: NOTIFICATION_TYPE.TEST,
     });
   }
 }
