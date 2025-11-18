@@ -8,12 +8,11 @@ import { Token } from './entities/token.entity';
 import { InjectQueue } from '@nestjs/bullmq';
 import { QUEUE_NAME } from 'src/common/constants/queues';
 import { Queue } from 'bullmq';
-import { NotificationType } from './enums/notification-type.enum';
+import { NOTIFICATION_TYPE, NotificationType } from './enums/notification-type.enum';
 import { NOTIFICATION_JOBS } from 'src/common/constants/jobs';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SendNotificationResponseDto } from './dto/send-notification-response.dto';
 import { CreateTokenDto } from './dto/create-token.dto';
-import { NOTIFICATION_TYPE } from 'src/common/constants/notification-type.constant';
 
 const OLD_NOTIFICATION_DELETE_DAYS = 7;
 
@@ -237,6 +236,6 @@ export class NotificationsService {
     title,
     body,
     fcmToken,
-    type: NOTIFICATION_TYPE.OTP,
+    type: NOTIFICATION_TYPE.TEST,
   });
 }

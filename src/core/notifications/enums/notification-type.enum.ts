@@ -6,6 +6,7 @@ export const NOTIFICATION_TYPE = {
   STATUS_UPDATE: 'Status Update',
   EXPIRING_SOON: 'Expiring Soon',
   ADMIN_ALERTS: 'Admin Alerts',
+  TEST: 'Test',
 } as const;
 
 export type NotificationType =
