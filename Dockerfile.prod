@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 
-FROM 3ammerli-base:latest as base
+ARG BASE_IMAGE=3ammerli-base:latest
+FROM ${BASE_IMAGE} as base
 
 WORKDIR /usr/src/app
 
@@ -40,6 +41,6 @@ COPY firebase.config.json ./
 # Expose the port that the application listens on.
 EXPOSE 3000
 
-# Run the application in dev mode with hot-reload
+# Run the application in production mode
 CMD ["pnpm", "run", "start:prod"]
 

@@ -27,7 +27,7 @@ services:
     container_name: server
     build:
       context: .
-      dockerfile: Dockerfile.prod
+      dockerfile: Dockerfile.dev
     restart: unless-stopped
     depends_on:
       db:
@@ -36,6 +36,9 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
     ports:
       - "3000:3000"
       - "8000:8000"

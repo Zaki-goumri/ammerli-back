@@ -1,31 +1,12 @@
+# Production override - pulls pre-built images from GHCR
+# Usage: docker compose -f compose.yaml -f compose.prod.yaml up -d
+
 services:
   server:
-    container_name: server
-    build:
-      context: .
-      dockerfile: Dockerfile.prod
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-    ports:
-      - "3000:3000"
-      - "8000:8000"
-      - "8008:8008"
-    networks:
-      - proxy
-      - internal
-    labels:
-      - "traefik.enable=true"
-      #TODO: change the Host rule in production
-      - "traefik.http.routers.server.rule=Host(`188.165.165.230`) || HostRegexp(`{host:.+}`)"
-      - "traefik.http.routers.server.entrypoints=web"
-      - "traefik.http.services.server.loadbalancer.server.port=3000"
-      - "traefik.docker.network=proxy"
-      - "traefik.http.routers.server.priority=10"
-    env_file:
-      - .env
+    image: ghcr.io/3ammerli/backend:latest
+    build: {}
+    volumes: []
+
+  minio:
+    image: ghcr.io/3ammerli/backend-minio:latest
+    build: {}
