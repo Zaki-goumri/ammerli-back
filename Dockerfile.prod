@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-ARG BASE_IMAGE=3ammerli-base:latest
+ARG BASE_IMAGE=zakigoumri/3ammerli-backend-base:latest
 FROM ${BASE_IMAGE} as base
 
 WORKDIR /usr/src/app
