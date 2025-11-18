@@ -188,7 +188,7 @@ services:
     ports:
       - "3100:3100"
     volumes:
-      - ./loki-config.yml:/etc/loki/loki-config.yml
+      - ./loki-config.yaml:/etc/loki/loki-config.yml
       - loki-data:/loki
     command: -config.file=/etc/loki/loki-config.yml
     networks:
@@ -201,8 +201,6 @@ services:
     container_name: grafana
     depends_on:
       - loki
-    ports:
-      - "3001:3000"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./traefik/provisioning/grafana:/etc/grafana/provisioning
@@ -218,22 +216,24 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
-
-      - "traefik.http.middlewares.grafana-auth.basicauth.users=${GRAFANA_TRAEFIK_AUTH}"
-      # Rate limiting for Grafana
+      
+      # Rate limiting
       - "traefik.http.middlewares.grafana-ratelimit.ratelimit.average=50"
       - "traefik.http.middlewares.grafana-ratelimit.ratelimit.period=1m"
       - "traefik.http.middlewares.grafana-ratelimit.ratelimit.burst=25"
+      
       # HTTP router (redirect to HTTPS)
       - "traefik.http.routers.grafana.rule=Host(`grafana.ammerli.com`)"
       - "traefik.http.routers.grafana.entrypoints=web"
       - "traefik.http.routers.grafana.middlewares=https-redirect@file"
-      # HTTPS router with security middlewares
+      
+      # HTTPS router with only rate limiting
       - "traefik.http.routers.grafana-secure.rule=Host(`grafana.ammerli.com`)"
       - "traefik.http.routers.grafana-secure.entrypoints=websecure"
       - "traefik.http.routers.grafana-secure.tls=true"
       - "traefik.http.routers.grafana-secure.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.grafana-secure.middlewares=grafana-ratelimit,grafana-auth"
+      - "traefik.http.routers.grafana-secure.middlewares=grafana-ratelimit"
+      
       # Service definition
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
     restart: unless-stopped
