@@ -26,10 +26,6 @@ services:
   server:
     container_name: server
     image: zakigoumri/3ammerli-backend:latest
-    # Remove build directive for production
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile.${NODE_ENV:-dev}
     restart: unless-stopped
     depends_on:
       db:
@@ -47,11 +43,20 @@ services:
       - internal
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.server.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.server.entrypoints=web"
-      - "traefik.http.services.server.loadbalancer.server.port=3000"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.server.priority=1"
+      
+      # HTTP router (redirects to HTTPS)
+      - "traefik.http.routers.server.rule=Host(`api.ammerli.com`)"
+      - "traefik.http.routers.server.entrypoints=web"
+      
+      # HTTPS router
+      - "traefik.http.routers.server-secure.rule=Host(`api.ammerli.com`)"
+      - "traefik.http.routers.server-secure.entrypoints=websecure"
+      - "traefik.http.routers.server-secure.tls=true"
+      - "traefik.http.routers.server-secure.tls.certresolver=letsencrypt"
+      
+      # Service definition
+      - "traefik.http.services.server.loadbalancer.server.port=3000"
     env_file:
       - .env
 
@@ -79,29 +84,27 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.minio-console.rule=Host(`minio.localhost`)"
-      - "traefik.http.routers.minio-console.entrypoints=web"
-      - "traefik.http.routers.minio-console.priority=200"
-      - "traefik.http.routers.minio-console.service=minio-console-svc"
-      - "traefik.http.services.minio-console-svc.loadbalancer.server.port=9001"
-      - "traefik.http.routers.minio-api.rule=HostRegexp(`{host:.+}`) && PathPrefix(`/minio-data`)"
+      
+      # S3 API HTTP router (redirects to HTTPS)
+      - "traefik.http.routers.minio-api.rule=Host(`storage.ammerli.com`)"
       - "traefik.http.routers.minio-api.entrypoints=web"
-      - "traefik.http.routers.minio-api.priority=2000"
-      - "traefik.http.routers.minio-api.service=minio-api-svc"
+      
+      # S3 API HTTPS router
+      - "traefik.http.routers.minio-api-secure.rule=Host(`storage.ammerli.com`)"
+      - "traefik.http.routers.minio-api-secure.entrypoints=websecure"
+      - "traefik.http.routers.minio-api-secure.tls=true"
+      - "traefik.http.routers.minio-api-secure.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.minio-api-secure.service=minio-api-svc"
+      
+      # Service definition
       - "traefik.http.services.minio-api-svc.loadbalancer.server.port=9000"
-      - "traefik.http.routers.minio-api.middlewares=minio-path-strip@docker,minio-host@docker"
-      - "traefik.http.middlewares.minio-host.headers.customRequestHeaders.Host=minio:9000"
-      - "traefik.http.middlewares.minio-path-strip.stripprefix.prefixes=/minio-data"
 
   redis:
     image: redis:latest
     container_name: redis
     restart: unless-stopped
-    ports:
-      - "6379:6379" 
     networks:
       - internal
-      - proxy 
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
