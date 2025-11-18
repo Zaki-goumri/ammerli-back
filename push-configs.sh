@@ -54,6 +54,9 @@ run_scp compose.yaml $VPS_HOST:$VPS_PATH/
 echo "Uploading Dockerfile.prod..."
 run_scp Dockerfile.prod $VPS_HOST:$VPS_PATH/
 
+echo "Uploading Dockerfile.base..."
+run_scp Dockerfile.base $VPS_HOST:$VPS_PATH/
+
 echo "Uploading .env..."
 run_scp .env $VPS_HOST:$VPS_PATH/
 

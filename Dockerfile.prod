@@ -29,15 +29,16 @@ FROM base as final
 
 ENV NODE_ENV=prod
 
+# Create logs directory before switching user
+RUN mkdir -p logs && chown -R node:node logs
+
+# Copy all files as node user
 COPY --chown=node:node package.json ./
 COPY --chown=node:node --from=deps /usr/src/app/node_modules ./node_modules
 COPY --chown=node:node --from=build /usr/src/app/dist ./dist
 COPY --chown=node:node --from=build /usr/src/app/src/core/invoice/templates ./src/core/invoice/templates
 COPY --chown=node:node firebase.config.json ./
 COPY --chown=node:node ecosystem.config.js ./
-
-# Create logs directory
-RUN mkdir -p logs && chown -R node:node logs
 
 USER node
 
