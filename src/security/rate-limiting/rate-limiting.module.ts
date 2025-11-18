@@ -19,7 +19,7 @@ import redisConfig from 'src/config/redis.config';
       ) => ({
         throttlers: [
           {
-            name: 'global',
+            name: 'ip',
             limit: config.limit,
             ttl: config.ttl * 1000, // Convert to milliseconds
             blockDuration: config.blockDuration * 1000,

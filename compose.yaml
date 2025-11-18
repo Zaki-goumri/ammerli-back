@@ -45,22 +45,29 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
       
-      # Rate limiting middleware (Traefik Layer 1)
-      - "traefik.http.middlewares.api-ratelimit.ratelimit.average=${TRAEFIK_RATE_LIMIT_AVERAGE:-200}"
-      - "traefik.http.middlewares.api-ratelimit.ratelimit.period=${TRAEFIK_RATE_LIMIT_PERIOD:-1m}"
-      - "traefik.http.middlewares.api-ratelimit.ratelimit.burst=${TRAEFIK_RATE_LIMIT_BURST:-50}"
-      - "traefik.http.middlewares.api-ratelimit.ratelimit.sourceCriterion.requestHeaderName=X-Forwarded-For"
+      # Per-IP Rate limiting middleware (Traefik Layer 1)
+      - "traefik.http.middlewares.api-ratelimit-ip.ratelimit.average=${TRAEFIK_RATE_LIMIT_AVERAGE:-100}"
+      - "traefik.http.middlewares.api-ratelimit-ip.ratelimit.period=${TRAEFIK_RATE_LIMIT_PERIOD:-1m}"
+      - "traefik.http.middlewares.api-ratelimit-ip.ratelimit.burst=${TRAEFIK_RATE_LIMIT_BURST:-50}"
+      - "traefik.http.middlewares.api-ratelimit-ip.ratelimit.sourceCriterion.requestHeaderName=X-Forwarded-For"
+      
+      # Per-Subnet Rate limiting middleware (Traefik Layer 1 - Subnet)
+      # Note: Traefik groups by /24 automatically when using depth strategy
+      - "traefik.http.middlewares.api-ratelimit-subnet.ratelimit.average=${TRAEFIK_SUBNET_RATE_LIMIT_AVERAGE:-150}"
+      - "traefik.http.middlewares.api-ratelimit-subnet.ratelimit.period=${TRAEFIK_SUBNET_RATE_LIMIT_PERIOD:-1m}"
+      - "traefik.http.middlewares.api-ratelimit-subnet.ratelimit.burst=${TRAEFIK_SUBNET_RATE_LIMIT_BURST:-50}"
+      - "traefik.http.middlewares.api-ratelimit-subnet.ratelimit.sourceCriterion.ipStrategy.depth=1"
       
       # HTTP router (redirects to HTTPS)
       - "traefik.http.routers.server.rule=Host(`api.ammerli.com`)"
       - "traefik.http.routers.server.entrypoints=web"
       
-      # HTTPS router with rate limiting
+      # HTTPS router with both rate limiters
       - "traefik.http.routers.server-secure.rule=Host(`api.ammerli.com`)"
       - "traefik.http.routers.server-secure.entrypoints=websecure"
       - "traefik.http.routers.server-secure.tls=true"
       - "traefik.http.routers.server-secure.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.server-secure.middlewares=api-ratelimit"
+      - "traefik.http.routers.server-secure.middlewares=api-ratelimit-ip,api-ratelimit-subnet"
       
       # Service definition
       - "traefik.http.services.server.loadbalancer.server.port=3000"
@@ -92,22 +99,28 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
       
-      # Rate limiting middleware for storage (same as API)
-      - "traefik.http.middlewares.storage-ratelimit.ratelimit.average=${TRAEFIK_RATE_LIMIT_AVERAGE:-200}"
-      - "traefik.http.middlewares.storage-ratelimit.ratelimit.period=${TRAEFIK_RATE_LIMIT_PERIOD:-1m}"
-      - "traefik.http.middlewares.storage-ratelimit.ratelimit.burst=${TRAEFIK_RATE_LIMIT_BURST:-50}"
-      - "traefik.http.middlewares.storage-ratelimit.ratelimit.sourceCriterion.requestHeaderName=X-Forwarded-For"
+      # Per-IP Rate limiting middleware for storage
+      - "traefik.http.middlewares.storage-ratelimit-ip.ratelimit.average=${TRAEFIK_RATE_LIMIT_AVERAGE:-100}"
+      - "traefik.http.middlewares.storage-ratelimit-ip.ratelimit.period=${TRAEFIK_RATE_LIMIT_PERIOD:-1m}"
+      - "traefik.http.middlewares.storage-ratelimit-ip.ratelimit.burst=${TRAEFIK_RATE_LIMIT_BURST:-50}"
+      - "traefik.http.middlewares.storage-ratelimit-ip.ratelimit.sourceCriterion.requestHeaderName=X-Forwarded-For"
+      
+      # Per-Subnet Rate limiting middleware for storage
+      - "traefik.http.middlewares.storage-ratelimit-subnet.ratelimit.average=${TRAEFIK_SUBNET_RATE_LIMIT_AVERAGE:-150}"
+      - "traefik.http.middlewares.storage-ratelimit-subnet.ratelimit.period=${TRAEFIK_SUBNET_RATE_LIMIT_PERIOD:-1m}"
+      - "traefik.http.middlewares.storage-ratelimit-subnet.ratelimit.burst=${TRAEFIK_SUBNET_RATE_LIMIT_BURST:-50}"
+      - "traefik.http.middlewares.storage-ratelimit-subnet.ratelimit.sourceCriterion.ipStrategy.depth=1"
       
       # S3 API HTTP router (redirects to HTTPS)
       - "traefik.http.routers.minio-api.rule=Host(`storage.ammerli.com`)"
       - "traefik.http.routers.minio-api.entrypoints=web"
       
-      # S3 API HTTPS router with rate limiting
+      # S3 API HTTPS router with both rate limiters
       - "traefik.http.routers.minio-api-secure.rule=Host(`storage.ammerli.com`)"
       - "traefik.http.routers.minio-api-secure.entrypoints=websecure"
       - "traefik.http.routers.minio-api-secure.tls=true"
       - "traefik.http.routers.minio-api-secure.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.minio-api-secure.middlewares=storage-ratelimit"
+      - "traefik.http.routers.minio-api-secure.middlewares=storage-ratelimit-ip,storage-ratelimit-subnet"
       - "traefik.http.routers.minio-api-secure.service=minio-api-svc"
       
       # Service definition
