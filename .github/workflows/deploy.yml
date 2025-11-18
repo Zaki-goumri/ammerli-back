@@ -49,7 +49,7 @@ jobs:
             
             # Health check before stopping
             echo "🏥 Running pre-deployment health check..."
-            if ! curl -f http://localhost:3000/health/status 2>/dev/null; then
+            if ! curl -f http://localhost/api/v1/health/status 2>/dev/null; then
               echo "⚠️  Warning: Health check failed, but continuing..."
             fi
             
@@ -71,7 +71,7 @@ jobs:
             MAX_RETRIES=12
             
             while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-              if curl -f http://localhost:3000/health/status 2>/dev/null; then
+              if curl -f http://localhost/api/v1/health/status 2>/dev/null; then
                 echo "✅ Health check passed!"
                 break
               fi

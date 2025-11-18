@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigType } from '@nestjs/config';
 import * as Minio from 'minio';
 import minioConfig from 'src/config/minio.config';
+import { MinioInitService } from './minio-init.service';
 
 export const MINIO_CLIENT = 'MINIO_CLIENT';
 
@@ -21,7 +22,7 @@ const minioClientProvider = {
 
 @Module({
   imports: [ConfigModule],
-  providers: [minioClientProvider],
+  providers: [minioClientProvider, MinioInitService],
   exports: [MINIO_CLIENT],
 })
 export class MinioModule {}

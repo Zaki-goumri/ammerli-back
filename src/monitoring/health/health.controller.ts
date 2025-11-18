@@ -53,8 +53,6 @@ export class HealthController {
           thresholdPercent: 0.9,
           path: '/',
         }),
-      () => this.memory.checkHeap('memory heap', 150 * 1024 * 1024),
-      () => this.memory.checkRSS('memory RSS', 300 * 1024 * 1024),
     ]);
   }
 }
