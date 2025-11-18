@@ -30,7 +30,7 @@
     "load-test:orders": "./load-tests/run-tests.sh orders-flow",
     "load-test:payment": "./load-tests/run-tests.sh payment-flow",
     "load-test:mixed": "./load-tests/run-tests.sh mixed-load",
-    "pnpm push:config": "./push-configs.sh"
+    "push:config": "./push-configs.sh"
   },
   "dependencies": {
     "@nest-lab/throttler-storage-redis": "^1.1.0",
