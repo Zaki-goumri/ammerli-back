@@ -198,26 +198,44 @@ services:
       - internal 
     restart: unless-stopped
 
-  grafana:
+grafana:
     image: grafana/grafana:10.2.3
     container_name: grafana
+    depends_on:
+      - loki
     ports:
       - "3001:3001"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./traefik/provisioning/grafana:/etc/grafana/provisioning
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
       - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=https://grafana.ammerli.com
+      - GF_SERVER_DOMAIN=grafana.ammerli.com
     networks:
-      - proxy 
-      - internal 
+      - proxy
+      - internal
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=proxy" 
-      - "traefik.http.routers.grafana.rule=Host(`grafana.localhost`)"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.middlewares.grafana-auth.basicauth.users=${GRAFANA_TRAEFIK_AUTH}"
+      # Rate limiting for Grafana
+      - "traefik.http.middlewares.grafana-ratelimit.ratelimit.average=50"
+      - "traefik.http.middlewares.grafana-ratelimit.ratelimit.period=1m"
+      - "traefik.http.middlewares.grafana-ratelimit.ratelimit.burst=25"
+      # HTTP router (redirect to HTTPS)
+      - "traefik.http.routers.grafana.rule=Host(`grafana.ammerli.com`)"
       - "traefik.http.routers.grafana.entrypoints=web"
+      - "traefik.http.routers.grafana.middlewares=https-redirect@file"
+      # HTTPS router with security middlewares
+      - "traefik.http.routers.grafana-secure.rule=Host(`grafana.ammerli.com`)"
+      - "traefik.http.routers.grafana-secure.entrypoints=websecure"
+      - "traefik.http.routers.grafana-secure.tls=true"
+      - "traefik.http.routers.grafana-secure.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.grafana-secure.middlewares=grafana-ratelimit,grafana-auth"
+      # Service definition
       - "traefik.http.services.grafana.loadbalancer.server.port=3001"
     restart: unless-stopped
 

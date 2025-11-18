@@ -67,7 +67,10 @@ echo "Uploading traefik configs..."
 run_scp traefik/traefik.yml $VPS_HOST:$VPS_PATH/traefik/
 run_scp traefik/config.yml $VPS_HOST:$VPS_PATH/traefik/
 
-echo ""
+
+echo "Uploading loki-config.yaml..."
+run_scp loki-config.yaml $VPS_HOST:$VPS_PATH/
+
 echo "Setting correct permissions..."
 run_ssh $VPS_HOST "cd $VPS_PATH && chmod 600 .env && chmod 600 traefik/acme.json && chmod 644 traefik/traefik.yml traefik/config.yml"
 
