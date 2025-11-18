@@ -198,7 +198,7 @@ services:
       - internal 
     restart: unless-stopped
 
-grafana:
+  grafana:
     image: grafana/grafana:10.2.3
     container_name: grafana
     depends_on:
