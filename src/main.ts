@@ -8,7 +8,7 @@ import { DatabaseExceptionFilter } from './common/filters/db.filter';
 import { AppClusterService } from './infrastructure/clustring/app.cluster';
 import { LoggerBuilder } from './monitoring/logger/logger.builder';
 import helmet from 'helmet';
-import * as BasicAuth from 'express-basic-auth';
+import BasicAuth = require('express-basic-auth');
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
