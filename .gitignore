@@ -3,7 +3,7 @@
 /node_modules
 /build
 # Docker files dev
-compose.dev.yaml
+compose.local.yaml
 Dockerfile.dev
 # Logs
 logs
