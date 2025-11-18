@@ -27,12 +27,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
+          NODE_ENV: prod
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
           port: 22
-          envs: GITHUB_TOKEN,GITHUB_ACTOR
+          envs: GITHUB_TOKEN,GITHUB_ACTOR,NODE_ENV
           script_stop: true
           script: |
             set -e
@@ -47,7 +48,6 @@ jobs:
             echo $GITHUB_TOKEN | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
 
             # Set environment variables
-            export NODE_ENV=prod
             export SERVER_IMAGE=ghcr.io/${{ github.repository }}:latest
             export MINIO_IMAGE=ghcr.io/${{ github.repository }}-minio:latest
             
