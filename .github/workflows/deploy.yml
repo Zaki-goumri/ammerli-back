@@ -40,12 +40,12 @@ jobs:
             echo "🚀 Starting deployment..."
             
             # Navigate to project directory
-            cd /root/3ammerli || { echo "❌ Project directory not found"; exit 1; }
+            cd /root/ammerli || { echo "❌ Project directory not found"; exit 1; }
             
             # Login to GHCR
             echo "🔐 Authenticating with GitHub Container Registry..."
             echo $GITHUB_TOKEN | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
-            
+
             # Pull latest images
             echo "📥 Pulling latest images..."
             docker compose -f compose.yaml -f compose.prod.yaml pull
@@ -69,14 +69,14 @@ jobs:
             sleep 10
             
             # Run database migrations
-            echo "🗄️  Running database migrations..."
-            if ! docker compose -f compose.yaml -f compose.prod.yaml exec -T server pnpm run migration:run; then
-              echo "❌ Migration failed! Rolling back..."
-              docker compose -f compose.yaml -f compose.prod.yaml down
-              docker compose -f compose.yaml -f compose.prod.yaml up -d
-              echo "⚠️  Deployment rolled back due to migration failure"
-              exit 1
-            fi
+            # echo "🗄️  Running database migrations..."
+            # if ! docker compose -f compose.yaml -f compose.prod.yaml exec -T server pnpm run migration:run; then
+            #   echo "❌ Migration failed! Rolling back..."
+            #   docker compose -f compose.yaml -f compose.prod.yaml down
+            #   docker compose -f compose.yaml -f compose.prod.yaml up -d
+            #   echo "⚠️  Deployment rolled back due to migration failure"
+            #   exit 1
+            # fi
             
             # Health check after deployment
             echo "🏥 Running post-deployment health check..."
