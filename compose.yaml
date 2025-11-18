@@ -163,6 +163,28 @@ services:
       timeout: 5s
       retries: 5
 
+  db-backup:
+    image: prodrigest/postgres-backup-local
+    container_name: db-backup
+    restart: unless-stopped
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - SCHEDULE=@daily
+      - BACKUP_KEEP_DAYS=7
+      - BACKUP_KEEP_WEEKS=4
+      - BACKUP_KEEP_MONTHS=6
+    volumes:
+      - backups:/backups
+    networks:
+      - internal
+
 networks:
   proxy:
     name: proxy
@@ -176,4 +198,6 @@ volumes:
   minio-data:
     driver: local
   db-data:
+    driver: local
+  backups:
     driver: local
