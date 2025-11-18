@@ -1,5 +1,4 @@
 import { AppService } from './app.service';
-
 import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { QUEUE_NAME } from './common/constants/queues';
@@ -21,7 +20,7 @@ import { APP_GUARD } from '@nestjs/core';
 import throttlerConfig from './config/throttler.config';
 import { AppController } from './app.controller';
 import { Module } from '@nestjs/common';
-import { ThrottlerGuard } from '@nestjs/throttler';
+import { GlobalThrottlerGuard } from './security/rate-limiting/global-throttler.guard';
 
 @Module({
   imports: [
@@ -74,7 +73,7 @@ import { ThrottlerGuard } from '@nestjs/throttler';
     AppService,
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: GlobalThrottlerGuard,
     },
   ],
 })
