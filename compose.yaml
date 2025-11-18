@@ -25,9 +25,10 @@ services:
 
   server:
     container_name: server
+    image: ${SERVER_IMAGE:-}
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile.${NODE_ENV:-dev}
     restart: unless-stopped
     depends_on:
       db:
@@ -36,9 +37,16 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-    volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: /usr/src/app/src
+        - action: sync
+          path: ./package.json
+          target: /usr/src/app/package.json
+        - action: rebuild
+          path: package.json
     ports:
       - "3000:3000"
       - "8000:8000"
