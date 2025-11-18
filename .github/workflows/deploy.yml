@@ -50,9 +50,9 @@ jobs:
             # Debug environment
             echo "🔧 Environment: NODE_ENV=$NODE_ENV"
             
-            # Pull latest images
+            # Pull latest images (never build, always pull)
             echo "📥 Pulling latest images..."
-            docker compose pull
+            docker compose pull --ignore-buildable
             
             # Health check before stopping
             echo "🏥 Running pre-deployment health check..."
@@ -64,9 +64,9 @@ jobs:
             echo "🛑 Stopping old containers..."
             docker compose down --timeout 30
             
-            # Start new containers
+            # Start new containers (use images, don't build)
             echo "🚀 Starting new containers..."
-            docker compose up -d
+            docker compose up -d --no-build
             
             # Wait for containers to be ready
             echo "⏳ Waiting for containers to start..."
