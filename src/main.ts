@@ -6,41 +6,44 @@ import { AppModule } from './app.module';
 import { LoggerInterceptor } from './monitoring/logger/logger.interceptor';
 import { DatabaseExceptionFilter } from './common/filters/db.filter';
 import { AppClusterService } from './infrastructure/clustring/app.cluster';
+import { LoggerBuilder } from './monitoring/logger/logger.builder';
+import helmet from 'helmet';
+import * as BasicAuth from 'express-basic-auth';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    logger: ['log', 'error', 'warn', 'debug', 'verbose'],
-    snapshot: true,
+    bufferLogs: true,
+    logger:
+      process.env.ENV === 'staging' || process.env.ENV === 'prod'
+        ? new LoggerBuilder()
+            .setJobName('core')
+            .setEnvironment(process.env.ENV)
+            .build()
+        : ['log', 'error', 'warn', 'debug', 'verbose'],
   });
 
   app.enableVersioning({
     type: VersioningType.URI,
-    defaultVersion: '1', // Optional: default version if none specified
-    prefix: 'api/v', // Optional: custom prefix (default is 'v')
+    defaultVersion: '1',
+    prefix: 'api/v',
   });
 
   //SECURITY
-  // added a basic auth for the swagger docs
-  // TODO: add those into .env
-  // app.use(
-  //   ['/api-docs', '/api-docs-json'],
-  //   BasicAuth({
-  //     users: { admin: 'admin' },
-  //     challenge: true,
-  //   }),
-  // );
-  // app.use(
-  //   helmet({
-  //     contentSecurityPolicy: {
-  //       directives: {
-  //         defaultSrc: ["'self'"],
-  //         scriptSrc: ["'self'", 'https://cdn.jsdelivr.net'],
-  //         styleSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'],
-  //         fontSrc: ["'self'", 'https://cdn.jsdelivr.net'],
-  //       },
-  //     },
-  //   }),
-  // );
-  //
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", 'https://cdn.jsdelivr.net', "'unsafe-inline'"], // Added unsafe-inline for Scalar
+          styleSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'],
+          fontSrc: ["'self'", 'https://cdn.jsdelivr.net'],
+          imgSrc: ["'self'", 'data:', 'https:'],
+          connectSrc: ["'self'"],
+        },
+      },
+    }),
+  );
+
   //INTERCEPTORS
   app.useGlobalInterceptors(
     new LoggerInterceptor(),
@@ -58,8 +61,7 @@ async function bootstrap() {
 
   //FILTERS
   app.useGlobalFilters(new DatabaseExceptionFilter());
-  //app.useGlobalFilters(new ElasticSearchExceptionFilter()); //TODO:figure out what error to catch
-  //--
+
   app.enableShutdownHooks();
   //Those to are for handling the shutdown of the server
   process.on('SIGINT', () => {
@@ -89,21 +91,49 @@ async function bootstrap() {
     console.error('Uncaught Exception:', err);
   });
 
-  const config = new DocumentBuilder()
-    .setTitle('Core Api Documentation')
-    .setDescription('The Api Documentation')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .addTag('Core')
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  app.use(
-    '/api-docs',
-    apiReference({
-      theme: 'solarized',
-      content: document,
-    }),
-  );
+  const swaggerEnabled = process.env.SWAGGER_ENABLED === 'true';
+  const swaggerUser = process.env.SWAGGER_USER || 'admin';
+  const swaggerPassword = process.env.SWAGGER_PASSWORD || 'admin';
+
+  if (swaggerEnabled) {
+    app.use(
+      '/api-docs',
+      BasicAuth({
+        challenge: true,
+        users: {
+          [swaggerUser]: swaggerPassword,
+        },
+        unauthorizedResponse: (req) => {
+          return 'Unauthorized - Invalid credentials for API documentation';
+        },
+      }),
+    );
+
+    // Build Swagger document
+    const config = new DocumentBuilder()
+      .setTitle('Core Api Documentation')
+      .setDescription('The Api Documentation')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .addTag('Core')
+      .build();
+
+    const document = SwaggerModule.createDocument(app, config);
+
+    // Setup Scalar API Reference with the document
+    app.use(
+      '/api-docs',
+      apiReference({
+        theme: 'solarized',
+        spec: {
+          content: document,
+        },
+      }),
+    );
+    console.log('✓ Swagger documentation enabled at /api-docs');
+  } else {
+    console.log('✗ Swagger documentation disabled');
+  }
 
   //RUNNING THE APPLICATION
   const port = process.env.PORT || 3000;

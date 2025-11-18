@@ -3,13 +3,13 @@ module.exports = {
     {
       name: '3ammerli-backend',
       script: './dist/main.js',
-      instances: 'max', // Uses all available CPU cores
+      instances: 'max',
       exec_mode: 'cluster',
       autorestart: true,
       watch: false,
       max_memory_restart: '1G',
-      env_prod: {
-        NODE_ENV: 'prod',
+      env_production: {
+        NODE_ENV: 'production',
         PORT: 3000,
       },
       error_file: './logs/pm2-error.log',
