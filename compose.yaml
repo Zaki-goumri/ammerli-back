@@ -204,7 +204,7 @@ services:
     depends_on:
       - loki
     ports:
-      - "3001:3001"
+      - "3000:3001"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./traefik/provisioning/grafana:/etc/grafana/provisioning
@@ -236,7 +236,7 @@ services:
       - "traefik.http.routers.grafana-secure.tls.certresolver=letsencrypt"
       - "traefik.http.routers.grafana-secure.middlewares=grafana-ratelimit,grafana-auth"
       # Service definition
-      - "traefik.http.services.grafana.loadbalancer.server.port=3001"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
     restart: unless-stopped
 
 networks:
