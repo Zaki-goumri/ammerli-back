@@ -3,21 +3,12 @@
 
 set -e
 
-# Load configuration from .env
 if [ -f .env ]; then
     export $(grep -v '^#' .env | grep -E '^(VPS_HOST|VPS_PATH|VPS_PASSWORD)=' | xargs)
 fi
 
-# Check if required variables are set
-if [ -z "$VPS_HOST" ] || [ -z "$VPS_PATH" ]; then
-    echo "Error: VPS_HOST and VPS_PATH must be set in .env file"
-    echo ""
-    echo "Add these to your .env:"
-    echo "  VPS_HOST=root@YOUR_VPS_IP"
-    echo "  VPS_PATH=/root/ammerli"
-    echo "  VPS_PASSWORD=YOUR_PASSWORD  # Optional"
-    exit 1
-fi
+VPS_HOST="${VPS_HOST:-root@YOUR_VPS_IP}"
+VPS_PATH="${VPS_PATH:-/root/ammerli}"
 
 echo "Pushing configuration files to VPS..."
 echo "Target: $VPS_HOST:$VPS_PATH"

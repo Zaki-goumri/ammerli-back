@@ -13,6 +13,7 @@ import { NOTIFICATION_JOBS } from 'src/common/constants/jobs';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SendNotificationResponseDto } from './dto/send-notification-response.dto';
 import { CreateTokenDto } from './dto/create-token.dto';
+import { NOTIFICATION_TYPE } from 'src/common/constants/notification-type.constant';
 
 const OLD_NOTIFICATION_DELETE_DAYS = 7;
 
@@ -223,4 +224,19 @@ export class NotificationsService {
     });
     return { success: true, message: 'Notification job added to queue' };
   }
+
+//TODO: remove it 
+  async sendOtpViaNotification(
+  fcmToken: string,
+  otp: string,
+): Promise<void> {
+  const title = 'Your Verification Code';
+  const body = `Your OTP is: ${otp}`;
+
+  await this.notificationQueue.add(NOTIFICATION_JOBS.SEND_NOTIFICATION, {
+    title,
+    body,
+    fcmToken,
+    type: NOTIFICATION_TYPE.OTP,
+  });
 }
