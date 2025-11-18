@@ -21,7 +21,6 @@ const NUM_CPUS = parseInt(process.env.NUM_CPUS || '1', 10);
 export class AppClusterService {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   static clusterize(callback: Function): void {
-    console.log(cluster);
     if (cluster.isPrimary) {
       console.log(`Master server started on ${process.pid}`);
       for (let i = 0; i < NUM_CPUS; i++) {
