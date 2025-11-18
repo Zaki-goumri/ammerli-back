@@ -26,6 +26,10 @@ services:
   server:
     container_name: server
     image: ghcr.io/3ammerli/backend:latest
+    # Remove build directive for production
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile.${NODE_ENV:-dev}
     restart: unless-stopped
     depends_on:
       db:

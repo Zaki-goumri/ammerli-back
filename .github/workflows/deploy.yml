@@ -63,11 +63,11 @@ jobs:
             
             # Stop old containers gracefully
             echo "🛑 Stopping old containers..."
-            docker compose -f docker-compose.prod.yml down --timeout 30
+            docker compose down --timeout 30
             
-            # Start new containers using production compose file
+            # Start new containers (images already pulled, won't build)
             echo "🚀 Starting new containers..."
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose up -d --no-build
             
             # Wait for containers to be ready
             echo "⏳ Waiting for containers to start..."
