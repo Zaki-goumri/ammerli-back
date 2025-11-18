@@ -91,7 +91,7 @@ jobs:
             if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
               echo "❌ Health check failed after deployment!"
               echo "📋 Container logs:"
-              docker compose -f docker-compose.prod.yml logs --tail=50 server
+              docker compose logs --tail=50 server
               exit 1
             fi
             
