@@ -25,10 +25,7 @@ services:
 
   server:
     container_name: server
-    image: ${SERVER_IMAGE:-ghcr.io/3ammerli/backend:latest}
-    build:
-      context: .
-      dockerfile: Dockerfile.${NODE_ENV:-dev}
+    image: ghcr.io/3ammerli/backend:latest
     restart: unless-stopped
     depends_on:
       db:
@@ -37,16 +34,6 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-    develop:
-      watch:
-        - action: sync
-          path: ./src
-          target: /usr/src/app/src
-        - action: sync
-          path: ./package.json
-          target: /usr/src/app/package.json
-        - action: rebuild
-          path: package.json
     ports:
       - "3000:3000"
       - "8000:8000"
@@ -66,9 +53,6 @@ services:
 
   minio:
     image: ghcr.io/3ammerli/backend-minio:latest
-    build:
-      context: .
-      dockerfile: Dockerfile.minio
     container_name: minio
     ports:
       - "9000:9000"
@@ -89,7 +73,6 @@ services:
       timeout: 5s
       retries: 3
     labels:
-      # TODO: change the Host rules in production
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.minio-console.rule=Host(`minio.localhost`)"
