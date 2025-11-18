@@ -21,7 +21,7 @@ const minioClientProvider = {
 };
 
 @Module({
-  imports: [ConfigModule],
+  imports: [ConfigModule.forFeature(minioConfig)],
   providers: [minioClientProvider, MinioInitService],
   exports: [MINIO_CLIENT],
 })
