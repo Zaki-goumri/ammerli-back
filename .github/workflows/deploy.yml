@@ -50,6 +50,19 @@ jobs:
             # Debug environment
             echo "🔧 Environment: NODE_ENV=$NODE_ENV"
             
+            # Pull latest configuration files
+            echo "📥 Pulling latest configuration..."
+            git fetch origin main
+            git reset --hard origin/main
+            
+            # Verify traefik configuration files
+            echo "🔍 Verifying traefik configuration..."
+            if [ ! -f "./traefik/traefik.yml" ]; then
+              echo "❌ traefik.yml file not found!"
+              exit 1
+            fi
+            ls -la ./traefik/
+            
             # Pull latest images
             echo "📥 Pulling latest images..."
             docker pull ghcr.io/${{ github.repository }}:latest
@@ -57,7 +70,7 @@ jobs:
             
             # Health check before stopping
             echo "🏥 Running pre-deployment health check..."
-            if ! curl -f http://localhost:3000/health 2>/dev/null; then
+            if ! curl -f http://localhost:3000/health/status 2>/dev/null; then
               echo "⚠️  Warning: Health check failed, but continuing..."
             fi
             
@@ -79,7 +92,7 @@ jobs:
             MAX_RETRIES=12
             
             while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-              if curl -f http://localhost:3000/health 2>/dev/null; then
+              if curl -f http://localhost:3000/health/status 2>/dev/null; then
                 echo "✅ Health check passed!"
                 break
               fi

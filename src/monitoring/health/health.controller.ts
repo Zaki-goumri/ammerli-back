@@ -34,6 +34,14 @@ export class HealthController {
     return this.health.check([() => this.redis.isHealthy('redis')]);
   }
 
+  @Get('status')
+  checkStatus() {
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   @Get()
   @HealthCheck()
   check() {
