@@ -194,14 +194,15 @@ services:
       - loki-data:/loki
     command: -config.file=/etc/loki/loki-config.yml
     networks:
-      - traefik-network
+      - proxy 
+      - internal 
     restart: unless-stopped
 
   grafana:
     image: grafana/grafana:10.2.3
     container_name: grafana
     ports:
-      - "3000:3000"
+      - "3001:3001"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./traefik/provisioning/grafana:/etc/grafana/provisioning
@@ -210,12 +211,14 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
     networks:
-      - traefik-network
+      - proxy 
+      - internal 
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=proxy" 
       - "traefik.http.routers.grafana.rule=Host(`grafana.localhost`)"
       - "traefik.http.routers.grafana.entrypoints=web"
-      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3001"
     restart: unless-stopped
 
 networks:
