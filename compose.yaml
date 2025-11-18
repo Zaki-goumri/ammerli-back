@@ -25,7 +25,7 @@ services:
 
   server:
     container_name: server
-    image: ${SERVER_IMAGE:-}
+    image: ${SERVER_IMAGE:-ghcr.io/3ammerli/backend:latest}
     build:
       context: .
       dockerfile: Dockerfile.${NODE_ENV:-dev}
@@ -65,6 +65,7 @@ services:
       - .env
 
   minio:
+    image: ghcr.io/3ammerli/backend-minio:latest
     build:
       context: .
       dockerfile: Dockerfile.minio
