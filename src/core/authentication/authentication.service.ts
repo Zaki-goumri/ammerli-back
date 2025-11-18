@@ -21,6 +21,7 @@ import { RegistrationTokenPayload } from './interfaces/access-token-payload.inte
 import { UserDto } from '../user/dtos/response/user.dto';
 import { plainToInstance } from 'class-transformer';
 import { OtpStrategy } from './strategies/otp/otp.strategy';
+import { RedisService } from 'nestjs-redis-client';
 
 /**
  * @class AuthenticationService
@@ -36,6 +37,7 @@ export class AuthenticationService {
     private readonly firebaseService: FirebaseService,
     private readonly blackListService: BlackListService,
     private readonly otpStrategy: OtpStrategy,
+    private readonly redisService: RedisService,
   ) {}
 
   /**
@@ -173,7 +175,9 @@ export class AuthenticationService {
   async sendVerificationCode(phoneNumber: string): Promise<SendOtpDto> {
     await this.checkBlacklistAndThrow(phoneNumber);
     await this.otpStrategy.send(phoneNumber);
-    return { message: `OTP sent to ${phoneNumber}` };
+    //TODO: remove otp from response
+    const opt = this.redisService.get<string>(`otp:${phoneNumber}`);
+    return { message: `OTP sent to ${phoneNumber} otp:{}}` };
   }
 
   private async issueRegistrationToken(phoneNumber: string): Promise<string> {
