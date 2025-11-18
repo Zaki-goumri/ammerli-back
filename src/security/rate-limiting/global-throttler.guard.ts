@@ -35,6 +35,56 @@ export class GlobalThrottlerGuard extends ThrottlerGuard {
     return req.ip || req.connection?.remoteAddress || 'unknown';
   }
 
+  /**
+   * Calculate subnet from IP address
+   * @param ip - IP address (e.g., "192.168.1.45")
+   * @param mask - Subnet mask (e.g., 24 for /24)
+   * @returns Subnet string (e.g., "192.168.1.0")
+   */
+  private getSubnetFromIP(ip: string, mask: number): string {
+    // IPv4 handling
+    if (ip.includes('.')) {
+      const parts = ip.split('.').map(Number);
+      if (parts.length !== 4) return ip;
+
+      const bits = 32;
+      const hostBits = bits - mask;
+      const ipInt =
+        (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3];
+      const subnetMask = (0xffffffff << hostBits) >>> 0;
+      const subnetInt = (ipInt & subnetMask) >>> 0;
+
+      return [
+        (subnetInt >>> 24) & 0xff,
+        (subnetInt >>> 16) & 0xff,
+        (subnetInt >>> 8) & 0xff,
+        subnetInt & 0xff,
+      ].join('.');
+    }
+
+    // IPv6 handling (simplified - take first N segments)
+    if (ip.includes(':')) {
+      const segments = ip.split(':');
+      const keepSegments = Math.floor(mask / 16);
+      return segments.slice(0, keepSegments).join(':') + '::';
+    }
+
+    return ip;
+  }
+
+  /**
+   * Override to return both IP and subnet for tracking
+   */
+  protected async getTracker(req: Record<string, any>): Promise<string> {
+    const clientIP = this.getRealClientIP(req);
+    
+    // Store both IP and subnet in request for tracking
+    req.clientIP = clientIP;
+    req.clientSubnet = this.getSubnetFromIP(clientIP, 24); // /24 for IPv4
+    
+    return clientIP;
+  }
+
   protected async throwThrottlingException(
     context: ExecutionContext,
   ): Promise<void> {

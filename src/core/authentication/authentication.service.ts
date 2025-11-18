@@ -176,8 +176,8 @@ export class AuthenticationService {
     await this.checkBlacklistAndThrow(phoneNumber);
     await this.otpStrategy.send(phoneNumber);
     //TODO: remove otp from response
-    const opt = this.redisService.get<string>(`otp:${phoneNumber}`);
-    return { message: `OTP sent to ${phoneNumber} otp:{}}` };
+    const otp = this.redisService.get<string>(`otp:${phoneNumber}`);
+    return { message: `OTP sent to ${phoneNumber} otp:${otp}}` };
   }
 
   private async issueRegistrationToken(phoneNumber: string): Promise<string> {
