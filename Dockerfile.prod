@@ -27,12 +27,12 @@ FROM base as final
 
 ENV NODE_ENV=prod
 
-USER node
+COPY --chown=node:node package.json ./
+COPY --chown=node:node --from=deps /usr/src/app/node_modules ./node_modules
+COPY --chown=node:node --from=build /usr/src/app/dist ./dist
+COPY --chown=node:node firebase.config.json ./
 
-COPY --from=deps /usr/src/app/node_modules ./node_modules
-COPY --from=build /usr/src/app/dist ./dist
-COPY --from=build /usr/src/app/package.json ./package.json
-COPY firebase.config.json ./
+USER node
 
 # Expose the port that the application listens on.
 EXPOSE 3000
