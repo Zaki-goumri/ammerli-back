@@ -7,16 +7,16 @@ WORKDIR /usr/src/app
 
 FROM base as deps
 
-RUN --mount=type=bind,source=package.json,target=package.json \
-  --mount=type=bind,source=pnpm-lock.yaml,target=pnpm-lock.yaml \
-  --mount=type=cache,target=/root/.local/share/pnpm/store \
+COPY package.json pnpm-lock.yaml ./
+
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
   pnpm install --prod --frozen-lockfile
 
 FROM base as build
 
-RUN --mount=type=bind,source=package.json,target=package.json \
-  --mount=type=bind,source=pnpm-lock.yaml,target=pnpm-lock.yaml \
-  --mount=type=cache,target=/root/.local/share/pnpm/store \
+COPY package.json pnpm-lock.yaml ./
+
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
   pnpm install --frozen-lockfile
 
 COPY . .
@@ -29,13 +29,9 @@ ENV NODE_ENV=prod
 
 USER node
 
-COPY package.json .
-
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=build /usr/src/app/dist ./dist
-
-# Copy source code
-COPY . .
+COPY --from=build /usr/src/app/package.json ./package.json
 COPY firebase.config.json ./
 
 # Expose the port that the application listens on.
