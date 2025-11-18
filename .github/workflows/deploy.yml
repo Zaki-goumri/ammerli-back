@@ -2,7 +2,7 @@ name: Deploy to VPS
 
 on:
   workflow_run:
-    workflows: ["Build & Push to GHCR"]
+    workflows: ["Build & Push to Docker Hub"]
     types:
       - completed
     branches:
@@ -10,8 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ghcr.io/${{ github.repository }}
+  DOCKERHUB_REPO: ${{ secrets.DOCKERHUB_USERNAME }}/3ammerli-backend
 
 jobs:
   deploy:
@@ -19,21 +18,18 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          NODE_ENV: prod
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          IMAGE_NAME: ${{ env.DOCKERHUB_REPO }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
           port: 22
-          envs: GITHUB_TOKEN,GITHUB_ACTOR,NODE_ENV
+          envs: DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,IMAGE_NAME
           script_stop: true
           script: |
             set -e
@@ -43,30 +39,13 @@ jobs:
             # Navigate to project directory
             cd /root/ammerli || { echo "❌ Project directory not found"; exit 1; }
             
-            # Login to GHCR
-            echo "🔐 Authenticating with GitHub Container Registry..."
-            echo $GITHUB_TOKEN | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
-
-            # Debug environment
-            echo "🔧 Environment: NODE_ENV=$NODE_ENV"
-            
-            # Pull latest configuration files
-            echo "📥 Pulling latest configuration..."
-            git fetch origin main
-            git reset --hard origin/main
-            
-            # Verify traefik configuration files
-            echo "🔍 Verifying traefik configuration..."
-            if [ ! -f "./traefik/traefik.yml" ]; then
-              echo "❌ traefik.yml file not found!"
-              exit 1
-            fi
-            ls -la ./traefik/
+            # Login to Docker Hub
+            echo "🔐 Authenticating with Docker Hub..."
+            echo $DOCKERHUB_TOKEN | docker login -u $DOCKERHUB_USERNAME --password-stdin
             
             # Pull latest images
             echo "📥 Pulling latest images..."
-            docker pull ghcr.io/${{ github.repository }}:latest
-            docker pull ghcr.io/${{ github.repository }}-minio:latest
+            docker pull $IMAGE_NAME:latest
             
             # Health check before stopping
             echo "🏥 Running pre-deployment health check..."
@@ -78,13 +57,13 @@ jobs:
             echo "🛑 Stopping old containers..."
             docker compose down --timeout 30
             
-            # Start new containers (images already pulled, won't build)
+            # Start new containers
             echo "🚀 Starting new containers..."
-            docker compose up -d --no-build
+            docker compose up -d
             
             # Wait for containers to be ready
             echo "⏳ Waiting for containers to start..."
-            sleep 10
+            sleep 15
             
             # Health check after deployment
             echo "🏥 Running post-deployment health check..."
@@ -121,10 +100,8 @@ jobs:
             echo "## ✅ Deployment Successful" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "🎉 Application deployed to production!" >> $GITHUB_STEP_SUMMARY
-            echo "🌐 URL: https://api.ammerli.com" >> $GITHUB_STEP_SUMMARY
           else
             echo "## ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "⚠️  Deployment was rolled back due to errors." >> $GITHUB_STEP_SUMMARY
-            echo "Check the logs above for details." >> $GITHUB_STEP_SUMMARY
+            echo "⚠️  Deployment failed. Check logs above." >> $GITHUB_STEP_SUMMARY
           fi
