@@ -218,6 +218,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
+
       - "traefik.http.middlewares.grafana-auth.basicauth.users=${GRAFANA_TRAEFIK_AUTH}"
       # Rate limiting for Grafana
       - "traefik.http.middlewares.grafana-ratelimit.ratelimit.average=50"
