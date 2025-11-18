@@ -37,61 +37,65 @@ jobs:
             echo "🚀 Starting deployment..."
             
             # Navigate to project directory
-            cd /root/ammerli || { echo "❌ Project directory not found"; exit 1; }
+            cd /root/ammerli || { echo "Project directory not found"; exit 1; }
             
             # Login to Docker Hub
-            echo "🔐 Authenticating with Docker Hub..."
+            echo "Authenticating with Docker Hub..."
             echo $DOCKERHUB_TOKEN | docker login -u $DOCKERHUB_USERNAME --password-stdin
             
+            # Build base image first
+            echo "Building base image..."
+            docker build -t 3ammerli-base:latest -f Dockerfile.base .
+            
             # Pull latest images
-            echo "📥 Pulling latest images..."
+            echo "Pulling latest images..."
             docker pull $IMAGE_NAME:latest
             
             # Health check before stopping
-            echo "🏥 Running pre-deployment health check..."
+            echo "Running pre-deployment health check..."
             if ! curl -f http://localhost/api/v1/health/status 2>/dev/null; then
-              echo "⚠️  Warning: Health check failed, but continuing..."
+              echo " Warning: Health check failed, but continuing..."
             fi
             
             # Stop old containers gracefully
-            echo "🛑 Stopping old containers..."
+            echo "Stopping old containers..."
             docker compose down --timeout 30
             
             # Start new containers
-            echo "🚀 Starting new containers..."
+            echo "Starting new containers..."
             docker compose up -d 
             
             # Wait for containers to be ready
-            echo "⏳ Waiting for containers to start..."
+            echo "Waiting for containers to start..."
             sleep 15
             
             # Health check after deployment
-            echo "🏥 Running post-deployment health check..."
+            echo "Running post-deployment health check..."
             RETRY_COUNT=0
             MAX_RETRIES=12
             
             while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
               if curl -f http://localhost/api/v1/health/status 2>/dev/null; then
-                echo "✅ Health check passed!"
+                echo "Health check passed!"
                 break
               fi
               RETRY_COUNT=$((RETRY_COUNT + 1))
-              echo "⏳ Waiting for service to be ready... ($RETRY_COUNT/$MAX_RETRIES)"
+              echo "Waiting for service to be ready... ($RETRY_COUNT/$MAX_RETRIES)"
               sleep 5
             done
             
             if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-              echo "❌ Health check failed after deployment!"
-              echo "📋 Container logs:"
+              echo "Health check failed after deployment!"
+              echo "Container logs:"
               docker compose logs --tail=50 server
               exit 1
             fi
             
             # Clean up old images
-            echo "🧹 Cleaning up old images..."
+            echo "Cleaning up old images..."
             docker image prune -f
             
-            echo "✅ Deployment completed successfully!"
+            echo "Deployment completed successfully!"
 
       - name: Deployment notification
         if: always()

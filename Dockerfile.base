@@ -3,9 +3,9 @@ ARG NODE_VERSION=22.15.1
 ARG PNPM_VERSION=10.10.0
 FROM node:${NODE_VERSION}-alpine
 
-# Install pnpm.
+# Install pnpm and pm2.
 RUN --mount=type=cache,target=/root/.npm \
-  npm install -g pnpm@${PNPM_VERSION}
+  npm install -g pnpm@${PNPM_VERSION} pm2
 
 # Configure pnpm to use a standard bin directory
 RUN pnpm config set global-bin-dir /usr/local/bin

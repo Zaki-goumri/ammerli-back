@@ -34,12 +34,16 @@ COPY --chown=node:node --from=deps /usr/src/app/node_modules ./node_modules
 COPY --chown=node:node --from=build /usr/src/app/dist ./dist
 COPY --chown=node:node --from=build /usr/src/app/src/core/invoice/templates ./src/core/invoice/templates
 COPY --chown=node:node firebase.config.json ./
+COPY --chown=node:node ecosystem.config.js ./
+
+# Create logs directory
+RUN mkdir -p logs && chown -R node:node logs
 
 USER node
 
 # Expose the port that the application listens on.
 EXPOSE 3000
 
-# Run the application in production mode
-CMD ["pnpm", "run", "start:prod"]
+# Run the application with PM2 in production mode
+CMD ["pm2-runtime", "start", "ecosystem.config.js", "--env", "prod"]
 
