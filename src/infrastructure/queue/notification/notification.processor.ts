@@ -43,13 +43,13 @@ export class NotificationProcessor extends WorkerHost {
   }
 
   async process(
-    job: Job<SendNotificationJob, TestNotificationJob, any, string>,
+    job: Job<SendNotificationJob | TestNotificationJob, any, string>,
   ): Promise<any> {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
     switch (job.name) {
       case NOTIFICATION_JOBS.SEND_NOTIFICATION:
         this.logger.log(`Processing log event job: ${job.id}`);
-        await this.handleSendingNotification(job.data);
+        await this.handleSendingNotification(job.data as SendNotificationJob);
         return Promise.resolve({
           message: 'Bulk notification job processed',
           jobId: job.id,
@@ -62,12 +62,13 @@ export class NotificationProcessor extends WorkerHost {
 
       case NOTIFICATION_JOBS.SEND_TEST_NOTIFICATION: {
         this.logger.log(`Processing test notification job: ${job.id}`);
+        const { title, body, token } = job.data as TestNotificationJob;
         const message: NotificationMessage = {
           notification: {
-            title: job.data.title,
-            body: job.data.body,
+            title,
+            body,
           },
-          token: job.data.token,
+          token,
         };
         const response = await this.sendNotificationToOneDevice(message);
         return Promise.resolve({
