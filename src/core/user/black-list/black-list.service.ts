@@ -81,33 +81,27 @@ export class BlackListService {
   async restore(userId: number): Promise<{ message: string }> {
     const phoneNumber = await this.userRepo.manager.transaction(
       async (entityManager) => {
-        const result = await entityManager.update(
-          User,
-          {
+        const user = await entityManager.findOne(User, {
+          where: {
             id: userId,
             blackListedAt: Not(IsNull()),
             deletedAt: IsNull(),
           },
-          { blackListedAt: undefined },
-        );
+        });
 
-        if (result.affected === 0) {
+        if (!user) {
           throw new NotFoundException(
             `Blacklisted user with ID ${userId} not found or already deleted.`,
           );
         }
 
-        const user = await entityManager.findOneOrFail(User, {
-          where: { id: userId },
-          select: ['phoneNumber'],
-        });
+        user.blackListedAt = undefined;
+        await entityManager.save(User, user);
 
         return user.phoneNumber;
       },
     );
-
     await this.redisService.del(BlackListService.getCacheKey(phoneNumber));
-
     return { message: 'User removed from blacklist successfully' };
   }
 
