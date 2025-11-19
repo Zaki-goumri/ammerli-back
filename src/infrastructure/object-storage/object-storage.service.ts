@@ -155,10 +155,17 @@ export class ObjectService implements ObjectStorageService {
         7 * 24 * 60 * 60, // 7 days
       );
 
-      this.logger.log(
-        `Generated presigned URL for ${objectName} in bucket ${bucketName}: ${presignedUrl}`,
+      const publicHost = this.config.publicUrl;
+      const customBase = `https://${publicHost}/${bucketName}`;
+      const cleanUrl = presignedUrl.replace(
+        /https?:\/\/minio:9000\/[^/]+/,
+        customBase,
       );
-      return presignedUrl;
+
+      this.logger.log(
+        `Generated presigned URL for ${objectName} in bucket ${bucketName}: ${cleanUrl}`,
+      );
+      return cleanUrl;
     } catch (error) {
       this.logger.error(
         `Failed to generate presigned URL for ${objectName} in bucket ${bucketName}`,

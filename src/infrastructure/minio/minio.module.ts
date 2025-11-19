@@ -15,7 +15,7 @@ const minioClientProvider = {
       secretKey: config.secretKey,
       region: config.region,
       useSSL: config.useSSL,
-      s3AccelerateEndpoint: config.publicUrl,
+      s3AccelerateEndpoint: `https://${config.publicUrl}`,
     });
     return client;
   },

@@ -104,50 +104,31 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
       
-      # Per-IP Rate limiting middleware for storage API
-      - "traefik.http.middlewares.storage-ratelimit-ip.ratelimit.average=${TRAEFIK_RATE_LIMIT_AVERAGE:-100}"
-      - "traefik.http.middlewares.storage-ratelimit-ip.ratelimit.period=${TRAEFIK_RATE_LIMIT_PERIOD:-1m}"
-      - "traefik.http.middlewares.storage-ratelimit-ip.ratelimit.burst=${TRAEFIK_RATE_LIMIT_BURST:-50}"
-      - "traefik.http.middlewares.storage-ratelimit-ip.ratelimit.sourceCriterion.requestHeaderName=X-Forwarded-For"
-      
-      # Per-Subnet Rate limiting middleware for storage API
-      - "traefik.http.middlewares.storage-ratelimit-subnet.ratelimit.average=${TRAEFIK_SUBNET_RATE_LIMIT_AVERAGE:-150}"
-      - "traefik.http.middlewares.storage-ratelimit-subnet.ratelimit.period=${TRAEFIK_SUBNET_RATE_LIMIT_PERIOD:-1m}"
-      - "traefik.http.middlewares.storage-ratelimit-subnet.ratelimit.burst=${TRAEFIK_SUBNET_RATE_LIMIT_BURST:-50}"
-      - "traefik.http.middlewares.storage-ratelimit-subnet.ratelimit.sourceCriterion.ipStrategy.depth=1"
-      
-      # Rate limiting for console (less strict)
-      - "traefik.http.middlewares.minio-console-ratelimit.ratelimit.average=50"
-      - "traefik.http.middlewares.minio-console-ratelimit.ratelimit.period=1m"
-      - "traefik.http.middlewares.minio-console-ratelimit.ratelimit.burst=25"
-      
-      # MinIO API HTTP router (redirects to HTTPS)
-      - "traefik.http.routers.minio-api.rule=Host(`storage.ammerli.com`)"
+      # MinIO API (S3 Access)
+      # 🎯 Hostname change for local (storage.ammerli.com -> storage.localhost)
+      - "traefik.http.routers.minio-api.rule=Host(`storage.localhost`)"
       - "traefik.http.routers.minio-api.entrypoints=web"
-      - "traefik.http.routers.minio-api.middlewares=https-redirect@file"
       
-      # MinIO API HTTPS router with rate limiters
-      - "traefik.http.routers.minio-api-secure.rule=Host(`storage.ammerli.com`)"
+      - "traefik.http.routers.minio-api-secure.rule=Host(`storage.localhost`)"
       - "traefik.http.routers.minio-api-secure.entrypoints=websecure"
       - "traefik.http.routers.minio-api-secure.tls=true"
-      - "traefik.http.routers.minio-api-secure.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.minio-api-secure.middlewares=storage-ratelimit-ip,storage-ratelimit-subnet"
+      - "traefik.http.routers.minio-api-secure.tls.certresolver=localcert" # CHANGE: Using localcert resolver
+      # Removed rate limiting middlewares for local simplicity (optional removal)
       - "traefik.http.routers.minio-api-secure.service=minio-api-svc"
       
-      # MinIO Console HTTP router (redirects to HTTPS)
-      - "traefik.http.routers.minio-console.rule=Host(`minio.ammerli.com`)"
+      # MinIO Console (Web UI)
+      # 🎯 Hostname change for local (minio.ammerli.com -> minio.localhost)
+      - "traefik.http.routers.minio-console.rule=Host(`minio.localhost`)"
       - "traefik.http.routers.minio-console.entrypoints=web"
-      - "traefik.http.routers.minio-console.middlewares=https-redirect@file"
       
-      # MinIO Console HTTPS router
-      - "traefik.http.routers.minio-console-secure.rule=Host(`minio.ammerli.com`)"
+      - "traefik.http.routers.minio-console-secure.rule=Host(`minio.localhost`)"
       - "traefik.http.routers.minio-console-secure.entrypoints=websecure"
       - "traefik.http.routers.minio-console-secure.tls=true"
-      - "traefik.http.routers.minio-console-secure.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.minio-console-secure.middlewares=minio-console-ratelimit"
+      - "traefik.http.routers.minio-console-secure.tls.certresolver=localcert" # CHANGE: Using localcert resolver
+      # Removed rate limiting middlewares for local simplicity (optional removal)
       - "traefik.http.routers.minio-console-secure.service=minio-console-svc"
       
-      # Service definitions
+      # Service definitions (Ports remain internal to Docker network)
       - "traefik.http.services.minio-api-svc.loadbalancer.server.port=9000"
       - "traefik.http.services.minio-console-svc.loadbalancer.server.port=9001"
 
