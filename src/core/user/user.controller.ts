@@ -156,9 +156,8 @@ export class UserController {
       storage: memoryStorage(),
       limits: { fileSize: 2 * 1024 * 1024 * 5 }, // 2MB
     }),
-    PresignedUrlInterceptor,
   )
-  @ConvertToPresignedUrls(['avatar'], BUCKET_TARGETS.USER_PROFILE)
+  @ConvertToPresignedUrls(['profilePic'], BUCKET_TARGETS.USER_PROFILE)
   async updateProfilePicture(
     @USER('id') userId: number,
     @UploadedFile() file: Express.Multer.File,

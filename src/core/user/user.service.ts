@@ -598,7 +598,7 @@ export class UserService {
     await this.redisService.del(UserService.getCacheKey(userId, 'id'));
     await this.redisService.del(
       UserService.getCacheKey(userId, 'admin-details'),
-    ); // Invalidate admin details cache
+    );
     return { profilePic: objectName };
   }
 

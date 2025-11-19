@@ -8,6 +8,7 @@ import { Observable } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 import { Reflector } from '@nestjs/core';
 import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
+import { BUCKET_TARGETS } from '../constants/buckets';
 
 export const PRESIGNED_URL_FIELDS = 'presigned_url_fields';
 export const PRESIGNED_URL_EXPIRY = 'presigned_url_expiry';
@@ -17,7 +18,6 @@ export const PRESIGNED_URL_BUCKET = 'presigned_url_bucket';
  * Interceptor that converts object names to presigned URLs in response data
  * Works with @ConvertToPresignedUrls() decorator
  */
-import { BUCKET_TARGETS } from '../constants/buckets';
 
 @Injectable()
 export class PresignedUrlInterceptor implements NestInterceptor {
@@ -67,7 +67,7 @@ export class PresignedUrlInterceptor implements NestInterceptor {
           return data;
         }
         const newData = this.convertFields(data, fields, bucket, expiry);
-        console.log('PresignedUrlInterceptor converted data:', newData);
+        console.table(newData);
         return newData;
       }),
     );
@@ -92,7 +92,6 @@ export class PresignedUrlInterceptor implements NestInterceptor {
             bucket,
           );
         } else if (Array.isArray(value)) {
-          // Check if it's array of strings or array of objects
           if (value.length > 0 && typeof value[0] === 'string') {
             result[field] = await Promise.all(
               value

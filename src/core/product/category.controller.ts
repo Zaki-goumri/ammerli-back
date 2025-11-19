@@ -60,7 +60,7 @@ export class CategoryController {
 
   @Get(':id/children')
   @HttpCode(HttpStatus.OK)
-  @ConvertToPresignedUrls(['pictureUrl'], BUCKET_TARGETS.CATEGORY_PICTURES)
+  @ConvertToPresignedUrls(['url'], BUCKET_TARGETS.CATEGORY_PICTURES)
   @ApiOperation({ summary: 'Get all children categories' })
   @ApiOkResponse({
     description: 'Returns all children categories',
@@ -88,6 +88,11 @@ export class CategoryController {
           type: 'string',
           format: 'binary',
           description: 'Category picture file',
+        },
+        parentId: {
+          type: 'number',
+          description: 'Parent category ID (optional)',
+          example: 1,
         },
       },
       required: ['label'],

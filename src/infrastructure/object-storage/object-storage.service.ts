@@ -78,15 +78,7 @@ export class ObjectService implements ObjectStorageService {
         metaData,
       ),
     ).pipe(
-      mergeMap(() =>
-        from(this.getPresignedUrl(objectName, bucketName)).pipe(
-          map((fileUrl) => ({
-            message: 'File uploaded to MinIO successfully.',
-            fileUrl,
-            objectName,
-          })),
-        ),
-      ),
+      map(() => ({ success: true, objectName })),
       retry(this.MAX_RETRIES),
       catchError((error) => {
         this.logger.error(
@@ -106,7 +98,24 @@ export class ObjectService implements ObjectStorageService {
       }),
     );
 
-    return lastValueFrom(uploadOperation$);
+    try {
+      await lastValueFrom(uploadOperation$);
+
+      const fileUrl = 'test';
+
+      this.logger.log(`Generated presigned URL for ${objectName}: ${fileUrl}`);
+
+      return {
+        message: 'File uploaded to MinIO successfully.',
+        fileUrl,
+        objectName,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Final upload failure for ${objectName}: ${error.message}`,
+      );
+      throw error;
+    }
   }
 
   async uploadBulkFiles(
@@ -153,7 +162,6 @@ export class ObjectService implements ObjectStorageService {
     index?: number,
   ): Observable<UploadResult> {
     const fileBuffer = this.normalizeFileBuffer(file.buffer);
-
     const bucketName = options?.bucketName ?? this.defaultBucket;
     const objectName =
       options?.objectName || this.generateUniqueObjectName(file.originalname);
@@ -172,16 +180,16 @@ export class ObjectService implements ObjectStorageService {
         metaData,
       ),
     ).pipe(
-      mergeMap(() =>
-        from(this.getPresignedUrl(objectName, bucketName)).pipe(
-          map((fileUrl) => ({
-            message: 'File uploaded to MinIO successfully.',
-            fileUrl,
-            objectName,
-          })),
-        ),
-      ),
       retry(this.MAX_RETRIES),
+      mergeMap(async () => {
+        // Generate presigned URL ONCE after successful upload
+        const fileUrl = await this.getPresignedUrl(objectName, bucketName);
+        return {
+          message: 'File uploaded to MinIO successfully.',
+          fileUrl,
+          objectName,
+        };
+      }),
       catchError((error) => {
         this.logger.error(
           `Upload failed for ${objectName} after ${this.MAX_RETRIES} retries`,

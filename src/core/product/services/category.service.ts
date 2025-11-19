@@ -38,43 +38,27 @@ export class CategoryService {
       where: { parentCategoryId: IsNull() },
     });
 
-    const categoriesWithPresignedUrls = await Promise.all(
-      categories.map(async (c) => {
-        let presignedUrl = '';
-        if (c.pictureUrl) {
-          presignedUrl = await this.objectStorageService.getPresignedUrl(
-            c.pictureUrl,
-            BUCKET_TARGETS.CATEGORY_PICTURES,
-          );
-        }
+    const formattedCategories = categories.map((c) => {
         return {
           id: c.id,
           label: c.label,
-          pictureUrl: presignedUrl,
+          pictureUrl: c.pictureUrl,
         };
       }),
     );
 
-    return categoriesWithPresignedUrls;
+    return formattedCategories;
   }
 
   async getChildrenCaregories(parentId: number): Promise<CategoryResDto[]> {
     const categories = await this.categoryRepo.find({
       where: { parentCategoryId: parentId },
     });
-    const categoriesWithPresignedUrls = await Promise.all(
-      categories.map(async (c) => {
-        let presignedUrl = '';
-        if (c.pictureUrl) {
-          presignedUrl = await this.objectStorageService.getPresignedUrl(
-            c.pictureUrl,
-            BUCKET_TARGETS.CATEGORY_PICTURES,
-          );
-        }
+    const categoriesWithPresignedUrls = categories.map( (c) => {
         return {
           id: c.id,
           label: c.label,
-          pictureUrl: presignedUrl,
+          pictureUrl: c.pictureUrl
         };
       }),
     );
@@ -103,15 +87,10 @@ export class CategoryService {
       },
     });
 
-    const presignedUrl = await this.objectStorageService.getPresignedUrl(
-      objectName,
-      BUCKET_TARGETS.CATEGORY_PICTURES,
-    );
-
     return {
       id: newCategory.id,
       label: newCategory.label,
-      pictureUrl: presignedUrl,
+      pictureUrl: newCategory.pictureUrl,
     };
   }
 

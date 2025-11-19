@@ -34,7 +34,5 @@ export interface ObjectStorageService {
     options?: UploadingOptions,
   ): Promise<Array<{ message: string; fileUrl: string; objectName: string }>>;
 
-  getFileUrl(fileName: string, bucketName: string): string;
-
   getFileNameFromUrl(url: string): string;
 }
