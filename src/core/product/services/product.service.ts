@@ -201,11 +201,13 @@ export class ProductService {
         categoryIds,
       });
     }
+
     if (brandIds && brandIds.length > 0) {
       productIdsQuery.andWhere('brand.id IN (:...brandIds)', {
         brandIds,
       });
     }
+
     if (search) {
       productIdsQuery.andWhere(
         '(product.name ILIKE :search OR product.description ILIKE :search OR brand.label ILIKE :search OR category.label ILIKE :search)',
@@ -244,25 +246,22 @@ export class ProductService {
         'fav_products.userId = :userId',
         { userId },
       )
-      .leftJoin('product.pictures', 'mainPicture', 'mainPicture.isMain = TRUE')
+      .leftJoin('product.pictures', 'pictures')
       .where('product.id IN (:...productIds)', { productIds })
       .select([
         'product.id AS id',
         'product.name AS name',
         'product.quantityPerBatch as quantityPerBatch',
-        'mainPicture.url AS picture',
+        'ARRAY_AGG(DISTINCT pictures.url) FILTER (WHERE pictures.url IS NOT NULL) AS pictures',
         'product.price AS price',
         'brand.label AS brand',
         'category.label AS category',
         'product.createdAt AS createdAt',
-        'CASE WHEN fav_products.id IS NOT NULL THEN true ELSE false END AS "isLoved"',
+        'BOOL_OR(fav_products.id IS NOT NULL) AS "isLoved"',
       ])
       .groupBy('product.id')
       .addGroupBy('brand.label')
       .addGroupBy('category.label')
-      .addGroupBy('mainPicture.url')
-      .addGroupBy('product.createdAt')
-      .addGroupBy('fav_products.id')
       .orderBy('product.createdAt', 'DESC');
 
     const productsRaw = await queryBuilder.getRawMany();
@@ -273,8 +272,8 @@ export class ProductService {
       price: parseInt(p?.price || '0', 10),
       brand: p?.brand,
       category: p?.category,
-      picture: p?.picture,
-      isLoved: p?.isLoved,
+      pictures: p?.pictures || [],
+      isLoved: p?.isLoved || false,
     }));
 
     return {

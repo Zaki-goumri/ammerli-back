@@ -59,6 +59,7 @@ export class PresignedUrlInterceptor implements NestInterceptor {
         }
 
         if (data.data && Array.isArray(data.data)) {
+          console.table(data);
           data.data = await Promise.all(
             data.data.map((item) =>
               this.convertFields(item, fields, bucket, expiry),
@@ -67,7 +68,6 @@ export class PresignedUrlInterceptor implements NestInterceptor {
           return data;
         }
         const newData = this.convertFields(data, fields, bucket, expiry);
-        console.table(newData);
         return newData;
       }),
     );
@@ -87,12 +87,14 @@ export class PresignedUrlInterceptor implements NestInterceptor {
       if (field in result) {
         const value = result[field];
         if (typeof value === 'string' && value) {
+          console.log('Converting array of strings for field:', field);
           result[field] = await this.objectStorageService.getPresignedUrl(
             value,
             bucket,
           );
         } else if (Array.isArray(value)) {
           if (value.length > 0 && typeof value[0] === 'string') {
+            console.log('Converting array of strings for field:', field);
             result[field] = await Promise.all(
               value
                 .filter((v) => typeof v === 'string')
@@ -101,6 +103,7 @@ export class PresignedUrlInterceptor implements NestInterceptor {
                 ),
             );
           } else if (value.length > 0 && typeof value[0] === 'object') {
+            console.log('Converting array of strings for field:', field);
             result[field] = await Promise.all(
               value.map((item) =>
                 this.convertFields(item, fields, bucket, expiry),
@@ -108,6 +111,7 @@ export class PresignedUrlInterceptor implements NestInterceptor {
             );
           }
         } else if (value && typeof value === 'object') {
+          console.log('Converting array of strings for field:', field);
           result[field] = await this.convertFields(
             value,
             fields,

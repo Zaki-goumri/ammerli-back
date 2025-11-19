@@ -41,5 +41,5 @@ export class ProductResDto {
     example: 'https://example.com/image.png',
     description: 'URL of the main picture of the product',
   })
-  picture: string;
+  pictures: string[];
 }
