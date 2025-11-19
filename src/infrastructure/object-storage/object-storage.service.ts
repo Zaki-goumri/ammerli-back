@@ -148,7 +148,6 @@ export class ObjectService implements ObjectStorageService {
     if (!objectName) {
       return '';
     }
-
     try {
       const presignedUrl = await this.minioClient.presignedGetObject(
         bucketName,
@@ -156,17 +155,10 @@ export class ObjectService implements ObjectStorageService {
         7 * 24 * 60 * 60, // 7 days
       );
 
-      const publicHost = this.config.publicUrl;
-      const customBase = `https://${publicHost}/${bucketName}`;
-      const cleanUrl = presignedUrl.replace(
-        /https?:\/\/minio:9000\/[^/]+/,
-        customBase,
-      );
-
       this.logger.log(
-        `Generated presigned URL for ${objectName} in bucket ${bucketName}: ${cleanUrl}`,
+        `Generated presigned URL for ${objectName} in bucket ${bucketName}: ${presignedUrl}`,
       );
-      return cleanUrl;
+      return presignedUrl;
     } catch (error) {
       this.logger.error(
         `Failed to generate presigned URL for ${objectName} in bucket ${bucketName}`,

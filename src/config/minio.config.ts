@@ -9,6 +9,7 @@ export default registerAs('minio', () => ({
   useSSL: process.env.NODE_ENV === 'prod',
   bucket: process.env.MINIO_BUCKET_NAME || 'app-bucket',
   publicUrl: process.env.MINIO_PUBLIC_HOST || 'localhost',
+  region: process.env.MINIO_REGION || 'us-east-1',
   buckets: [
     BUCKET_TARGETS.USER_PROFILE,
     BUCKET_TARGETS.PRODUCT_PICTURES,
