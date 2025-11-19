@@ -1,4 +1,11 @@
-import { Entity, Column, OneToMany, DeleteDateColumn, Index, OneToOne } from 'typeorm';
+import {
+  Entity,
+  Column,
+  OneToMany,
+  DeleteDateColumn,
+  Index,
+  OneToOne,
+} from 'typeorm';
 import { Product } from '../../product/entities/product.entity';
 import { Address } from './address.entity';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -91,7 +98,7 @@ export class User extends BaseEntity {
     format: 'date-time',
   })
   @Column({ type: 'timestamp', nullable: true, default: null })
-  blackListedAt?: Date;
+  blackListedAt: Date | null;
 
   @OneToMany(() => Token, (token) => token.user)
   tokens?: Token[];
