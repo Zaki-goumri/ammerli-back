@@ -3,7 +3,6 @@ import {
   NestInterceptor,
   ExecutionContext,
   CallHandler,
-  Inject,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
@@ -68,6 +67,7 @@ export class PresignedUrlInterceptor implements NestInterceptor {
           return data;
         }
         const newData = this.convertFields(data, fields, bucket, expiry);
+        console.log('PresignedUrlInterceptor converted data:', newData);
         return newData;
       }),
     );

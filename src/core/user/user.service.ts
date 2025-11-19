@@ -608,7 +608,7 @@ export class UserService {
    * @param {number} userId - The ID of the user.
    * @returns {Promise<void>}
    */
-  private async setProfilePicUrlNull(userId: number) {
+  private async setProfilePicUrlNull(userId: number): Promise<void> {
     await this.userRepo.update(userId, { profilePic: undefined });
     await this.redisService.del(UserService.getCacheKey(userId, 'id'));
   }
@@ -621,7 +621,7 @@ export class UserService {
    * @returns {Promise<void>}
    */
   @OnEvent(`file.failed.${BUCKET_TARGETS.USER_PROFILE}`, { async: true })
-  async finalizeUser(payload: FinalizePayloadDto) {
+  async finalizeUser(payload: FinalizePayloadDto): Promise<void> {
     this.logger.log(
       `Finalizing user profile pic upload for user ID: ${payload.targetId}`,
     );

@@ -156,8 +156,6 @@ export class ObjectService implements ObjectStorageService {
         7 * 24 * 60 * 60, // 7 days
       );
 
-      // This part seems to replace the internal MinIO URL with the public one.
-      // It might need adjustment if the public URL format is different.
       const publicHost = this.config.publicUrl;
       const customBase = `https://${publicHost}/${bucketName}`;
       const cleanUrl = presignedUrl.replace(
@@ -165,6 +163,9 @@ export class ObjectService implements ObjectStorageService {
         customBase,
       );
 
+      this.logger.log(
+        `Generated presigned URL for ${objectName} in bucket ${bucketName}: ${cleanUrl}`,
+      );
       return cleanUrl;
     } catch (error) {
       this.logger.error(
@@ -219,4 +220,3 @@ export class ObjectService implements ObjectStorageService {
     }
   }
 }
-
