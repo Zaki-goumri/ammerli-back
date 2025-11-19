@@ -9,12 +9,6 @@ export class CreateCategoryDto {
 
   @ApiPropertyOptional({ description: 'parent category id', example: 1 })
   @IsOptional()
-  @Transform(({ value }) => {
-    if (value === '' || value === null || value === undefined) {
-      return undefined;
-    }
-    return Number(value);
-  })
   @IsNumber({}, { message: 'parentId must be a number' })
   @IsPositive({ message: 'parentId must be a positive number' })
   parentId?: number;

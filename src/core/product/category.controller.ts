@@ -66,6 +66,7 @@ export class CategoryController {
     description: 'Returns all children categories',
     type: [CategoryResDto],
   })
+  @ConvertToPresignedUrls(['pictureUrl'], BUCKET_TARGETS.CATEGORY_PICTURES)
   getChildrenCategories(@Param('id', ParseIntPipe) id: number) {
     return this.categoryService.getChildrenCaregories(id);
   }
@@ -75,6 +76,7 @@ export class CategoryController {
   @Roles(USER_ROLES.ADMIN)
   @ApiOperation({ summary: 'Create a new category' })
   @ApiConsumes('multipart/form-data')
+  @ConvertToPresignedUrls(['pictureUrl'], BUCKET_TARGETS.CATEGORY_PICTURES)
   @ApiBody({
     schema: {
       type: 'object',
@@ -141,6 +143,7 @@ export class CategoryController {
   @ApiOkResponse({ description: 'Category successfully updated' })
   @ApiNotFoundResponse({ description: 'Category not found' })
   @ApiParam({ name: 'id', type: Number, description: 'Category ID' })
+  @ConvertToPresignedUrls(['pictureUrl'], BUCKET_TARGETS.CATEGORY_PICTURES)
   updateCategory(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: Partial<CreateCategoryDto>,
@@ -156,6 +159,7 @@ export class CategoryController {
   @ApiNoContentResponse({ description: 'Category successfully deleted' })
   @ApiNotFoundResponse({ description: 'Category not found' })
   @ApiParam({ name: 'id', type: Number, description: 'Category ID' })
+  @ConvertToPresignedUrls(['pictureUrl'], BUCKET_TARGETS.CATEGORY_PICTURES)
   removeCategory(@Param('id', ParseIntPipe) id: number) {
     return this.categoryService.remove(id);
   }

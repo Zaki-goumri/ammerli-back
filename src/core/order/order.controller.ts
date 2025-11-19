@@ -12,6 +12,7 @@ import {
   Param,
   ParseIntPipe,
   HttpStatus,
+  UseInterceptors,
 } from '@nestjs/common';
 import { OrderService } from './services/order.service';
 import {
@@ -43,6 +44,9 @@ import { Roles } from '../authentication/decorators/role.decorator';
 import { RoleGuard } from '../authentication/guards/role.guard';
 import { OrderForAdminListItemDto } from './dtos/order-for-admin-list-item.dto';
 import { CancelOrderDto } from './dtos/cancel-order.dto';
+import { PresignedUrlInterceptor } from 'src/common/interceptors/presigned-url.interceptor';
+import { ConvertToPresignedUrls } from 'src/common/decorators/convert-to-presigned-urls.decorator';
+import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 /**
  *
  * @class OrderController
@@ -52,6 +56,7 @@ import { CancelOrderDto } from './dtos/cancel-order.dto';
  */
 @ApiTags('Order')
 @Controller('order')
+@UseInterceptors(PresignedUrlInterceptor)
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
   logger = new Logger(OrderController.name);
@@ -113,6 +118,7 @@ export class OrderController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all products for a specific order' })
   @UseGuards(AccessTokenGuard)
+  @ConvertToPresignedUrls(['picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
   @Get('/:orderId/products')
   getOrderProducts(
     @Param('orderId', ParseIntPipe) orderId: number,
@@ -129,6 +135,7 @@ export class OrderController {
     description: 'A paginated list of orders',
   })
   @Get('/all')
+  @ConvertToPresignedUrls(['picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
   getAllOrders(
     @Query() { page, limit }: PaginationQueryDto,
     @USER('id') userId: number,
@@ -151,6 +158,7 @@ export class OrderController {
     description: 'A paginated list of orders for admin view',
   })
   @Get('/admin/all')
+  @ConvertToPresignedUrls(['picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
   getOrdersForAdmin(
     @Query() { page, limit }: PaginationQueryDto,
   ): Promise<PaginationResponseDto<OrderForAdminListItemDto>> {

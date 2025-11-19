@@ -33,7 +33,7 @@ export class DefaultOtpStrategy extends OtpStrategy {
     );
     // TODO: replace with actual fcm token
     const fcmToken =
-      'dIkoTse0RLyIQknzHSe_LI:APA91bF5f1mbGzcmJ-x4tKhF5UvR3XYnVIC3kdG4m1hoDa6-4-okSf-_YkbUI6ASEORdz91y_ZTzTYirfldVCHhWVQnHE88ctISydv91Mh9sLL7aWx2coDQ';
+      'dHa4QQkTRJqOauLbM2Uksu:APA91bEpr4tr1qoVNhk7TGJrk2jXg89onaBREZwKgTFtEhwL9h1JKPsE9n9vUnGgWTUNTPX0NdImIaQbm5TV3aiLH_e8RVk6UUHOzxs9FPb8BJnREgQ6a6Y';
     await this.notificationsService.sendOtpViaNotification(fcmToken, otp);
 
     this.logger.log(`OTP for ${phoneNumber} is ${otp}`);

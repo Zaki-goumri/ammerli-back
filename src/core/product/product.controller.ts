@@ -92,6 +92,7 @@ export class ProductController {
     type: PaginatedResponse(ProductResDto),
     description: 'Returns paginated products',
   })
+  @ConvertToPresignedUrls(['picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
   findAll(@Query() query: FilterProductDto, @USER('id') userId: number) {
     const pagination = { page: query.page || 1, limit: query.limit || 10 };
     return this.productService.findManyWithPagination(
@@ -110,7 +111,10 @@ export class ProductController {
    * @returns {Promise<Product>} The product with the specified ID.
    */
   @Get(':id')
-  @ConvertToPresignedUrls(['url', 'picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
+  @ConvertToPresignedUrls(
+    ['picture', 'pictures'],
+    BUCKET_TARGETS.PRODUCT_PICTURES,
+  )
   @ApiOperation({ summary: 'Get product by ID' })
   @ApiOkResponse({
     type: ProductDto,
@@ -216,6 +220,10 @@ export class ProductController {
         fileSize: 10 * 1024 * 1024, // Per-file size limit (5MB)
       },
     }),
+  )
+  @ConvertToPresignedUrls(
+    ['picture', 'url', 'pictures'],
+    BUCKET_TARGETS.PRODUCT_PICTURES,
   )
   create(
     @Body() createProductDto: CreateProductDto,
@@ -325,6 +333,7 @@ export class ProductController {
       },
     },
   })
+  @ConvertToPresignedUrls(['picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateProductDto: UpdateProductDto,
@@ -442,6 +451,7 @@ export class ProductController {
     type: PaginatedResponse(FavoriteProductDto),
     description: 'Returns paginated favorite products',
   })
+  @ConvertToPresignedUrls(['picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
   @Get('favorite/all')
   getFavoriteProducts(
     @Query() query: FilterProductDto,
@@ -486,6 +496,7 @@ export class ProductController {
   @ApiOperation({
     summary: 'Get all products for admin with pagination and search',
   })
+  @ConvertToPresignedUrls(['mainPicture'], BUCKET_TARGETS.PRODUCT_PICTURES)
   @ApiOkResponse({
     type: PaginatedResponse(AdminProductDto),
     description: 'Returns paginated products for admin',
