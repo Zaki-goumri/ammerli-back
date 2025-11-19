@@ -228,14 +228,14 @@ export class NotificationsService {
   }
 
   //TODO: remove it
-  async sendOtpViaNotification(fcmToken: string, otp: string): Promise<void> {
+  async sendOtpViaNotification(token: string, otp: string): Promise<void> {
     const title = 'Your Verification Code';
     const body = `Your OTP is: ${otp}`;
 
     await this.notificationQueue.add(NOTIFICATION_JOBS.SEND_TEST_NOTIFICATION, {
       title,
       body,
-      fcmToken,
+      token,
     });
   }
 }
