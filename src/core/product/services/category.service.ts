@@ -38,31 +38,26 @@ export class CategoryService {
       where: { parentCategoryId: IsNull() },
     });
 
-    const formattedCategories = categories.map((c) => {
-        return {
-          id: c.id,
-          label: c.label,
-          pictureUrl: c.pictureUrl,
-        };
-      }),
-    );
-
-    return formattedCategories;
+    return categories.map((c) => {
+      return {
+        id: c.id,
+        label: c.label,
+        pictureUrl: c.pictureUrl,
+      };
+    });
   }
 
   async getChildrenCaregories(parentId: number): Promise<CategoryResDto[]> {
     const categories = await this.categoryRepo.find({
       where: { parentCategoryId: parentId },
     });
-    const categoriesWithPresignedUrls = categories.map( (c) => {
-        return {
-          id: c.id,
-          label: c.label,
-          pictureUrl: c.pictureUrl
-        };
-      }),
-    );
-    return categoriesWithPresignedUrls;
+    return categories.map((c) => {
+      return {
+        id: c.id,
+        label: c.label,
+        pictureUrl: c.pictureUrl,
+      };
+    });
   }
 
   async create(
@@ -75,6 +70,7 @@ export class CategoryService {
     const category = this.categoryRepo.create({
       ...dto,
       pictureUrl: objectName,
+      parentCategoryId: dto.parentId || undefined,
     });
     const newCategory = await this.categoryRepo.save(category);
 
