@@ -17,11 +17,13 @@ export class MinioInitializerService implements StorageInitializer {
   ) {}
 
   async initialize(): Promise<void> {
-    await this.ensureBucketExists();
+    const bucketNames = [this.config.bucket, ...this.config.buckets];
+    for (const bucketName of bucketNames) {
+      await this.ensureBucketExists(bucketName);
+    }
   }
 
-  private async ensureBucketExists(): Promise<void> {
-    const bucketName = this.config.bucket;
+  private async ensureBucketExists(bucketName: string): Promise<void> {
     try {
       const exists = await this.minioClient.bucketExists(bucketName);
       if (exists) {

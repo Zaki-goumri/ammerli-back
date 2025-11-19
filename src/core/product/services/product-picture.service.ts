@@ -8,6 +8,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { QUEUE_NAME } from 'src/common/constants/queues';
 import { Queue } from 'bullmq';
 import { UPLOAD_JOBS } from 'src/common/constants/jobs';
+import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 
 @Injectable()
 export class ProductPictureService {
@@ -21,7 +22,7 @@ export class ProductPictureService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  @OnEvent('file.uploaded.product_picture', { async: true })
+  @OnEvent(`file.uploaded.${BUCKET_TARGETS.PRODUCT_PICTURES}`, { async: true })
   async handleSingleUploadComplete(payload: {
     targetId: number;
     objectName: string;
@@ -41,7 +42,7 @@ export class ProductPictureService {
     return await this.productPictureRepo.save(preliminaryPicture);
   }
 
-  @OnEvent('file.failed.product_picture', { async: true })
+  @OnEvent(`file.failed.${BUCKET_TARGETS.PRODUCT_PICTURES}`, { async: true })
   async handleFailedUpload(payload: FinalizePayloadDto): Promise<void> {
     this.Logger.log(
       `Handling failed upload for product picture of product ID: ${payload.targetId}`,
@@ -49,7 +50,9 @@ export class ProductPictureService {
     //TODO: implement notification or cleanup logic
   }
 
-  @OnEvent('file.uploaded.bulk.product_picture', { async: true })
+  @OnEvent(`file.uploaded.bulk.${BUCKET_TARGETS.PRODUCT_PICTURES}`, {
+    async: true,
+  })
   async handleBulkUploadComplete(payload: {
     targetId: number;
     files: { objectName: string }[];
@@ -105,7 +108,10 @@ export class ProductPictureService {
 
     if (oldPictureUrls.length > 0) {
       await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
-        objectUrls: oldPictureUrls,
+        files: oldPictureUrls.map((url) => ({
+          objectName: url,
+          bucketName: BUCKET_TARGETS.PRODUCT_PICTURES,
+        })),
       });
       this.Logger.log(
         `Queued bulk deletion job for ${oldPictureUrls.length} files in object storage.`,

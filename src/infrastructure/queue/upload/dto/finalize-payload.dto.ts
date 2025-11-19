@@ -4,4 +4,5 @@ export class FinalizePayloadDto {
   targetId: number;
   jobId?: string;
   targetType?: string;
+  bucketName?: string;
 }

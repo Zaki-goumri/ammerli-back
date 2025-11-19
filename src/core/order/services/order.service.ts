@@ -49,6 +49,7 @@ import { Logger } from '@nestjs/common';
 import { PaymentWay } from '../enums/payment-way.enum';
 import { RefundService } from './refund.service';
 import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
+import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 
 export type PaymentStatus =
   | 'paid'
@@ -218,7 +219,10 @@ export class OrderService {
       order.map(async (op) => {
         const mainPicUrl = op?.product?.pictures.find((pic) => pic.isMain)?.url;
         const presignedUrl = mainPicUrl
-          ? await this.objectStorageService.getPresignedUrl(mainPicUrl)
+          ? await this.objectStorageService.getPresignedUrl(
+              mainPicUrl,
+              BUCKET_TARGETS.PRODUCT_PICTURES,
+            )
           : null;
         
         return {
@@ -259,7 +263,10 @@ export class OrderService {
         products.map(async (p) => ({
           ...p,
           picture: p.picture
-            ? await this.objectStorageService.getPresignedUrl(p.picture)
+            ? await this.objectStorageService.getPresignedUrl(
+                p.picture,
+                BUCKET_TARGETS.PRODUCT_PICTURES,
+              )
             : null,
         })),
       );
@@ -507,7 +514,10 @@ export class OrderService {
         products.map(async (p) => ({
           ...p,
           picture: p.picture
-            ? await this.objectStorageService.getPresignedUrl(p.picture)
+            ? await this.objectStorageService.getPresignedUrl(
+                p.picture,
+                BUCKET_TARGETS.PRODUCT_PICTURES,
+              )
             : null,
           price: parseFloat(p.price),
         })),

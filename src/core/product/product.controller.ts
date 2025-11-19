@@ -50,6 +50,7 @@ import { memoryStorage } from 'multer';
 import { UploadingOptions } from 'src/infrastructure/object-storage/types/upload-options.interface';
 import { PresignedUrlInterceptor } from 'src/common/interceptors/presigned-url.interceptor';
 import { ConvertToPresignedUrls } from 'src/common/decorators/convert-to-presigned-urls.decorator';
+import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 import { ProductDto } from './dtos/product/product.dto';
 import { DeleteProductPicturesDto } from './dtos/product/delete-product-pictures.dto';
 import { AdminProductDto } from './dtos/product/admin-product.dto';
@@ -83,7 +84,7 @@ export class ProductController {
    */
   @Get('/all')
   @HttpCode(HttpStatus.OK)
-  @ConvertToPresignedUrls(['url', 'picture'])
+  @ConvertToPresignedUrls(['url', 'picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
   @ApiOperation({
     summary: 'Get all products with pagination, search, and filters',
   })
@@ -109,7 +110,7 @@ export class ProductController {
    * @returns {Promise<Product>} The product with the specified ID.
    */
   @Get(':id')
-  @ConvertToPresignedUrls(['url', 'picture'])
+  @ConvertToPresignedUrls(['url', 'picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
   @ApiOperation({ summary: 'Get product by ID' })
   @ApiOkResponse({
     type: ProductDto,
@@ -408,7 +409,7 @@ export class ProductController {
   })
   @Roles(USER_ROLES.WHOLESELLER, USER_ROLES.ADMIN)
   @Get('wholeseller/all')
-  @ConvertToPresignedUrls(['url', 'picture'])
+  @ConvertToPresignedUrls(['url', 'picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
   getWholesellerProducts(
     @Query() query: FilterProductDto,
     @USER('id') userId: number,
@@ -433,7 +434,7 @@ export class ProductController {
    * @returns {Promise<PaginatedResponse<FavProductDtoRes>>} A paginated list of favorite products.
    */
   @HttpCode(HttpStatus.OK)
-  @ConvertToPresignedUrls(['url', 'picture'])
+  @ConvertToPresignedUrls(['url', 'picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
   @ApiOperation({
     summary: 'Get all favorite products with pagination, search, and filters',
   })
@@ -480,7 +481,7 @@ export class ProductController {
 
   @Get('admin/all')
   @HttpCode(HttpStatus.OK)
-  @ConvertToPresignedUrls(['url', 'picture'])
+  @ConvertToPresignedUrls(['url', 'picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
   @Roles(USER_ROLES.ADMIN)
   @ApiOperation({
     summary: 'Get all products for admin with pagination and search',

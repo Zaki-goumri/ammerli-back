@@ -53,6 +53,7 @@ import { UserDetailForAdminDto } from './dtos/response/user-detail-for-admin.dto
 import { BulkDeleteUserDto } from './dtos/bulk-delete.dto';
 import { PresignedUrlInterceptor } from 'src/common/interceptors/presigned-url.interceptor';
 import { ConvertToPresignedUrls } from 'src/common/decorators/convert-to-presigned-urls.decorator';
+import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 
 @ApiTags('User')
 @ApiBearerAuth()
@@ -75,7 +76,7 @@ export class UserController {
    * @returns {Promise<GetMeDto>} The user's profile information.
    */
   @Get('/me')
-  @ConvertToPresignedUrls(['profilePic'])
+  @ConvertToPresignedUrls(['avatar'], BUCKET_TARGETS.USER_PROFILE)
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiOkResponse({
     description: 'Successfully fetched user profile',
@@ -157,7 +158,7 @@ export class UserController {
     }),
     PresignedUrlInterceptor,
   )
-  @ConvertToPresignedUrls(['profilePic'])
+  @ConvertToPresignedUrls(['avatar'], BUCKET_TARGETS.USER_PROFILE)
   async updateProfilePicture(
     @USER('id') userId: number,
     @UploadedFile() file: Express.Multer.File,
@@ -251,7 +252,7 @@ export class UserController {
    * @returns {Promise<PaginationResponseDto<UserForAdminDto>>} A paginated list of users.
    */
   @Get('/admin/all')
-  @ConvertToPresignedUrls(['profilePic'])
+  @ConvertToPresignedUrls(['avatar'], BUCKET_TARGETS.USER_PROFILE)
   @ApiOperation({ summary: 'Get all users for admin view' })
   @ApiOkResponse({
     description: 'Successfully fetched users for admin view',
@@ -273,7 +274,7 @@ export class UserController {
    * @returns {Promise<UserDetailForAdminDto>} The detailed user information.
    */
   @Get('/admin/:id')
-  @ConvertToPresignedUrls(['profilePic'])
+  @ConvertToPresignedUrls(['avatar'], BUCKET_TARGETS.USER_PROFILE)
   @ApiOperation({ summary: 'Get user details for admin view' })
   @ApiOkResponse({
     description: 'Successfully fetched user details for admin view',

@@ -36,6 +36,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { PresignedUrlInterceptor } from 'src/common/interceptors/presigned-url.interceptor';
 import { ConvertToPresignedUrls } from 'src/common/decorators/convert-to-presigned-urls.decorator';
+import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 
 @ApiTags('categories')
 @ApiBearerAuth()
@@ -47,7 +48,7 @@ export class CategoryController {
 
   @Get('main-categories')
   @HttpCode(HttpStatus.OK)
-  @ConvertToPresignedUrls(['pictureUrl'])
+  @ConvertToPresignedUrls(['pictureUrl'], BUCKET_TARGETS.CATEGORY_PICTURES)
   @ApiOperation({ summary: 'Get all categories' })
   @ApiOkResponse({
     description: 'Returns all categories',
@@ -59,7 +60,7 @@ export class CategoryController {
 
   @Get(':id/children')
   @HttpCode(HttpStatus.OK)
-  @ConvertToPresignedUrls(['pictureUrl'])
+  @ConvertToPresignedUrls(['pictureUrl'], BUCKET_TARGETS.CATEGORY_PICTURES)
   @ApiOperation({ summary: 'Get all children categories' })
   @ApiOkResponse({
     description: 'Returns all children categories',

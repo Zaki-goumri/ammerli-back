@@ -14,6 +14,7 @@ import { InvoiceGeneratorService } from './invoice-generator.service';
 import { OrderForInvoice } from '../interfaces/invoice.interface';
 import { RedisService } from 'nestjs-redis-client';
 import { ConfigService } from '@nestjs/config';
+import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 
 @Injectable()
 export class InvoiceService {
@@ -62,7 +63,7 @@ export class InvoiceService {
    * @param targetId - The ID of the invoice.
    * @param objectName - The name of the uploaded PDF file in object storage.
    */
-  @OnEvent('file.uploaded.invoice')
+  @OnEvent(`file.uploaded.${BUCKET_TARGETS.INVOICES}`)
   async handleInvoiceUploaded({
     targetId,
     objectName,
@@ -93,6 +94,7 @@ export class InvoiceService {
         if (invoice.pdfUrl) {
           invoice.pdfUrl = await this.objectStorageService.getPresignedUrl(
             invoice.pdfUrl,
+            BUCKET_TARGETS.INVOICES,
           );
         }
         return invoice;
@@ -122,6 +124,7 @@ export class InvoiceService {
     if (invoice.pdfUrl) {
       invoice.pdfUrl = await this.objectStorageService.getPresignedUrl(
         invoice.pdfUrl,
+        BUCKET_TARGETS.INVOICES,
       );
     }
 
@@ -151,6 +154,7 @@ export class InvoiceService {
     if (invoice.pdfUrl) {
       invoice.pdfUrl = await this.objectStorageService.getPresignedUrl(
         invoice.pdfUrl,
+        BUCKET_TARGETS.INVOICES,
       );
     }
 
@@ -171,6 +175,7 @@ export class InvoiceService {
         if (invoice.pdfUrl) {
           invoice.pdfUrl = await this.objectStorageService.getPresignedUrl(
             invoice.pdfUrl,
+            BUCKET_TARGETS.INVOICES,
           );
         }
         return invoice;
@@ -199,7 +204,10 @@ export class InvoiceService {
     const objectName = this.objectStorageService.getFileNameFromUrl(
       invoice.pdfUrl,
     );
-    const pdfBuffer = await this.objectStorageService.getFile(objectName);
+    const pdfBuffer = await this.objectStorageService.getFile(
+      objectName,
+      BUCKET_TARGETS.INVOICES,
+    );
 
     await this.redisService.set(
       cacheKey,
@@ -269,7 +277,10 @@ export class InvoiceService {
     );
     await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
       file,
-      metadata: { targetId: invoice.id.toString(), targetType: 'invoice' },
+      metadata: {
+        targetId: invoice.id.toString(),
+        targetType: BUCKET_TARGETS.INVOICES,
+      },
     });
 
     await this.invalidateInvoiceCache(invoice);

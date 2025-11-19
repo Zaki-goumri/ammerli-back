@@ -17,6 +17,7 @@ import { FinalizePayloadDto } from 'src/infrastructure/queue/upload/dto/finalize
 import { CreateCategoryDto } from '../dtos/category/create-category.dto';
 import { CategoryResDto } from '../dtos/category/category.res.dto';
 import { Product } from '../entities/product.entity';
+import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 
 @Injectable()
 export class CategoryService {
@@ -43,6 +44,7 @@ export class CategoryService {
         if (c.pictureUrl) {
           presignedUrl = await this.objectStorageService.getPresignedUrl(
             c.pictureUrl,
+            BUCKET_TARGETS.CATEGORY_PICTURES,
           );
         }
         return {
@@ -66,6 +68,7 @@ export class CategoryService {
         if (c.pictureUrl) {
           presignedUrl = await this.objectStorageService.getPresignedUrl(
             c.pictureUrl,
+            BUCKET_TARGETS.CATEGORY_PICTURES,
           );
         }
         return {
@@ -94,11 +97,16 @@ export class CategoryService {
     await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
       file: picutre,
       options: { objectName },
-      metadata: { targetId: newCategory.id, targetType: 'category_picture' },
+      metadata: {
+        targetId: newCategory.id,
+        targetType: BUCKET_TARGETS.CATEGORY_PICTURES,
+      },
     });
 
-    const presignedUrl =
-      await this.objectStorageService.getPresignedUrl(objectName);
+    const presignedUrl = await this.objectStorageService.getPresignedUrl(
+      objectName,
+      BUCKET_TARGETS.CATEGORY_PICTURES,
+    );
 
     return {
       id: newCategory.id,
@@ -127,13 +135,24 @@ export class CategoryService {
       await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
         file: newPicture,
         options: { objectName },
-        metadata: { targetId: id, targetType: 'category_picture' },
+        metadata: {
+          targetId: id,
+          targetType: BUCKET_TARGETS.CATEGORY_PICTURES,
+        },
       });
 
       if (category.pictureUrl) {
         await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
-          objectUrls: [category.pictureUrl],
-          metadata: { targetId: id, targetType: 'category_picture' },
+          files: [
+            {
+              objectName: category.pictureUrl,
+              bucketName: BUCKET_TARGETS.CATEGORY_PICTURES,
+            },
+          ],
+          metadata: {
+            targetId: id,
+            targetType: BUCKET_TARGETS.CATEGORY_PICTURES,
+          },
         });
       }
     }
@@ -163,8 +182,16 @@ export class CategoryService {
     await this.categoryRepo.softDelete(id);
     if (category.pictureUrl) {
       await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
-        objectUrls: [category.pictureUrl],
-        metadata: { targetId: id, targetType: 'category_picture' },
+        files: [
+          {
+            objectName: category.pictureUrl,
+            bucketName: BUCKET_TARGETS.CATEGORY_PICTURES,
+          },
+        ],
+        metadata: {
+          targetId: id,
+          targetType: BUCKET_TARGETS.CATEGORY_PICTURES,
+        },
       });
     }
     return { message: 'Category soft deleted successfully' };
@@ -174,7 +201,7 @@ export class CategoryService {
     await this.categoryRepo.update(id, { pictureUrl: undefined });
   }
 
-  @OnEvent('file.failed.category_picture', { async: true })
+  @OnEvent(`file.failed.${BUCKET_TARGETS.CATEGORY_PICTURES}`, { async: true })
   async handlePictureUpload(payload: FinalizePayloadDto): Promise<void> {
     this.logger.log(
       `Handling failed upload for category picture, target ID: ${payload.targetId}`,

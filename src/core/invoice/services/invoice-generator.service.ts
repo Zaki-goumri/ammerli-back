@@ -1,3 +1,4 @@
+import { Readable } from 'stream';
 import {
   Injectable,
   InternalServerErrorException,
@@ -18,6 +19,7 @@ import { Order } from 'src/core/order/entities/order.entity';
 import { Repository } from 'typeorm';
 import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
 import { PaymentMethodType } from 'src/core/order/enums/payment-method.enum';
+import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 
 const DELIVERY_ESTIMATION_DAYS = 2;
 
@@ -68,11 +70,21 @@ export class InvoiceGeneratorService implements OnModuleInit {
     const pdfBuffer = await this.generateInvoicePDF(invoiceData);
 
     const invoiceFileName = `invoice-${orderId}-${Date.now()}.pdf`;
-    const invoicePath = await this.objectService.uploadFile({
-      buffer: pdfBuffer,
+    const file: Express.Multer.File = {
+      fieldname: 'file',
       originalname: invoiceFileName,
+      encoding: '7bit',
       mimetype: 'application/pdf',
+      buffer: pdfBuffer,
       size: pdfBuffer.length,
+      stream: Readable.from(pdfBuffer),
+      destination: '',
+      filename: '',
+      path: '',
+    };
+
+    const invoicePath = await this.objectService.uploadFile(file, {
+      bucketName: BUCKET_TARGETS.INVOICES as string,
     });
 
     return { invoicePath: invoicePath.fileUrl, buyerId: order.buyer.id };

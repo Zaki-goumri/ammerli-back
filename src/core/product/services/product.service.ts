@@ -30,6 +30,7 @@ import { Cron } from '@nestjs/schedule';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { NOTIFICATION_TYPE } from '../../notifications/enums/notification-type.enum';
 import { AdminProductDto } from '../dtos/product/admin-product.dto';
+import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 
 @Injectable()
 export class ProductService {
@@ -159,6 +160,7 @@ export class ProductService {
         if (product.mainpicture) {
           product.mainPicture = await this.objectService.getPresignedUrl(
             product.mainpicture,
+            BUCKET_TARGETS.PRODUCT_PICTURES,
           );
         }
         delete product.mainpicture;
@@ -320,6 +322,7 @@ export class ProductService {
     if (product?.category?.pictureUrl) {
       categoryPictureUrl = await this.objectService.getPresignedUrl(
         product.category.pictureUrl,
+        BUCKET_TARGETS.CATEGORY_PICTURES,
       );
     }
 
@@ -327,7 +330,10 @@ export class ProductService {
       product.pictures
         .filter((pic) => pic.url)
         .map(async (pic) => {
-          return this.objectService.getPresignedUrl(pic.url as string);
+          return this.objectService.getPresignedUrl(
+            pic.url as string,
+            BUCKET_TARGETS.PRODUCT_PICTURES,
+          );
         }),
     );
 
@@ -402,7 +408,7 @@ export class ProductService {
         options: uploadOptions,
         metadata: {
           targetId: id,
-          targetType: 'product_picture',
+          targetType: BUCKET_TARGETS.PRODUCT_PICTURES,
         },
       });
     }
@@ -446,8 +452,14 @@ export class ProductService {
 
     if (pictureUrls.length > 0) {
       await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
-        objectUrls: pictureUrls,
-        metadata: { targetId: productId, targetType: 'product_picture' },
+        files: pictureUrls.map((url) => ({
+          objectName: url,
+          bucketName: BUCKET_TARGETS.PRODUCT_PICTURES,
+        })),
+        metadata: {
+          targetId: productId.toString(),
+          targetType: BUCKET_TARGETS.PRODUCT_PICTURES,
+        },
       });
     }
     return {
@@ -538,7 +550,10 @@ export class ProductService {
     const productsWithPresignedUrls = await Promise.all(
       productsRaw.map(async (p) => {
         if (p.picture) {
-          p.picture = await this.objectService.getPresignedUrl(p.picture);
+          p.picture = await this.objectService.getPresignedUrl(
+            p.picture,
+            BUCKET_TARGETS.PRODUCT_PICTURES,
+          );
         }
         return p;
       }),
@@ -651,7 +666,10 @@ export class ProductService {
     const productsWithPresignedUrls = await Promise.all(
       productsRaw.map(async (p) => {
         if (p.picture) {
-          p.picture = await this.objectService.getPresignedUrl(p.picture);
+          p.picture = await this.objectService.getPresignedUrl(
+            p.picture,
+            BUCKET_TARGETS.PRODUCT_PICTURES,
+          );
         }
         return p;
       }),
@@ -754,7 +772,7 @@ export class ProductService {
           options: uploadOptions,
           metadata: {
             targetId: productId,
-            targetType: 'product_picture',
+            targetType: BUCKET_TARGETS.PRODUCT_PICTURES,
           },
         }),
       ),

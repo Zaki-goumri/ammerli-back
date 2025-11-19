@@ -1,6 +1,4 @@
-import { FinalizePayloadDto } from './finalize-payload.dto';
-
 export class DeleteFilesBulkDto {
-  objectUrls: string[];
-  metadata?: FinalizePayloadDto;
+  files: { objectName: string; bucketName: string }[];
+  metadata?: { targetId: string; targetType: string };
 }

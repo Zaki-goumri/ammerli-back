@@ -22,14 +22,16 @@ interface SerializedBuffer {
 @Injectable()
 export class ObjectService implements ObjectStorageService {
   private readonly logger = new Logger(ObjectService.name);
-  private readonly bucketName = this.config.bucket;
+  private readonly defaultBucket: string;
 
   constructor(
     @Inject(minioConfig.KEY)
     private readonly config: ConfigType<typeof minioConfig>,
     @Inject(MINIO_CLIENT)
     private readonly minioClient: Minio.Client,
-  ) {}
+  ) {
+    this.defaultBucket = this.config.bucket;
+  }
 
   async uploadFile(
     file: {
@@ -47,9 +49,9 @@ export class ObjectService implements ObjectStorageService {
     if (Buffer.isBuffer(file.buffer)) {
       fileBuffer = file.buffer;
     } else {
-      const serializedBuffer = file.buffer;
+      const serializedBuffer = file.buffer as SerializedBuffer;
       if (
-        serializedBuffer.type == 'Buffer' &&
+        serializedBuffer.type === 'Buffer' &&
         Array.isArray(serializedBuffer.data)
       ) {
         fileBuffer = Buffer.from(serializedBuffer.data);
@@ -61,9 +63,12 @@ export class ObjectService implements ObjectStorageService {
         throw new BadRequestException('File buffer is corrupted or invalid.');
       }
     }
+
+    const bucketName = options?.bucketName ?? this.defaultBucket;
     this.logger.log(
-      `Uploading file to MinIO: ${file.originalname} in bucket ${this.bucketName}`,
+      `Uploading file to MinIO: ${file.originalname} in bucket ${bucketName}`,
     );
+
     const objectName =
       options?.objectName || this.generateUniqueObjectName(file.originalname);
 
@@ -71,16 +76,17 @@ export class ObjectService implements ObjectStorageService {
       'Content-Type': file.mimetype,
       'X-Amz-Meta-Original-Name': encodeURIComponent(file.originalname),
     };
+
     try {
       await this.minioClient.putObject(
-        options?.bucketName ?? this.bucketName,
+        bucketName,
         objectName,
         fileBuffer,
         file.size,
         metaData,
       );
 
-      const fileUrl = this.getFileUrl(objectName);
+      const fileUrl = this.getFileUrl(objectName, bucketName);
       this.logger.log(`File uploaded successfully: ${fileUrl}`);
       return {
         message: 'File uploaded to MinIO successfully.',
@@ -88,30 +94,37 @@ export class ObjectService implements ObjectStorageService {
         objectName,
       };
     } catch (error) {
-      this.logger.error(`Error uploading file to MinIO: ${error}`);
+      this.logger.error(`Error uploading file to MinIO: ${error.message}`, {
+        stack: error.stack,
+        bucketName,
+        objectName,
+      });
       throw new BadRequestException('Failed to upload file to MinIO.');
     }
   }
 
-  async deleteFile(objectUrl: string): Promise<void> {
+  async deleteFile(objectName: string, bucketName: string): Promise<void> {
     try {
-      const objectName = this.getFileNameFromUrl(objectUrl);
       this.logger.log(
-        `Attempting to delete object: ${objectName} from bucket ${this.bucketName}`,
+        `Attempting to delete object: ${objectName} from bucket ${bucketName}`,
       );
-      await this.minioClient.removeObject(this.bucketName, objectName);
+      await this.minioClient.removeObject(bucketName, objectName);
       this.logger.log(`Successfully deleted object: ${objectName}`);
     } catch (error) {
       this.logger.error(
-        `MinIO deletion failed for object ${objectUrl}: ${error.message}`,
+        `MinIO deletion failed for object ${objectName} in bucket ${bucketName}: ${error.message}`,
         error.stack,
       );
     }
   }
 
-  async deleteBulkFiles(objectUrls: string[]): Promise<void> {
-    this.logger.log(`Attempting to delete ${objectUrls.length} files in bulk.`);
-    await Promise.allSettled(objectUrls.map((url) => this.deleteFile(url)));
+  async deleteBulkFiles(
+    files: { objectName: string; bucketName: string }[],
+  ): Promise<void> {
+    this.logger.log(`Attempting to delete ${files.length} files in bulk.`);
+    await Promise.allSettled(
+      files.map((file) => this.deleteFile(file.objectName, file.bucketName)),
+    );
     this.logger.log('Bulk file deletion process completed.');
   }
 
@@ -122,26 +135,31 @@ export class ObjectService implements ObjectStorageService {
     return `${timestamp}-${randomBytes}-${sanitizedOriginalName}`;
   }
 
-  getFileUrl(fileName: string): string {
+  getFileUrl(fileName: string, bucketName: string): string {
     const publicHost = this.config.publicUrl;
-    const protocol = this.config.useSSL ? 'http' : 'http';
-    return `${protocol}://${publicHost}/${this.bucketName}/${fileName}`;
+    const protocol = this.config.useSSL ? 'https' : 'http';
+    return `${protocol}://${publicHost}/${bucketName}/${fileName}`;
   }
 
-  async getPresignedUrl(objectName: string): Promise<string> {
+  async getPresignedUrl(
+    objectName: string,
+    bucketName: string,
+  ): Promise<string> {
     if (!objectName) {
       return '';
     }
 
     try {
       const presignedUrl = await this.minioClient.presignedGetObject(
-        this.bucketName,
+        bucketName,
         objectName,
         7 * 24 * 60 * 60, // 7 days
       );
 
+      // This part seems to replace the internal MinIO URL with the public one.
+      // It might need adjustment if the public URL format is different.
       const publicHost = this.config.publicUrl;
-      const customBase = 'https://' + publicHost + '/' + this.bucketName;
+      const customBase = `https://${publicHost}/${bucketName}`;
       const cleanUrl = presignedUrl.replace(
         /https?:\/\/minio:9000\/[^/]+/,
         customBase,
@@ -150,7 +168,7 @@ export class ObjectService implements ObjectStorageService {
       return cleanUrl;
     } catch (error) {
       this.logger.error(
-        `Failed to generate presigned URL for ${objectName}`,
+        `Failed to generate presigned URL for ${objectName} in bucket ${bucketName}`,
         error.stack,
       );
       throw new InternalServerErrorException(
@@ -173,15 +191,20 @@ export class ObjectService implements ObjectStorageService {
   }
 
   getFileNameFromUrl(url: string): string {
-    return url.split('/').pop() || '';
+    try {
+      const parsedUrl = new URL(url);
+      const pathParts = parsedUrl.pathname.split('/');
+      return pathParts[pathParts.length - 1] || '';
+    } catch (error) {
+      // Fallback for cases where the input is not a full URL but just a path or object name
+      const pathParts = url.split('/');
+      return pathParts[pathParts.length - 1] || '';
+    }
   }
 
-  async getFile(objectName: string): Promise<Buffer> {
+  async getFile(objectName: string, bucketName: string): Promise<Buffer> {
     try {
-      const stream = await this.minioClient.getObject(
-        this.bucketName,
-        objectName,
-      );
+      const stream = await this.minioClient.getObject(bucketName, objectName);
       const chunks: Buffer[] = [];
       for await (const chunk of stream) {
         chunks.push(chunk as Buffer);
@@ -189,10 +212,11 @@ export class ObjectService implements ObjectStorageService {
       return Buffer.concat(chunks);
     } catch (error) {
       this.logger.error(
-        `Failed to get file ${objectName} from MinIO`,
+        `Failed to get file ${objectName} from MinIO in bucket ${bucketName}`,
         error.stack,
       );
       throw new InternalServerErrorException('Failed to retrieve file.');
     }
   }
 }
+

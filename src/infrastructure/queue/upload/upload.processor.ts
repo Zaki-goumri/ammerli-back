@@ -38,14 +38,15 @@ export class UploadProcessor extends WorkerHost {
       case UPLOAD_JOBS.DELETE_FILE:
         this.logger.log(`Processing delete file job: ${job.id}`);
         const deleteData = job.data as DeleteFileDto;
-        await this.objectStorageService.deleteFile(deleteData.objectName);
+        await this.objectStorageService.deleteFile(
+          deleteData.objectName,
+          deleteData.bucketName,
+        );
         return { message: 'File deleted', jobId: job.id };
       case UPLOAD_JOBS.DELETE_FILES_BULK:
         this.logger.log(`Processing bulk delete files job: ${job.id}`);
         const deleteBulkData = job.data as DeleteFilesBulkDto;
-        await this.objectStorageService.deleteBulkFiles(
-          deleteBulkData.objectUrls,
-        );
+        await this.objectStorageService.deleteBulkFiles(deleteBulkData.files);
         return { message: 'Bulk files deleted', jobId: job.id };
       case UPLOAD_JOBS.UPLOAD_FILES_BULK:
         this.logger.log(`Processing bulk upload files job: ${job.id}`);
@@ -57,16 +58,22 @@ export class UploadProcessor extends WorkerHost {
 
   async handleUploading(data: UploadJobDto): Promise<FinalizePayloadDto> {
     this.logger.log('Handling uploading...');
-    const result = await this.objectStorageService.uploadFile(
-      data.file,
-      data.options,
-    );
+    const bucketName = data.metadata?.targetType;
+    if (!bucketName) {
+      this.logger.error(`Job is missing targetType in metadata`);
+      throw new Error(`Job is missing targetType in metadata`);
+    }
+    const result = await this.objectStorageService.uploadFile(data.file, {
+      ...data.options,
+      bucketName,
+    });
     this.logger.log('Uploading handled...');
     return {
       fileUrl: result.fileUrl,
       objectName: result.objectName,
       targetId: data?.metadata?.targetId,
       targetType: data?.metadata?.targetType,
+      bucketName: bucketName,
     };
   }
 
@@ -74,9 +81,17 @@ export class UploadProcessor extends WorkerHost {
     data: UploadFilesBulkDto,
   ): Promise<FinalizePayloadDto[]> {
     this.logger.log('Handling bulk uploading...');
+    const bucketName = data.metadata?.targetType;
+    if (!bucketName) {
+      this.logger.error(`Job is missing targetType in metadata`);
+      throw new Error(`Job is missing targetType in metadata`);
+    }
     const results = await this.objectStorageService.uploadBulkFiles(
       data.files,
-      data.options,
+      {
+        ...data.options,
+        bucketName,
+      },
     );
     this.logger.log('Bulk uploading handled.');
     return results.map((result) => ({
@@ -84,6 +99,7 @@ export class UploadProcessor extends WorkerHost {
       objectName: result.objectName,
       targetId: data?.metadata?.targetId ?? 0,
       targetType: data?.metadata?.targetType ?? 'unknown',
+      bucketName: bucketName,
     }));
   }
 

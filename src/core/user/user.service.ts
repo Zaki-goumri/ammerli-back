@@ -40,6 +40,7 @@ import { forkJoin, from, lastValueFrom, Observable, of } from 'rxjs';
 import { catchError, map, retry } from 'rxjs/operators';
 import { NOTIFICATION_TYPE } from '../notifications/enums/notification-type.enum';
 import { MessageDto } from './dtos/response/message.dto';
+import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 
 /**
  * @class UserService
@@ -178,6 +179,7 @@ export class UserService {
     if (user.profilePic) {
       user.profilePic = await this.objectService.getPresignedUrl(
         user.profilePic,
+        BUCKET_TARGETS.USER_PROFILE,
       );
     }
 
@@ -227,6 +229,7 @@ export class UserService {
     if (user.profilePic) {
       user.profilePic = await this.objectService.getPresignedUrl(
         user.profilePic,
+        BUCKET_TARGETS.USER_PROFILE,
       );
     }
 
@@ -308,6 +311,7 @@ export class UserService {
     if (user.profilePic) {
       presignedProfilePic = await this.objectService.getPresignedUrl(
         user.profilePic,
+        BUCKET_TARGETS.USER_PROFILE,
       );
     }
 
@@ -410,8 +414,13 @@ export class UserService {
 
     if (user.profilePic) {
       await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
-        objectUrls: [user.profilePic],
-        metadata: { targetId: id, targetType: 'user_picture' },
+        files: [
+          {
+            objectName: user.profilePic,
+            bucketName: BUCKET_TARGETS.USER_PROFILE,
+          },
+        ],
+        metadata: { targetId: id, targetType: BUCKET_TARGETS.USER_PROFILE },
       });
     }
     return { message: 'User soft deleted successfully' };
@@ -465,6 +474,7 @@ export class UserService {
         from(
           this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILE, {
             objectName: pic,
+            bucketName: BUCKET_TARGETS.USER_PROFILE,
           }),
         ).pipe(retry(3)),
       );
@@ -567,12 +577,23 @@ export class UserService {
     await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
       file: profilePic,
       options: { objectName },
-      metadata: { targetId: userId, targetType: 'user_picture' },
+      metadata: {
+        targetId: userId,
+        targetType: BUCKET_TARGETS.USER_PROFILE,
+      },
     });
     if (user.profilePic)
       await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
-        objectUrls: [user.profilePic],
-        metadata: { targetId: userId, targetType: 'user_picture' },
+        files: [
+          {
+            objectName: user.profilePic,
+            bucketName: BUCKET_TARGETS.USER_PROFILE,
+          },
+        ],
+        metadata: {
+          targetId: userId,
+          targetType: BUCKET_TARGETS.USER_PROFILE,
+        },
       });
     await this.redisService.del(UserService.getCacheKey(userId, 'id'));
     await this.redisService.del(
@@ -599,7 +620,7 @@ export class UserService {
    * @param {FinalizePayloadDto} payload - The payload containing information about the failed upload.
    * @returns {Promise<void>}
    */
-  @OnEvent('file.failed.user_picture', { async: true })
+  @OnEvent(`file.failed.${BUCKET_TARGETS.USER_PROFILE}`, { async: true })
   async finalizeUser(payload: FinalizePayloadDto) {
     this.logger.log(
       `Finalizing user profile pic upload for user ID: ${payload.targetId}`,

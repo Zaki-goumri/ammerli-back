@@ -1,4 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { BUCKET_TARGETS } from 'src/common/constants/buckets';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order } from '../order/entities/order.entity';
@@ -253,7 +258,10 @@ export class AnalyticsService {
         productId: item.productId,
         totalQuantity: parseInt(item.total_quantity, 10),
         productImage: item.product_image
-          ? await this.objectStorageService.getPresignedUrl(item.product_image)
+          ? await this.objectStorageService.getPresignedUrl(
+              item.product_image,
+              BUCKET_TARGETS.PRODUCT_PICTURES,
+            )
           : null,
       })),
     );
