@@ -34,16 +34,33 @@ async function bootstrap() {
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", 'https://cdn.jsdelivr.net', "'unsafe-inline'"], // Added unsafe-inline for Scalar
-          styleSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'],
-          fontSrc: ["'self'", 'https://cdn.jsdelivr.net'],
+          scriptSrc: [
+            "'self'",
+            "'unsafe-inline'",
+            "'unsafe-eval'",
+            'https://cdn.jsdelivr.net',
+            'https://unpkg.com',
+          ],
+          styleSrc: [
+            "'self'",
+            "'unsafe-inline'",
+            'https://cdn.jsdelivr.net',
+            'https://fonts.googleapis.com',
+          ],
+          fontSrc: [
+            "'self'",
+            'https://cdn.jsdelivr.net',
+            'https://fonts.gstatic.com',
+          ],
           imgSrc: ["'self'", 'data:', 'https:'],
           connectSrc: ["'self'"],
+          workerSrc: ["'self'", 'blob:'],
+          childSrc: ["'self'", 'blob:'],
         },
       },
+      crossOriginEmbedderPolicy: false,
     }),
   );
-
   //INTERCEPTORS
   app.useGlobalInterceptors(
     new LoggerInterceptor(),
