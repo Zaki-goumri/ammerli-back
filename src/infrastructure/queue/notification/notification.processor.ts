@@ -48,15 +48,10 @@ export class NotificationProcessor extends WorkerHost {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
     switch (job.name) {
       case NOTIFICATION_JOBS.SEND_NOTIFICATION:
-        this.logger.log(`Processing log event job: ${job.id}`);
+        this.logger.log(`Processing notification job: ${job.id}`);
         await this.handleSendingNotification(job.data as SendNotificationJob);
         return Promise.resolve({
-          message: 'Bulk notification job processed',
-          jobId: job.id,
-        });
-      default:
-        return Promise.resolve({
-          message: 'Unknown job processed',
+          message: 'Notification job processed',
           jobId: job.id,
         });
 
@@ -77,11 +72,20 @@ export class NotificationProcessor extends WorkerHost {
           response,
         });
       }
+
+      default:
+        this.logger.warn(`Unknown job type: ${job.name}`);
+        return Promise.resolve({
+          message: 'Unknown job processed',
+          jobId: job.id,
+        });
     }
   }
 
   sendNotificationToOneDevice(message: NotificationMessage): Promise<string> {
-    this.logger.log(`Sending notification to token: ${message.token}`);
+    this.logger.log(
+      `Sending notification to token: ${message.token.substring(0, 20)}...`,
+    );
     return this.firebaseService.getFcm().send(message);
   }
 
@@ -90,6 +94,12 @@ export class NotificationProcessor extends WorkerHost {
     const tokens = await this.notificationsService.getActiveTokensForUser(
       data.userId,
     );
+
+    if (tokens.length === 0) {
+      this.logger.warn(`No active tokens found for user ${data.userId}`);
+      return;
+    }
+
     const messages = tokens.map((token) => ({
       notification: {
         title: data.title,
@@ -151,20 +161,40 @@ export class NotificationProcessor extends WorkerHost {
   }
 
   @OnWorkerEvent('completed')
-  async onCompleted(job: Job<SendNotificationJob>) {
-    this.logger.log(`Job completed: ${job.id}`);
-    const { title, body, userId, type } = job.data;
-    await this.notificationsService.saveNotificationRecord(
-      title,
-      body,
-      userId,
-      type,
-    );
-    this.logger.log(`Notification saved to DB for job ${job.id}`);
+  async onCompleted(job: Job<SendNotificationJob | TestNotificationJob>) {
+    // Skip saving test notifications to database
+    if (job.name === NOTIFICATION_JOBS.SEND_TEST_NOTIFICATION) {
+      this.logger.log(
+        `Test notification job completed: ${job.id} (not saved to DB)`,
+      );
+      return;
+    }
+
+    // Only save regular notifications
+    if (job.name === NOTIFICATION_JOBS.SEND_NOTIFICATION) {
+      this.logger.log(`Job completed: ${job.id}`);
+      const { title, body, userId, type } = job.data as SendNotificationJob;
+      await this.notificationsService.saveNotificationRecord(
+        title,
+        body,
+        userId,
+        type,
+      );
+      this.logger.log(`Notification saved to DB for job ${job.id}`);
+    }
   }
 
   @OnWorkerEvent('failed')
-  onFailed(job: Job) {
-    this.logger.log(`Job failed: ${job.id}`);
+  onFailed(job: Job<SendNotificationJob | TestNotificationJob>) {
+    // Skip logging for test notification failures (if needed)
+    if (job.name === NOTIFICATION_JOBS.SEND_TEST_NOTIFICATION) {
+      this.logger.error(
+        `Test notification job failed: ${job.id} - ${job.failedReason}`,
+      );
+      return;
+    }
+
+    // Log regular notification failures
+    this.logger.error(`Job failed: ${job.id} - ${job.failedReason}`);
   }
 }
