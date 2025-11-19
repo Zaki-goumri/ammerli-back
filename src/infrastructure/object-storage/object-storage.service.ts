@@ -149,10 +149,15 @@ export class ObjectService implements ObjectStorageService {
       return '';
     }
     try {
-      const presignedUrl = await this.minioClient.presignedGetObject(
+      let presignedUrl = await this.minioClient.presignedGetObject(
         bucketName,
         objectName,
         7 * 24 * 60 * 60, // 7 days
+      );
+
+      presignedUrl = presignedUrl.replace(
+        /https?:\/\/minio:9000\//,
+        'https://storage.ammerli.com/',
       );
 
       this.logger.log(
