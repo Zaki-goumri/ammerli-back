@@ -86,7 +86,7 @@ export class ObjectService implements ObjectStorageService {
         metaData,
       );
 
-      const fileUrl = this.getFileUrl(objectName, bucketName);
+      const fileUrl = await this.getPresignedUrl(objectName, bucketName);
       this.logger.log(`File uploaded successfully: ${fileUrl}`);
       return {
         message: 'File uploaded to MinIO successfully.',
