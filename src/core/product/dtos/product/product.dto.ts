@@ -36,4 +36,10 @@ export class ProductDto {
 
   @ApiProperty()
   loveCount?: number;
+
+  @ApiProperty({
+    example: 12,
+    description: 'quantity Per Batch of the product',
+  })
+  quantityPerBatch: number;
 }

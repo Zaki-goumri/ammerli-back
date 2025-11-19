@@ -44,8 +44,8 @@ export class ProductResDto {
   picture: string;
 
   @ApiProperty({
-    example: 10,
-    description: 'Number of buyers for the product',
+    example: 12,
+    description: 'quantity Per Batch of the product',
   })
-  buyerCount: number;
+  quantityPerBatch: number;
 }

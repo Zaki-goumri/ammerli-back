@@ -189,7 +189,6 @@ export class ProductService {
     const { page, limit } = paginationQuery;
     const offset = (page - 1) * limit;
 
-    // First, get paginated product IDs
     const productIdsQuery = this.productRepo
       .createQueryBuilder('product')
       .leftJoin('product.brand', 'brand')
@@ -235,7 +234,6 @@ export class ProductService {
 
     const productIds = paginatedIds.map((p) => p.id);
 
-    // Now fetch full data for these product IDs
     const queryBuilder = this.productRepo
       .createQueryBuilder('product')
       .leftJoin('product.brand', 'brand')
@@ -247,27 +245,16 @@ export class ProductService {
         { userId },
       )
       .leftJoin('product.pictures', 'mainPicture', 'mainPicture.isMain = TRUE')
-      .leftJoin('order_products', 'op', 'op.productId = product.id')
-      .leftJoin(
-        'op.order',
-        'order',
-        'order.id = op.orderId AND order.isCancelled = FALSE',
-      )
-      .leftJoin(
-        'checkouts',
-        'checkout',
-        'checkout."orderId" = order.id AND checkout.isPaid = TRUE',
-      )
       .where('product.id IN (:...productIds)', { productIds })
       .select([
         'product.id AS id',
         'product.name AS name',
+        'product.quantityPerBatch as quantityPerBatch',
         'mainPicture.url AS picture',
         'product.price AS price',
         'brand.label AS brand',
         'category.label AS category',
         'product.createdAt AS createdAt',
-        'COUNT(DISTINCT "order"."buyerId") AS "buyerCount"',
         'CASE WHEN fav_products.id IS NOT NULL THEN true ELSE false END AS "isLoved"',
       ])
       .groupBy('product.id')
@@ -288,7 +275,6 @@ export class ProductService {
       category: p?.category,
       picture: p?.picture,
       isLoved: p?.isLoved,
-      buyerCount: parseInt(p?.buyerCount || '0', 10),
     }));
 
     return {
@@ -317,43 +303,22 @@ export class ProductService {
       where: { productId: id },
     });
 
-    console.debug(product);
-    let categoryPictureUrl = '';
-    if (product?.category?.pictureUrl) {
-      categoryPictureUrl = await this.objectService.getPresignedUrl(
-        product.category.pictureUrl,
-        BUCKET_TARGETS.CATEGORY_PICTURES,
-      );
-    }
-
-    const picturesUrls = await Promise.all(
-      product.pictures
-        .filter((pic) => pic.url)
-        .map(async (pic) => {
-          return this.objectService.getPresignedUrl(
-            pic.url as string,
-            BUCKET_TARGETS.PRODUCT_PICTURES,
-          );
-        }),
-    );
-
     return {
-      id: product.id,
-      name: product.name,
-      description: product.description ?? null,
-      price: product.price,
-      quantity: product.quantity,
+      id: product?.id,
+      name: product?.name,
+      description: product?.description ?? null,
+      price: product?.price,
+      quantity: product?.quantity,
       loveCount,
-      brand: product.brand.label,
+      quantityPerBatch: product?.quantityPerBatch,
+      brand: product?.brand?.label,
       category: {
         label: product?.category?.label,
-        picture: categoryPictureUrl,
+        picture: product?.category?.pictureUrl,
       },
-      pictures: picturesUrls ?? [],
+      pictures: product?.pictures.map((pic) => pic?.url) ?? [],
     };
   }
-
-  async initiateQueuedCreation() {}
 
   async create(
     dto: CreateProductDto,
