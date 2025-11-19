@@ -19,7 +19,6 @@ export class LoggerBuilder {
 
   build(): LoggerService {
     const transports: winston.transport[] = [
-      // Console transport - always enabled
       new winston.transports.Console({
         format: winston.format.combine(
           winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
@@ -36,14 +35,13 @@ export class LoggerBuilder {
       }),
     ];
 
-    // Add Loki transport only in staging/production
-    if (process.env.ENV === 'STAGING' || process.env.ENV === 'PRODUCTION') {
+    if (process.env.NODE_ENV === 'staging' || process.env.ENV === 'prod') {
       transports.push(
         new LokiTransport({
           host: process.env.LOKI_HOST || 'http://loki:3100',
           labels: {
             job: this.jobName || 'nestjs-app',
-            environment: this.environment || process.env.ENV || 'development',
+            environment: this.environment || process.env.NODE_ENV || 'dev',
             service: 'core',
           },
           json: true,

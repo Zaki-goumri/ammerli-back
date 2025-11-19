@@ -14,10 +14,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
     logger:
-      process.env.ENV === 'staging' || process.env.ENV === 'prod'
+      process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'prod'
         ? new LoggerBuilder()
             .setJobName('core')
-            .setEnvironment(process.env.ENV)
+            .setEnvironment(process.env.NODE_ENV)
             .build()
         : ['log', 'error', 'warn', 'debug', 'verbose'],
   });
