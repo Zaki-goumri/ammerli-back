@@ -320,6 +320,8 @@ export class ProductService {
     };
   }
 
+  async initiateQueuedCreation() {}
+
   async create(
     dto: CreateProductDto,
     sellerId: number,

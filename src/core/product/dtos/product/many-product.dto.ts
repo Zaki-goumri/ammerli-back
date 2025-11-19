@@ -42,10 +42,4 @@ export class ProductResDto {
     description: 'URL of the main picture of the product',
   })
   picture: string;
-
-  @ApiProperty({
-    example: 12,
-    description: 'quantity Per Batch of the product',
-  })
-  quantityPerBatch: number;
 }
