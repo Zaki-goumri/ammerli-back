@@ -84,7 +84,7 @@ export class ProductController {
    */
   @Get('/all')
   @HttpCode(HttpStatus.OK)
-  @ConvertToPresignedUrls(['url', 'picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
+  @ConvertToPresignedUrls(['pictures'], BUCKET_TARGETS.PRODUCT_PICTURES)
   @ApiOperation({
     summary: 'Get all products with pagination, search, and filters',
   })
