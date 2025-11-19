@@ -1,12 +1,13 @@
-import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import * as Minio from 'minio';
 import minioConfig from 'src/config/minio.config';
-import { MINIO_CLIENT } from './minio.module';
+import { MINIO_CLIENT } from '../../minio/minio.module';
+import { StorageInitializer } from './storage-initializer.interface';
 
 @Injectable()
-export class MinioInitService implements OnModuleInit {
-  private readonly logger = new Logger(MinioInitService.name);
+export class MinioInitializerService implements StorageInitializer {
+  private readonly logger = new Logger(MinioInitializerService.name);
 
   constructor(
     @Inject(minioConfig.KEY)
@@ -15,21 +16,18 @@ export class MinioInitService implements OnModuleInit {
     private readonly minioClient: Minio.Client,
   ) {}
 
-  async onModuleInit() {
+  async initialize(): Promise<void> {
     await this.ensureBucketExists();
   }
 
   private async ensureBucketExists(): Promise<void> {
     const bucketName = this.config.bucket;
-
     try {
       const exists = await this.minioClient.bucketExists(bucketName);
-
       if (exists) {
         this.logger.log(`Bucket '${bucketName}' already exists`);
         return;
       }
-
       this.logger.log(`Creating bucket '${bucketName}'...`);
       await this.minioClient.makeBucket(bucketName, 'us-east-1');
       this.logger.log(`Bucket '${bucketName}' created successfully`);

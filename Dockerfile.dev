@@ -9,6 +9,9 @@ RUN pnpm add -g @nestjs/cli
 
 COPY package.json pnpm-lock.yaml ./
 
+
+COPY /src/core/invoice/templates ./src/core/invoice/templates
+
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
   pnpm install --frozen-lockfile
 

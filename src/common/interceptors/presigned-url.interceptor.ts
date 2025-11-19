@@ -56,8 +56,8 @@ export class PresignedUrlInterceptor implements NestInterceptor {
           );
           return data;
         }
-
-        return this.convertFields(data, fields, expiry);
+        const newData = this.convertFields(data, fields, expiry);
+        return newData;
       }),
     );
   }
