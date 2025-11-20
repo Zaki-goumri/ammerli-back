@@ -190,31 +190,6 @@ services:
     networks:
       - internal
 
-  pgbouncer:
-    image: edoburu/pgbouncer:latest
-    container_name: pgbouncer
-    environment:
-      LISTEN_PORT: 6432
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_NAME: 3ammerli
-      DB_USER: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - "6432:6432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 6432 -t 1 -U ${DB_USERNAME}"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - internal
-    restart: always
-
   loki:
     image: grafana/loki:2.9.3
     container_name: loki
