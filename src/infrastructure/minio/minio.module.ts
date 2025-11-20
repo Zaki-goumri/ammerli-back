@@ -26,11 +26,11 @@ const minioPublicClientProvider = {
   useFactory: (config: ConfigType<typeof minioConfig>) => {
     return new Minio.Client({
       endPoint: config.publicUrl,
-      port: 443,
+      port: 80,
       accessKey: config.accessKey,
       secretKey: config.secretKey,
       region: config.region,
-      useSSL: true,
+      useSSL: false,
     });
   },
   inject: [minioConfig.KEY],
