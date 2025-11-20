@@ -31,6 +31,7 @@ import { NotificationsService } from '../../notifications/notifications.service'
 import { NOTIFICATION_TYPE } from '../../notifications/enums/notification-type.enum';
 import { AdminProductDto } from '../dtos/product/admin-product.dto';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
+import { parseInt } from 'lodash';
 
 @Injectable()
 export class ProductService {
@@ -306,10 +307,11 @@ export class ProductService {
       id: product?.id,
       name: product?.name,
       description: product?.description ?? null,
-      price: product?.price,
+      price: parseInt(product?.price.toString(), 10),
       quantity: product?.quantity,
       loveCount,
       quantityPerBatch: product?.quantityPerBatch,
+      specifications: product?.specification || [],
       brand: product?.brand?.label,
       category: {
         label: product?.category?.label,

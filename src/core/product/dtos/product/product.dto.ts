@@ -42,4 +42,7 @@ export class ProductDto {
     description: 'quantity Per Batch of the product',
   })
   quantityPerBatch: number;
+
+  @ApiProperty()
+  specifications: string[];
 }
