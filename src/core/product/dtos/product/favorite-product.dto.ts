@@ -32,10 +32,10 @@ export class FavoriteProductDto {
   brand: string;
 
   @ApiProperty({
-    example: 'https://example.com/image.png',
+    example: ['https://example.com/image.png'],
     description: 'URL of the main picture of the product',
   })
-  picture: string;
+  pictures: string[];
 
   @ApiProperty({
     example: 'Running Shoes',

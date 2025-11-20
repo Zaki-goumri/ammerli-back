@@ -444,7 +444,6 @@ export class ProductService {
     const { page, limit } = paginationQuery;
     const offset = (page - 1) * limit;
 
-    // First, get paginated product IDs
     const productIdsQuery = this.productRepo
       .createQueryBuilder('product')
       .leftJoin('product.brand', 'brand')
@@ -459,11 +458,13 @@ export class ProductService {
         categoryIds,
       });
     }
+
     if (brandIds && brandIds.length > 0) {
       productIdsQuery.andWhere('brand.id IN (:...brandIds)', {
         brandIds,
       });
     }
+
     if (search) {
       productIdsQuery.andWhere(
         '(product.name ILIKE :search OR product.description ILIKE :search OR brand.label ILIKE :search OR category.label ILIKE :search)',
@@ -492,51 +493,39 @@ export class ProductService {
 
     const productIds = paginatedIds.map((p) => p.id);
 
-    // Now fetch full data for these product IDs
     const queryBuilder = this.productRepo
       .createQueryBuilder('product')
       .leftJoin('product.brand', 'brand')
       .leftJoin('product.category', 'category')
-      .leftJoin('product.pictures', 'mainPicture', 'mainPicture.isMain = TRUE')
+      .leftJoin('product.pictures', 'pictures')
       .where('product.id IN (:...productIds)', { productIds })
       .select([
         'product.id AS id',
         'product.name AS name',
         'product.price AS price',
-        'mainPicture.url AS picture',
+        'ARRAY_AGG(DISTINCT pictures.url) FILTER (WHERE pictures.url IS NOT NULL) AS pictures',
         'brand.label AS brand',
         'category.label AS category',
         'product.createdAt AS createdAt',
         'product.quantity AS quantity',
       ])
+      .groupBy('product.id')
+      .addGroupBy('brand.label')
+      .addGroupBy('category.label')
       .orderBy('product.createdAt', 'DESC');
 
     const productsRaw = await queryBuilder.getRawMany();
 
-    const productsWithPresignedUrls = await Promise.all(
-      productsRaw.map(async (p) => {
-        if (p.picture) {
-          p.picture = await this.objectService.getPresignedUrl(
-            p.picture,
-            BUCKET_TARGETS.PRODUCT_PICTURES,
-          );
-        }
-        return p;
-      }),
-    );
-
-    const formatted: WholesellerProductDto[] = productsWithPresignedUrls.map(
-      (p) => ({
-        id: p?.id,
-        name: p?.name,
-        price: p?.price,
-        brand: p?.brand,
-        picture: p?.picture,
-        category: p?.category,
-        createdAt: p?.createdAt,
-        quantity: p?.quantity,
-      }),
-    );
+    const formatted: WholesellerProductDto[] = productsRaw.map((p) => ({
+      id: p?.id,
+      name: p?.name,
+      price: p?.price,
+      brand: p?.brand,
+      pictures: p?.pictures ?? [],
+      category: p?.category,
+      createdAt: p?.createdAt,
+      quantity: p?.quantity,
+    }));
 
     return {
       data: formatted,
@@ -560,7 +549,6 @@ export class ProductService {
     const { page, limit } = pagination;
     const offset = (page - 1) * limit;
 
-    // First, get paginated product IDs
     const productIdsQuery = this.favProductRepo
       .createQueryBuilder('favProduct')
       .leftJoin('favProduct.product', 'product')
@@ -575,11 +563,13 @@ export class ProductService {
         categoryIds,
       });
     }
+
     if (brandIds && brandIds.length > 0) {
       productIdsQuery.andWhere('brand.id IN (:...brandIds)', {
         brandIds,
       });
     }
+
     if (search) {
       productIdsQuery.andWhere(
         '(product.name ILIKE :search OR product.description ILIKE :search OR brand.label ILIKE :search OR category.label ILIKE :search)',
@@ -608,50 +598,38 @@ export class ProductService {
 
     const productIds = paginatedIds.map((p) => p.id);
 
-    // Now fetch full data for these product IDs
     const queryBuilder = this.favProductRepo
       .createQueryBuilder('favProduct')
       .leftJoin('favProduct.product', 'product')
       .leftJoin('product.brand', 'brand')
       .leftJoin('product.category', 'category')
-      .leftJoin('product.pictures', 'mainPicture', 'mainPicture.isMain = TRUE')
+      .leftJoin('product.pictures', 'pictures')
       .where('product.id IN (:...productIds)', { productIds })
       .select([
         'product.id AS id',
         'product.name AS name',
         'product.price AS price',
-        'mainPicture.url AS picture',
+        'ARRAY_AGG(DISTINCT pictures.url) FILTER (WHERE pictures.url IS NOT NULL) AS pictures',
         'brand.label AS brand',
         'category.label AS category',
         'product.createdAt AS createdAt',
       ])
+      .groupBy('product.id')
+      .addGroupBy('brand.label')
+      .addGroupBy('category.label')
       .orderBy('product.createdAt', 'DESC');
 
     const productsRaw = await queryBuilder.getRawMany();
 
-    const productsWithPresignedUrls = await Promise.all(
-      productsRaw.map(async (p) => {
-        if (p.picture) {
-          p.picture = await this.objectService.getPresignedUrl(
-            p.picture,
-            BUCKET_TARGETS.PRODUCT_PICTURES,
-          );
-        }
-        return p;
-      }),
-    );
-
-    const formatted: FavoriteProductDto[] = productsWithPresignedUrls.map(
-      (p) => ({
-        id: p?.id,
-        productId: p?.id,
-        name: p?.name,
-        price: p?.price,
-        brand: p?.brand,
-        picture: p?.picture,
-        category: p?.category,
-      }),
-    );
+    const formatted: FavoriteProductDto[] = productsRaw.map((p) => ({
+      id: p?.id,
+      productId: p?.id,
+      name: p?.name,
+      price: p?.price,
+      brand: p?.brand,
+      pictures: p?.pictures ?? [],
+      category: p?.category,
+    }));
 
     return {
       data: formatted,

@@ -60,7 +60,7 @@ export class CategoryController {
 
   @Get(':id/children')
   @HttpCode(HttpStatus.OK)
-  @ConvertToPresignedUrls(['url'], BUCKET_TARGETS.CATEGORY_PICTURES)
+  @ConvertToPresignedUrls(['pictureUrl'], BUCKET_TARGETS.CATEGORY_PICTURES)
   @ApiOperation({ summary: 'Get all children categories' })
   @ApiOkResponse({
     description: 'Returns all children categories',
@@ -138,6 +138,12 @@ export class CategoryController {
       required: ['label'],
     },
   })
+  @UseInterceptors(
+    FileInterceptor('picture', {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
   @Roles(USER_ROLES.ADMIN)
   @ApiOperation({ summary: 'Update an existing category' })
   @ApiOkResponse({ description: 'Category successfully updated' })

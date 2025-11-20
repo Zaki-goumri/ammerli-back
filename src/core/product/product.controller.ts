@@ -333,7 +333,10 @@ export class ProductController {
       },
     },
   })
-  @ConvertToPresignedUrls(['picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
+  @ConvertToPresignedUrls(
+    ['picture', 'pictures'],
+    BUCKET_TARGETS.PRODUCT_PICTURES,
+  )
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateProductDto: UpdateProductDto,
@@ -418,7 +421,10 @@ export class ProductController {
   })
   @Roles(USER_ROLES.WHOLESELLER, USER_ROLES.ADMIN)
   @Get('wholeseller/all')
-  @ConvertToPresignedUrls(['url', 'picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
+  @ConvertToPresignedUrls(
+    ['url', 'picture', 'pictures'],
+    BUCKET_TARGETS.PRODUCT_PICTURES,
+  )
   getWholesellerProducts(
     @Query() query: FilterProductDto,
     @USER('id') userId: number,
@@ -443,15 +449,14 @@ export class ProductController {
    * @returns {Promise<PaginatedResponse<FavProductDtoRes>>} A paginated list of favorite products.
    */
   @HttpCode(HttpStatus.OK)
-  @ConvertToPresignedUrls(['url', 'picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
   @ApiOperation({
     summary: 'Get all favorite products with pagination, search, and filters',
   })
+  @ConvertToPresignedUrls(['pictures'], BUCKET_TARGETS.PRODUCT_PICTURES)
   @ApiOkResponse({
     type: PaginatedResponse(FavoriteProductDto),
     description: 'Returns paginated favorite products',
   })
-  @ConvertToPresignedUrls(['picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
   @Get('favorite/all')
   getFavoriteProducts(
     @Query() query: FilterProductDto,

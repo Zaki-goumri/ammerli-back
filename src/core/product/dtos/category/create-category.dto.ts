@@ -1,6 +1,6 @@
 import { IsNumber, IsOptional, IsPositive, IsString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 
 export class CreateCategoryDto {
   @ApiProperty({ description: 'Label name', example: 'Electronics' })
@@ -8,8 +8,9 @@ export class CreateCategoryDto {
   label: string;
 
   @ApiPropertyOptional({ description: 'parent category id', example: 1 })
+  @Transform(({ value }) => (value === '' ? undefined : parseInt(value, 10)))
   @IsOptional()
-  @IsNumber({}, { message: 'parentId must be a number' })
-  @IsPositive({ message: 'parentId must be a positive number' })
+  @IsNumber()
+  @IsPositive()
   parentId?: number;
 }

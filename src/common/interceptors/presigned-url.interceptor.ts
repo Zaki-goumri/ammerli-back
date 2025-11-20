@@ -80,42 +80,19 @@ export class PresignedUrlInterceptor implements NestInterceptor {
   ): Promise<any> {
     if (!obj || typeof obj !== 'object') return obj;
 
-    console.log('=== Converting object ===');
-    console.log('Fields to convert:', fields);
-    console.log('Object keys:', Object.keys(obj));
-    console.log('Bucket:', bucket);
-
     const result = { ...obj };
 
     for (const field of fields) {
-      console.log(`Checking field: ${field}, exists: ${field in result}`);
-
       if (field in result) {
         const value = result[field];
-        console.log(
-          `Field ${field} value:`,
-          value,
-          'Type:',
-          typeof value,
-          'IsArray:',
-          Array.isArray(value),
-        );
 
         if (typeof value === 'string' && value) {
-          console.log('Converting string for field:', field, value);
           result[field] = await this.objectStorageService.getPresignedUrl(
             value,
             bucket,
           );
-          console.log('Converted to:', result[field]);
         } else if (Array.isArray(value)) {
-          console.log('Array length:', value.length);
-          if (value.length > 0) {
-            console.log('First element type:', typeof value[0]);
-          }
-
           if (value.length > 0 && typeof value[0] === 'string') {
-            console.log('Converting array of strings for field:', field, value);
             result[field] = await Promise.all(
               value.map(async (v) => {
                 if (typeof v === 'string' && v) {
@@ -123,15 +100,12 @@ export class PresignedUrlInterceptor implements NestInterceptor {
                     v,
                     bucket,
                   );
-                  console.log(`Converted ${v} to ${url}`);
                   return url;
                 }
                 return v;
               }),
             );
-            console.log('Final converted array:', result[field]);
           } else if (value.length > 0 && typeof value[0] === 'object') {
-            console.log('Converting array of objects for field:', field);
             result[field] = await Promise.all(
               value.map((item) =>
                 this.convertFields(item, fields, bucket, expiry),
@@ -139,7 +113,6 @@ export class PresignedUrlInterceptor implements NestInterceptor {
             );
           }
         } else if (value && typeof value === 'object') {
-          console.log('Converting nested object for field:', field);
           result[field] = await this.convertFields(
             value,
             fields,
@@ -149,9 +122,6 @@ export class PresignedUrlInterceptor implements NestInterceptor {
         }
       }
     }
-
-    console.log('=== Returning result ===');
-    console.log(JSON.stringify(result, null, 2));
 
     return result;
   }

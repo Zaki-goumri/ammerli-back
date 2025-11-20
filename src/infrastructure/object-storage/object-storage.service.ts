@@ -101,7 +101,7 @@ export class ObjectService implements ObjectStorageService {
     try {
       await lastValueFrom(uploadOperation$);
 
-      const fileUrl = 'test';
+      const fileUrl = await this.getPresignedUrl(objectName, bucketName);
 
       this.logger.log(`Generated presigned URL for ${objectName}: ${fileUrl}`);
 
