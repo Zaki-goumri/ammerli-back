@@ -152,26 +152,6 @@ async function bootstrap() {
     console.log('Swagger documentation disabled');
   }
 
-  try {
-    try {
-      console.log('3. Testing MinIO connection...');
-      const minio = app.get('MINIO_CLIENT');
-      const publicMinio = app.get('MINIO_PUBLIC_CLIENT');
-      await minio.listBuckets();
-      await publicMinio.listBuckets();
-      console.log('✅ MinIO connected');
-    } catch (error) {
-      console.log('❌ MinIO connection failed:', error.message);
-    }
-    console.log('3. Testing MinIO connection...');
-    const minio = app.get('MINIO_CLIENT');
-    const publicMinio = app.get('MINIO_PUBLIC_CLIENT');
-    await minio.listBuckets();
-    console.log('✅ MinIO connected');
-  } catch (error) {
-    console.log('❌ MinIO connection failed:', error.message);
-  }
-
   //RUNNING THE APPLICATION
   const port = process.env.PORT || 3000;
   await app.listen(port);
