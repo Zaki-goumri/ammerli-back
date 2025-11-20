@@ -159,19 +159,13 @@ async function bootstrap() {
 
 const cluserizeApp = process.env.NUM_CPUS;
 
-if (cluserizeApp) {
-  AppClusterService.clusterize(async () => {
-    await bootstrap();
+bootstrap()
+  .then(() => {
+    console.log(
+      `Application is running on: ${process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`}`,
+    );
+  })
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
   });
-} else {
-  bootstrap()
-    .then(() => {
-      console.log(
-        `Application is running on: ${process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`}`,
-      );
-    })
-    .catch((e) => {
-      console.error(e);
-      process.exit(1);
-    });
-}
