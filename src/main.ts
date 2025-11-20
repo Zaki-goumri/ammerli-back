@@ -156,7 +156,7 @@ async function bootstrap() {
     try {
       console.log('3. Testing MinIO connection...');
       const minio = app.get('MINIO_CLIENT');
-      const publicMinio = app.get('PUBLIC_MINIO_CLIENT');
+      const publicMinio = app.get('MINIO_PUBLIC_CLIENT');
       await minio.listBuckets();
       await publicMinio.listBuckets();
       console.log('✅ MinIO connected');
