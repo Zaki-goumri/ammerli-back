@@ -45,7 +45,7 @@ import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 /**
  * @class UserService
  * @description Handles all user-related business logic, including CRUD operations, address management,
- *              profile picture uploads, and integration with caching and blacklisting services.
+ * profile picture uploads, and integration with caching and blacklisting services.
  */
 @Injectable()
 export class UserService {
