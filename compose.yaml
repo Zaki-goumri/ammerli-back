@@ -188,6 +188,18 @@ services:
     networks:
       - internal
 
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    env_file:
+      - .env
+    ports:
+      - "6432:6432" 
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+    restart: always
 
   loki:
     image: grafana/loki:2.9.3
