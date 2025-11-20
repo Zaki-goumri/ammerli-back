@@ -187,7 +187,7 @@ export class ProductController {
           description: 'The quantity of the product per batch.',
           example: 20,
         },
-        specifications: {
+        specification: {
           type: 'string',
           description:
             'Optional: Product specifications, submitted as a single comma-separated string (e.g., "Color: Blue, Weight: 2kg").',
