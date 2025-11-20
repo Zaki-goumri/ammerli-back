@@ -104,7 +104,7 @@ export class Product extends BaseEntity {
     isArray: true,
     nullable: true,
   })
-  @Column('text', { array: true, nullable: true })
+  @Column({ type: 'text', array: true, nullable: true })
   specification?: string[];
 
   @Column({ type: 'date', nullable: true })
