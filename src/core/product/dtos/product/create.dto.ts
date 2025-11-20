@@ -94,7 +94,7 @@ export class CreateProductDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  specifications?: string[];
+  specification?: string[];
 
   @ApiProperty({
     description: 'The product expiration date (ISO 8601 format: YYYY-MM-DD)',
