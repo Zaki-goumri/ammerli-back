@@ -9,6 +9,7 @@ import { AppClusterService } from './infrastructure/clustring/app.cluster';
 import { LoggerBuilder } from './monitoring/logger/logger.builder';
 import helmet from 'helmet';
 import BasicAuth = require('express-basic-auth');
+import * as http from 'http';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -20,6 +21,18 @@ async function bootstrap() {
             .setEnvironment(process.env.NODE_ENV)
             .build()
         : ['log', 'error', 'warn', 'debug', 'verbose'],
+  });
+
+  //eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const server: http.Server = app.getHttpServer();
+
+  const KEEPALIVE_TIMEOUT_MS = 30000; // 30 seconds
+  server.keepAliveTimeout = KEEPALIVE_TIMEOUT_MS;
+  // headersTimeout must be slightly greater than keepAliveTimeout
+  server.headersTimeout = KEEPALIVE_TIMEOUT_MS + 1000;
+  // 2. Disable Nagle's algorithm on every new connection
+  server.on('connection', (socket) => {
+    socket.setNoDelay(true);
   });
 
   app.enableVersioning({

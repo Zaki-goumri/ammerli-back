@@ -51,7 +51,7 @@
                         "uid": "Loki"
                     },
                     "editorMode": "code",
-                    "expr": "{service=\"core\", level=~\"$level\", context=~\"$context\"} |= \"$search\"",
+                    "expr": "{service=\"core\"} | json | level=~\"$level\", context=~\"$context\" |= \"$search\"",
                     "queryType": "range",
                     "refId": "A"
                 }

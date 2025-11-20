@@ -18,21 +18,25 @@ const NUM_CPUS = parseInt(process.env.NUM_CPUS || '1', 10);
 
 
  **/
+import { Logger } from '@nestjs/common';
+
 export class AppClusterService {
+  private static readonly logger = new Logger(AppClusterService.name);
+
   // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   static clusterize(callback: Function): void {
     if (cluster.isPrimary) {
-      console.log(`Master server started on ${process.pid}`);
+      this.logger.log(`Master server started on ${process.pid}`);
       for (let i = 0; i < NUM_CPUS; i++) {
         cluster.fork();
       }
       cluster.on('exit', (worker, code, signal) => {
         // Auto Restart Dead Workers
-        console.log(`Worker ${worker.process.pid} died. Restarting`);
+        this.logger.warn(`Worker ${worker.process.pid} died. Restarting`);
         cluster.fork();
       });
     } else {
-      console.log(`Cluster server started on ${process.pid}`);
+      this.logger.log(`Cluster server started on ${process.pid}`);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       callback();
     }

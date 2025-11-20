@@ -158,15 +158,27 @@ export class DatabaseExceptionFilter implements ExceptionFilter {
     request: Request,
     statusCode: number,
   ): void {
-    const base = `${request.method} ${request.url} - ${statusCode}`;
+    const { method, url } = request;
 
     if (statusCode >= 500) {
-      const stack = exception instanceof Error ? exception.stack : undefined;
-      this.logger.error(base, stack);
+      this.logger.error({
+        message: 'Database error',
+        method,
+        url,
+        statusCode,
+        error: exception.message,
+        stack: exception instanceof Error ? exception.stack : undefined,
+        context: 'DatabaseExceptionFilter',
+      });
     } else {
-      const detail =
-        exception instanceof Error ? exception.message : String(exception);
-      this.logger.warn(`${base} - ${detail}`);
+      this.logger.warn({
+        message: 'Database warning',
+        method,
+        url,
+        statusCode,
+        error: exception.message,
+        context: 'DatabaseExceptionFilter',
+      });
     }
   }
 
