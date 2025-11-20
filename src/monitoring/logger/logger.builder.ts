@@ -4,8 +4,8 @@ import * as winston from 'winston';
 import LokiTransport from 'winston-loki';
 
 export class LoggerBuilder {
-  private jobName: string;
-  private environment: string;
+  private jobName: string = 'ammerli-backend';
+  private environment: string = 'development';
 
   setJobName(jobName: string) {
     this.jobName = jobName;
@@ -18,65 +18,93 @@ export class LoggerBuilder {
   }
 
   build(): LoggerService {
+    // Common format for both console and Loki
+    const consoleFormat = winston.format.combine(
+      winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+      winston.format.colorize(),
+      winston.format.errors({ stack: true }),
+      winston.format.printf(({ timestamp, level, message, context, trace }) => {
+        const contextStr = context ? `[${context}] ` : '';
+        const traceStr = trace ? `\n${trace}` : '';
+        return `${timestamp} ${contextStr}${level}: ${message}${traceStr}`;
+      }),
+    );
+
+    // Loki format - structured JSON
+    const lokiFormat = winston.format.combine(
+      winston.format.timestamp(),
+      winston.format.errors({ stack: true }),
+      winston.format.json(),
+      winston.format((info) => {
+        // Add custom fields for Loki
+        if (info.context) {
+          info.context = info.context;
+        }
+        if (info.trace) {
+          info.trace = info.trace;
+        }
+        return info;
+      })(),
+    );
+
     const transports: winston.transport[] = [
       new winston.transports.Console({
-        format: winston.format.combine(
-          winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-          winston.format.colorize(),
-          winston.format.printf(
-            ({ timestamp, level, message, context, trace }) => {
-              const contextStr = context ? `[${context}] ` : '';
-              const traceStr = trace ? `\n${trace}` : '';
-              return `${timestamp} ${contextStr}${level}: ${message}${traceStr}`;
-            },
-          ),
-        ),
+        format: consoleFormat,
         level: process.env.LOG_LEVEL || 'info',
+        handleExceptions: true,
+        handleRejections: true,
       }),
     ];
 
-    if (process.env.NODE_ENV === 'staging' || process.env.ENV === 'prod') {
+    // Add Loki transport if enabled
+    const lokiHost = process.env.LOKI_HOST || 'http://localhost:3100';
+    const enableLoki = process.env.LOKI_ENABLED !== 'false'; // Default to true unless explicitly false
+
+    if (enableLoki && lokiHost) {
+      console.log(`Initializing Loki transport to: ${lokiHost}`);
+
       transports.push(
         new LokiTransport({
-          host: process.env.LOKI_HOST || 'http://loki:3100',
+          host: lokiHost,
           labels: {
-            job: this.jobName || 'nestjs-app',
-            environment: this.environment || process.env.NODE_ENV || 'dev',
+            job: this.jobName,
+            environment: this.environment,
             service: 'core',
+            app: 'ammerli-backend',
           },
           json: true,
-          format: winston.format.json(),
+          format: lokiFormat,
           replaceTimestamp: true,
-          batching: true,
-          interval: 5, // Send logs every 5 seconds
-          gracefulShutdown: true,
-          onConnectionError: (err) => {
-            console.error('Loki connection error:', err);
+          onConnectionError: (err: unknown) => {
+            // Safe error handling
+            const errorMessage =
+              err instanceof Error ? err.message : String(err);
+            console.error('Loki connection error:', errorMessage);
           },
-        }),
+          level: process.env.LOKI_LOG_LEVEL || 'info',
+          // Loki transport options
+          batching: process.env.LOKI_BATCHING !== 'false', // Default true
+          interval: parseInt(process.env.LOKI_INTERVAL || '5'),
+          timeout: parseInt(process.env.LOKI_TIMEOUT || '15000'),
+          gracefulShutdown: true,
+        }) as any,
       );
     }
 
     return WinstonModule.createLogger({
       transports,
+      // Handle exceptions and rejections
       exceptionHandlers: [
         new winston.transports.Console({
-          format: winston.format.combine(
-            winston.format.timestamp(),
-            winston.format.errors({ stack: true }),
-            winston.format.json(),
-          ),
+          format: consoleFormat,
         }),
       ],
       rejectionHandlers: [
         new winston.transports.Console({
-          format: winston.format.combine(
-            winston.format.timestamp(),
-            winston.format.errors({ stack: true }),
-            winston.format.json(),
-          ),
+          format: consoleFormat,
         }),
       ],
+      exitOnError: false,
     });
   }
 }

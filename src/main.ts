@@ -8,25 +8,20 @@ import { DatabaseExceptionFilter } from './common/filters/db.filter';
 import { AppClusterService } from './infrastructure/clustring/app.cluster';
 import { LoggerBuilder } from './monitoring/logger/logger.builder';
 import helmet from 'helmet';
-import * as fs from 'fs';
 import BasicAuth = require('express-basic-auth');
 
 async function bootstrap() {
-  if (!fs.existsSync('logs')) {
-    fs.mkdirSync('logs', { recursive: true });
-  }
-
-  const logger = new LoggerBuilder()
-    .setJobName(process.env.APP_NAME || 'ammerli-backend')
-    .setEnvironment(process.env.NODE_ENV || 'dev')
-    .build();
-
   const app = await NestFactory.create(AppModule, {
-    logger: logger,
-    bufferLogs: false,
+    bufferLogs: true,
+    logger:
+      process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'prod'
+        ? new LoggerBuilder()
+            .setJobName('core-api')
+            .setEnvironment(process.env.NODE_ENV)
+            .build()
+        : ['log', 'error', 'warn', 'debug', 'verbose'],
   });
 
-  logger.log('🚀 Application starting...', 'Bootstrap');
   app.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: '1',
