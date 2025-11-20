@@ -19,8 +19,9 @@ import smsConfig from './config/sms.config';
 import { APP_GUARD } from '@nestjs/core';
 import throttlerConfig from './config/throttler.config';
 import { AppController } from './app.controller';
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { GlobalThrottlerGuard } from './security/rate-limiting/global-throttler.guard';
+import { RealIpMiddleware } from './common/middlewares/real-ip.middleware';
 
 @Module({
   imports: [
@@ -77,4 +78,8 @@ import { GlobalThrottlerGuard } from './security/rate-limiting/global-throttler.
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RealIpMiddleware).forRoutes('*');
+  }
+}

@@ -341,6 +341,16 @@ export class ProductService {
         error,
       );
     });
+
+    
+    this.logger.log({
+      message: 'Product created successfully',
+      productId,
+      sellerId,
+      productName: newProduct.name,
+      context: 'Product',
+    });
+
     return this.findOne(productId);
   }
 
@@ -359,10 +369,15 @@ export class ProductService {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
 
-    // Update text/numeric fields
     await this.productRepo.update(id, dto);
 
-    // Handle file replacement if new files are uploaded
+    this.logger.log({
+      message: 'Product updated',
+      productId: id,
+      sellerId,
+      context: 'Product',
+    });
+
     if (files && files.length > 0) {
       const queueFiles = files.map((file) => ({
         buffer: file.buffer,
@@ -392,8 +407,14 @@ export class ProductService {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
 
-    // Soft delete keeps images for potential future restoration
     await this.productRepo.softDelete(id);
+
+    this.logger.log({
+      message: 'Product soft deleted',
+      productId: id,
+      sellerId: userId,
+      context: 'Product',
+    });
 
     return { message: 'Product soft deleted successfully' };
   }

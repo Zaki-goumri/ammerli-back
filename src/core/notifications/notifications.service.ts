@@ -38,16 +38,21 @@ export class NotificationsService {
    */
   @Cron(CronExpression.EVERY_WEEK)
   async handleCron() {
-    this.logger.log(
-      'Running cron job to delete old notifications than one week',
-    );
+    this.logger.log({
+      message: 'Running cron job to delete old notifications',
+      daysOld: OLD_NOTIFICATION_DELETE_DAYS,
+      context: 'Notifications',
+    });
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - OLD_NOTIFICATION_DELETE_DAYS);
     await this.notificationRepo.delete({
       createdAt: LessThan(oneWeekAgo),
       isRead: true,
     });
-    this.logger.log('Old notifications deleted');
+    this.logger.log({
+      message: 'Old notifications deleted',
+      context: 'Notifications',
+    });
   }
 
   /**
@@ -147,6 +152,12 @@ export class NotificationsService {
       ...dto,
     });
     await this.tokenRepo.save(token);
+    this.logger.log({
+      message: 'FCM token registered',
+      userId,
+      deviceType: dto.os,
+      context: 'Notifications',
+    });
     return { message: 'Token registered successfully' };
   }
 
@@ -196,9 +207,19 @@ export class NotificationsService {
   ): Promise<{ message: string }> {
     if (fcmToken) {
       await this.revokeToken(fcmToken);
+      this.logger.log({
+        message: 'Logged out from device',
+        userId,
+        context: 'Notifications',
+      });
       return { message: 'Logged out from device successfully' };
     } else {
       await this.revokeAllTokensForUser(userId);
+      this.logger.log({
+        message: 'Logged out from all devices',
+        userId,
+        context: 'Notifications',
+      });
       return { message: 'Logged out from all devices successfully' };
     }
   }
@@ -223,6 +244,13 @@ export class NotificationsService {
       body,
       userId,
       type,
+    });
+    this.logger.log({
+      message: 'Notification job added to queue',
+      userId,
+      title,
+      type,
+      context: 'Notifications',
     });
     return { success: true, message: 'Notification job added to queue' };
   }

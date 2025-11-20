@@ -14,6 +14,7 @@ import {
   Param,
   Query,
   ParseIntPipe,
+  Logger,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -67,6 +68,8 @@ import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 @Controller('user')
 @UseGuards(AccessTokenGuard)
 export class UserController {
+  private readonly logger = new Logger(UserController.name);
+
   constructor(private readonly userService: UserService) {}
 
   /**
@@ -83,6 +86,7 @@ export class UserController {
     type: GetMeDto,
   })
   getMe(@USER('id') userId: number): Promise<GetMeDto> {
+    this.logger.log(`Fetching profile for user ID: ${userId}`);
     return this.userService.findById(userId);
   }
 
@@ -104,6 +108,7 @@ export class UserController {
     @USER('id') userId: number,
     @Body() userDto: UpdateUserDto,
   ): Promise<UserDto> {
+    this.logger.log(`Updating profile for user ID: ${userId}`);
     return this.userService.updateUser(userId, userDto);
   }
 
@@ -120,6 +125,7 @@ export class UserController {
     type: MessageDto,
   })
   deleteUser(@USER('id') userId: number): Promise<MessageDto> {
+    this.logger.log(`User requesting account deletion, ID: ${userId}`);
     return this.userService.deleteUser(userId);
   }
 
@@ -162,6 +168,7 @@ export class UserController {
     @USER('id') userId: number,
     @UploadedFile() file: Express.Multer.File,
   ): Promise<ProfilePictureDto> {
+    this.logger.log(`Updating profile picture for user ID: ${userId}`);
     return this.userService.updateUserProfilePic(userId, file);
   }
 
@@ -182,6 +189,7 @@ export class UserController {
     @USER('id') userId: number,
     @Body() createAddressDto: CreateAddressDto,
   ): Promise<AddressDto> {
+    this.logger.log(`Creating address for user ID: ${userId}`);
     return this.userService.createAddress(userId, createAddressDto);
   }
 
@@ -220,6 +228,7 @@ export class UserController {
     @Param('id') addressId: number,
     @Body() updateAddressDto: UpdateAddressDto,
   ): Promise<AddressDto> {
+    this.logger.log(`Updating address ${addressId} for user ID: ${userId}`);
     return this.userService.updateAddress(userId, addressId, updateAddressDto);
   }
 
@@ -240,6 +249,7 @@ export class UserController {
     @USER('id') userId: number,
     @Param('id') addressId: number,
   ): Promise<MessageDto> {
+    this.logger.log(`Deleting address ${addressId} for user ID: ${userId}`);
     return this.userService.deleteAddress(userId, addressId);
   }
 
@@ -263,6 +273,7 @@ export class UserController {
     @Query() paginationQuery: PaginationQueryDto,
     @USER('id') userId: number,
   ): Promise<PaginationResponseDto<UserForAdminDto>> {
+    this.logger.log(`Admin ${userId} fetching all users`);
     return this.userService.getUsersForAdmin(paginationQuery, userId);
   }
 
@@ -308,6 +319,7 @@ export class UserController {
     @Query() dto: BulkDeleteUserDto,
     @USER('id') currentAdminId: number,
   ): Promise<MessageDto> {
+    this.logger.log(`Admin ${currentAdminId} initiating bulk delete of users: ${dto.userIds.join(', ')}`);
     return this.userService.deleteBulk(dto.userIds, currentAdminId);
   }
 
@@ -328,6 +340,7 @@ export class UserController {
   deleteUserByAdmin(
     @Param('id', ParseIntPipe) userId: number,
   ): Promise<MessageDto> {
+    this.logger.log(`Admin deleting user ID: ${userId}`);
     return this.userService.deleteUser(userId);
   }
 }

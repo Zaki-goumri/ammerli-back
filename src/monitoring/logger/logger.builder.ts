@@ -18,7 +18,6 @@ export class LoggerBuilder {
   }
 
   build(): LoggerService {
-    // Common format for both console and Loki
     const consoleFormat = winston.format.combine(
       winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
       winston.format.colorize(),
@@ -30,13 +29,11 @@ export class LoggerBuilder {
       }),
     );
 
-    // Loki format - structured JSON
     const lokiFormat = winston.format.combine(
       winston.format.timestamp(),
       winston.format.errors({ stack: true }),
       winston.format.json(),
       winston.format((info) => {
-        // Add custom fields for Loki
         if (info.context) {
           info.context = info.context;
         }
@@ -56,9 +53,8 @@ export class LoggerBuilder {
       }),
     ];
 
-    // Add Loki transport if enabled
-    const lokiHost = process.env.LOKI_HOST || 'http://localhost:3100';
-    const enableLoki = process.env.LOKI_ENABLED !== 'false'; // Default to true unless explicitly false
+    const lokiHost = process.env.LOKI_HOST || 'http://loki:3100';
+    const enableLoki = process.env.LOKI_ENABLED !== 'false';
 
     if (enableLoki && lokiHost) {
       console.log(`Initializing Loki transport to: ${lokiHost}`);
@@ -71,19 +67,17 @@ export class LoggerBuilder {
             environment: this.environment,
             service: 'core',
             app: 'ammerli-backend',
+            level: process.env.LOKI_LOG_LEVEL || 'info',
           },
           json: true,
           format: lokiFormat,
           replaceTimestamp: true,
           onConnectionError: (err: unknown) => {
-            // Safe error handling
             const errorMessage =
               err instanceof Error ? err.message : String(err);
             console.error('Loki connection error:', errorMessage);
           },
-          level: process.env.LOKI_LOG_LEVEL || 'info',
-          // Loki transport options
-          batching: process.env.LOKI_BATCHING !== 'false', // Default true
+          batching: process.env.LOKI_BATCHING !== 'false',
           interval: parseInt(process.env.LOKI_INTERVAL || '5'),
           timeout: parseInt(process.env.LOKI_TIMEOUT || '15000'),
           gracefulShutdown: true,
@@ -93,7 +87,6 @@ export class LoggerBuilder {
 
     return WinstonModule.createLogger({
       transports,
-      // Handle exceptions and rejections
       exceptionHandlers: [
         new winston.transports.Console({
           format: consoleFormat,

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+  import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Invoice, InvoiceStatus } from '../entities/invoice.entity';
@@ -71,9 +71,12 @@ export class InvoiceService {
     targetId: number;
     objectName: string;
   }) {
-    this.logger.log(
-      `Invoice PDF uploaded for invoice ${targetId}, object name: ${objectName}`,
-    );
+    this.logger.log({
+      message: 'Invoice PDF uploaded',
+      invoiceId: targetId,
+      objectName,
+      context: 'Invoice',
+    });
     await this.invoiceRepository.update(targetId, { pdfUrl: objectName });
   }
 
@@ -272,9 +275,13 @@ export class InvoiceService {
       path: '',
     };
 
-    this.logger.debug(
-      `Generated PDF for invoice ${invoiceData.invoiceNumber}, size: ${pdfBuffer.length} bytes`,
-    );
+    this.logger.log({
+      message: 'Invoice generated and queued for upload',
+      invoiceId: invoice.id,
+      invoiceNumber: invoiceData.invoiceNumber,
+      fileSize: pdfBuffer.length,
+      context: 'Invoice',
+    });
     await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
       file,
       metadata: {
@@ -312,6 +319,13 @@ export class InvoiceService {
       throw new NotFoundException(`Invoice with ID ${id} not found.`);
     }
     await this.invalidateInvoiceCache(invoice);
+    
+    this.logger.log({
+      message: 'Invoice deleted',
+      invoiceId: id,
+      context: 'Invoice',
+    });
+
     const result = await this.invoiceRepository.delete(id);
     if (result.affected === 0) {
       throw new NotFoundException(`Invoice with ID ${id} not found.`);

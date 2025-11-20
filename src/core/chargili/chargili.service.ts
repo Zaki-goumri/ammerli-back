@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { retry, catchError } from 'rxjs/operators';
@@ -33,6 +33,8 @@ const RETRY_COUNT = 3;
  */
 @Injectable()
 export class ChargiliService {
+  private readonly logger = new Logger(ChargiliService.name);
+
   constructor(private readonly httpService: HttpService) {}
 
   /**
@@ -57,6 +59,12 @@ export class ChargiliService {
     const response = await lastValueFrom(
       this.httpService.post<Customer>('/customers', customer_data),
     );
+    this.logger.log({
+      message: 'Chargili customer created',
+      customerId: response.data.id,
+      email: customer_data.email,
+      context: 'Chargili',
+    });
     return response.data;
   }
 
@@ -131,6 +139,12 @@ export class ChargiliService {
     const response = await lastValueFrom(
       this.httpService.post<Product>('/products', product_data),
     );
+    this.logger.log({
+      message: 'Chargili product created',
+      productId: response.data.id,
+      productName: product_data.name,
+      context: 'Chargili',
+    });
     return response.data;
   }
 
@@ -224,6 +238,14 @@ export class ChargiliService {
     const response = await lastValueFrom(
       this.httpService.post<Price>('/prices', price_data),
     );
+    this.logger.log({
+      message: 'Chargili price created',
+      priceId: response.data.id,
+      productId: price_data.product_id,
+      amount: price_data.amount,
+      currency: price_data.currency,
+      context: 'Chargili',
+    });
     return response.data;
   }
 
@@ -305,6 +327,13 @@ export class ChargiliService {
         retry(RETRY_COUNT),
       ),
     );
+    this.logger.log({
+      message: 'Chargili checkout created',
+      checkoutId: response.data.id,
+      amount: checkout_data.amount,
+      currency: checkout_data.currency,
+      context: 'Chargili',
+    });
     return response.data;
   }
 
@@ -384,6 +413,12 @@ export class ChargiliService {
     const response = await lastValueFrom(
       this.httpService.post<PaymentLink>('/payment-links', payment_link_data),
     );
+    this.logger.log({
+      message: 'Chargili payment link created',
+      paymentLinkId: response.data.id,
+      name: payment_link_data.name,
+      context: 'Chargili',
+    });
     return response.data;
   }
 

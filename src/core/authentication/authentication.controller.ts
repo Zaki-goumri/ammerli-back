@@ -6,6 +6,7 @@ import {
   Post,
   Put,
   UseGuards,
+  Logger,
 } from '@nestjs/common';
 import { AuthenticationService } from './authentication.service';
 import { USER } from './decorators/user.decorartor';
@@ -46,6 +47,8 @@ import { MessageDto } from '../user/dtos/response/message.dto';
 })
 @ApiInternalServerErrorResponse({ description: 'Internal server error' })
 export class AuthenticationController {
+  private readonly logger = new Logger(AuthenticationController.name);
+
   constructor(
     private readonly authenticationService: AuthenticationService,
     private readonly notificationsService: NotificationsService,
@@ -85,6 +88,7 @@ export class AuthenticationController {
       'Too Many Requests. Please wait 30 seconds before requesting a new OTP.',
   })
   async auth(@Body() dto: AuthDto): Promise<SendOtpDto> {
+    this.logger.log(`Requesting OTP for phone number: ${dto.phoneNumber}`);
     return this.authenticationService.sendVerificationCode(dto.phoneNumber);
   }
 
@@ -110,6 +114,7 @@ export class AuthenticationController {
   })
   @Post('otp/validate')
   async validateOtp(@Body() dto: OtpValidationDto): Promise<ValidateOtpDto> {
+    this.logger.log(`Validating OTP for phone number: ${dto.phoneNumber}`);
     return this.authenticationService.validateOtp(dto);
   }
 
@@ -132,6 +137,7 @@ export class AuthenticationController {
   async validateFirebaseToken(
     @Body() dto: FirebaseTokenDto,
   ): Promise<ValidateOtpDto> {
+    this.logger.log('Validating Firebase token');
     return this.authenticationService.validateFirebaseToken(dto.firebaseToken);
   }
 
@@ -159,6 +165,7 @@ export class AuthenticationController {
     @USER('phoneNumber') phoneNumber: string,
     @Body() dto: RegisterUserDto,
   ): Promise<ValidateOtpDto> {
+    this.logger.log(`Registering user with phone number: ${phoneNumber}`);
     return this.authenticationService.registerUser(dto, phoneNumber);
   }
 
@@ -185,6 +192,7 @@ export class AuthenticationController {
     description: 'Unauthorized. Invalid refresh token provided.',
   })
   async refreshTokens(@USER() user: User): Promise<AuthResDto> {
+    this.logger.log(`Refreshing tokens for user ID: ${user.id}`);
     return this.authenticationService.issueTokens(user);
   }
 
@@ -218,6 +226,7 @@ export class AuthenticationController {
     @USER('id') userId: number,
     @Body() dto: LogoutDto,
   ): Promise<MessageDto> {
+    this.logger.log(`Logging out user ID: ${userId}`);
     await this.notificationsService.deleteToken(userId, dto.fcmToken);
     return { message: 'Logged out from device successfully' };
   }

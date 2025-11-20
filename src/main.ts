@@ -16,7 +16,7 @@ async function bootstrap() {
     logger:
       process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'prod'
         ? new LoggerBuilder()
-            .setJobName('core-api')
+            .setJobName('core')
             .setEnvironment(process.env.NODE_ENV)
             .build()
         : ['log', 'error', 'warn', 'debug', 'verbose'],

@@ -90,11 +90,18 @@ export class ObjectService implements ObjectStorageService {
       }),
       tap({
         next: () =>
-          this.logger.log(`File uploaded successfully: ${objectName}`),
+          this.logger.log({
+            message: 'File uploaded to MinIO',
+            objectName,
+            context: 'ObjectStorage',
+          }),
         error: (error) =>
-          this.logger.error(
-            `Final upload failure for ${objectName}: ${error.message}`,
-          ),
+          this.logger.error({
+            message: 'Final upload failure',
+            objectName,
+            error: error.message,
+            context: 'ObjectStorage',
+          }),
       }),
     );
 
@@ -111,9 +118,12 @@ export class ObjectService implements ObjectStorageService {
         objectName,
       };
     } catch (error) {
-      this.logger.error(
-        `Final upload failure for ${objectName}: ${error.message}`,
-      );
+      this.logger.error({
+        message: 'Final upload failure',
+        objectName,
+        error: error.message,
+        context: 'ObjectStorage',
+      });
       throw error;
     }
   }
@@ -122,7 +132,11 @@ export class ObjectService implements ObjectStorageService {
     files: FileData[],
     options?: UploadingOptions,
   ): Promise<Array<{ message: string; fileUrl: string; objectName: string }>> {
-    this.logger.log(`Starting bulk upload of ${files.length} files`);
+    this.logger.log({
+      message: 'Starting bulk upload',
+      count: files.length,
+      context: 'ObjectStorage',
+    });
 
     const uploadObservables = files.map((file, index) =>
       this.createUploadOperation(file, options, index).pipe(
@@ -145,9 +159,12 @@ export class ObjectService implements ObjectStorageService {
         const successful = results.filter((result) => !result.error);
         const failed = results.filter((result) => result.error);
 
-        this.logger.log(
-          `Bulk upload completed: ${successful.length} successful, ${failed.length} failed`,
-        );
+        this.logger.log({
+          message: 'Bulk upload completed',
+          successful: successful.length,
+          failed: failed.length,
+          context: 'ObjectStorage',
+        });
 
         return results.filter((result) => !result.error);
       }),
@@ -236,9 +253,12 @@ export class ObjectService implements ObjectStorageService {
   }
 
   async deleteFile(objectName: string, bucketName: string): Promise<void> {
-    this.logger.log(
-      `Attempting to delete object: ${objectName} from bucket ${bucketName}`,
-    );
+    this.logger.log({
+      message: 'Attempting to delete object',
+      objectName,
+      bucketName,
+      context: 'ObjectStorage',
+    });
 
     const delete$ = from(
       this.minioClient.removeObject(bucketName, objectName),
@@ -255,7 +275,13 @@ export class ObjectService implements ObjectStorageService {
             ),
         );
       }),
-      tap(() => this.logger.log(`Successfully deleted object: ${objectName}`)),
+      tap(() =>
+        this.logger.log({
+          message: 'Successfully deleted object',
+          objectName,
+          context: 'ObjectStorage',
+        }),
+      ),
     );
 
     await lastValueFrom(delete$);
@@ -264,7 +290,11 @@ export class ObjectService implements ObjectStorageService {
   async deleteBulkFiles(
     files: { objectName: string; bucketName: string }[],
   ): Promise<void> {
-    this.logger.log(`Attempting to delete ${files.length} files in bulk.`);
+    this.logger.log({
+      message: 'Attempting bulk delete',
+      count: files.length,
+      context: 'ObjectStorage',
+    });
 
     const deleteObservables = files.map((file) =>
       from(
@@ -297,9 +327,12 @@ export class ObjectService implements ObjectStorageService {
         const successful = results.filter((r) => r.success);
         const failed = results.filter((r) => !r.success);
 
-        this.logger.log(
-          `Bulk deletion completed: ${successful.length} successful, ${failed.length} failed`,
-        );
+        this.logger.log({
+          message: 'Bulk deletion completed',
+          successful: successful.length,
+          failed: failed.length,
+          context: 'ObjectStorage',
+        });
 
         if (failed.length > 0) {
           this.logger.warn(
@@ -331,9 +364,13 @@ export class ObjectService implements ObjectStorageService {
       );
       return presignedUrl;
     } catch (error) {
-      this.logger.error(
-        `Failed to generate presigned URL for ${objectName} in bucket ${bucketName}: ${error.message}`,
-      );
+      this.logger.error({
+        message: 'Failed to generate presigned URL',
+        objectName,
+        bucketName,
+        error: error.message,
+        context: 'ObjectStorage',
+      });
       throw new InternalServerErrorException(
         'Failed to generate presigned URL.',
       );
@@ -351,9 +388,13 @@ export class ObjectService implements ObjectStorageService {
 
       return Buffer.concat(chunks);
     } catch (error) {
-      this.logger.error(
-        `Failed to get file ${objectName} from MinIO in bucket ${bucketName}: ${error.message}`,
-      );
+      this.logger.error({
+        message: 'Failed to get file from MinIO',
+        objectName,
+        bucketName,
+        error: error.message,
+        context: 'ObjectStorage',
+      });
       throw new InternalServerErrorException('Failed to retrieve file.');
     }
   }

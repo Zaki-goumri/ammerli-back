@@ -10,6 +10,7 @@ import {
   ParseIntPipe,
   UseGuards,
   Header,
+  Logger,
 } from '@nestjs/common';
 import { InvoiceService } from './services/invoice.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
@@ -25,6 +26,8 @@ import { USER } from '../authentication/decorators/user.decorartor';
 @Controller('invoices')
 @UseGuards(AccessTokenGuard, RoleGuard)
 export class InvoiceController {
+  private readonly logger = new Logger(InvoiceController.name);
+
   constructor(
     private readonly invoiceService: InvoiceService,
     private readonly invoiceGeneratorService: InvoiceGeneratorService,
@@ -39,6 +42,7 @@ export class InvoiceController {
     description: 'The invoice has been successfully generated.',
   })
   generate(@Param('orderId', ParseIntPipe) orderId: number) {
+    this.logger.log(`Generating invoice for order ID: ${orderId}`);
     return this.invoiceService.generateInvoiceForOrder(orderId);
   }
 
@@ -94,6 +98,7 @@ export class InvoiceController {
   @Roles(USER_ROLES.ADMIN)
   @ApiOperation({ summary: 'Regenerate the invoice PDF' })
   regenerate(@Param('id', ParseIntPipe) id: number) {
+    this.logger.log(`Regenerating invoice ID: ${id}`);
     return this.invoiceService.regenerateInvoice(id);
   }
 
@@ -102,6 +107,7 @@ export class InvoiceController {
   @Roles(USER_ROLES.ADMIN)
   @ApiOperation({ summary: 'Delete an invoice' })
   remove(@Param('id', ParseIntPipe) id: number) {
+    this.logger.log(`Deleting invoice ID: ${id}`);
     return this.invoiceService.delete(id);
   }
 

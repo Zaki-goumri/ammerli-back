@@ -108,7 +108,12 @@ export class UserService {
       });
       await userRepo.save(user);
 
-      this.logger.log('User entity persisted', { id: user.id });
+      this.logger.log({
+        message: 'User created successfully',
+        userId: user.id,
+        phoneNumber: user.phoneNumber,
+        context: 'User',
+      });
       return user;
     });
   }
@@ -355,6 +360,13 @@ export class UserService {
       await this.userRepo.save(user);
       await this.redisService.del(UserService.getCacheKey(id, 'id'));
       await this.redisService.del(UserService.getCacheKey(id, 'admin-details')); // Invalidate admin details cache
+      
+      this.logger.log({
+        message: 'User updated successfully',
+        userId: id,
+        context: 'User',
+      });
+      
       return user as UserDto;
     });
   }
@@ -423,6 +435,13 @@ export class UserService {
         metadata: { targetId: id, targetType: BUCKET_TARGETS.USER_PROFILE },
       });
     }
+    
+    this.logger.log({
+      message: 'User soft deleted',
+      userId: id,
+      context: 'User',
+    });
+
     return { message: 'User soft deleted successfully' };
   }
 
@@ -452,7 +471,6 @@ export class UserService {
       throw new NotFoundException('No valid users found for deletion.');
     }
 
-    // 2. "At least one admin" check
     const adminsToDeleteCount = usersToDelete.filter(
       (user) => user.role === USER_ROLES.ADMIN,
     ).length;
@@ -464,7 +482,6 @@ export class UserService {
       throw new ForbiddenException('Cannot delete all admins in the system.');
     }
 
-    // 3. Object Storage Deletion with RxJS
     const profilePicsToDelete = usersToDelete
       .map((user) => user.profilePic)
       .filter((pic): pic is string => !!pic);
@@ -529,6 +546,14 @@ export class UserService {
         NOTIFICATION_TYPE.ADMIN_ALERTS,
       );
     }
+
+    this.logger.log({
+      message: 'Bulk delete process completed',
+      successfulDeletes: successfulDeletes.length,
+      failedDeletes: failedDeletes.length,
+      adminId: currentAdminId,
+      context: 'User',
+    });
 
     return {
       message: `Bulk delete process completed. Successfully deleted: ${successfulDeletes.length}. Failed: ${failedDeletes.length}.`,

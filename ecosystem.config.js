@@ -9,7 +9,7 @@ module.exports = {
       watch: false,
       max_memory_restart: '1G',
       env_production: {
-        NODE_ENV: 'production',
+        NODE_ENV: 'prod',
         PORT: 3000,
       },
       error_file: './logs/pm2-error.log',

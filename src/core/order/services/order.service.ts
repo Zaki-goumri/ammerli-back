@@ -101,9 +101,11 @@ export class OrderService {
     this.logger.log('Processing Chargili webhook in service');
     const checkoutId = extractCheckoutIdFromUrl(data.checkout_url);
     if (!checkoutId) {
-      this.logger.error(
-        `Invalid checkout URL received in webhook: ${data.checkout_url}`,
-      );
+      this.logger.error({
+        message: 'Invalid checkout URL received in webhook',
+        checkoutUrl: data.checkout_url,
+        context: 'Order',
+      });
       throw new BadRequestException('Invalid checkout URL');
     }
 
@@ -118,7 +120,14 @@ export class OrderService {
 
     const orderId =
       await this.CheckoutService.findOrderIdByCheckoutId(checkoutId);
-    this.logger.log('Webhook processed for order ID:', orderId);
+    
+    this.logger.log({
+      message: 'Webhook processed for order',
+      orderId,
+      checkoutId,
+      status: data.status,
+      context: 'Order',
+    });
 
     const buyerId =
       await this.CheckoutService.findBuyerIdByCheckoutId(checkoutId);
@@ -132,9 +141,12 @@ export class OrderService {
     };
 
     if (isPaymentSuccessful) {
-      this.logger.log(
-        `Payment successful for checkout ID: ${checkoutId}. Order processed.`,
-      );
+      this.logger.log({
+        message: 'Payment successful, order processed',
+        checkoutId,
+        orderId,
+        context: 'Order',
+      });
       await this.notificationService.sendNotification(
         'Payment Successful',
         `Your payment for order with checkout ID ${checkoutId} has been received successfully.`,
@@ -147,9 +159,13 @@ export class OrderService {
       });
       this.eventEmitter.emit('order.paid', orderId);
     } else {
-      this.logger.warn(
-        `Payment failed for checkout ID: ${checkoutId}. Order not processed.`,
-      );
+      this.logger.warn({
+        message: 'Payment failed or canceled',
+        checkoutId,
+        orderId,
+        status: data.status,
+        context: 'Order',
+      });
       finalDataForClient.errorMessage = 'Payment failed or was canceled.';
       await this.notificationService.sendNotification(
         'Payment Failed',
@@ -334,6 +350,16 @@ export class OrderService {
         }),
       );
       await orderProductRepo.save(items);
+      
+      this.logger.log({
+        message: 'Order created successfully',
+        orderId: order.id,
+        buyerId: buyerId,
+        totalAmount: order.totalAmount,
+        paymentWay: order.paymentWay,
+        context: 'Order',
+      });
+      
       return order;
     });
     const orderResponse: CreateOrderResponseDto = {
@@ -389,6 +415,7 @@ export class OrderService {
       amount: totalAmount,
       currency: 'dzd',
       //NOTE: Update URLs to actual frontend pages in production
+      //TODO: Update URLs to actual frontend pages in production
       success_url: `${backendApiUrl}/order/redirect/${orderId}`,
       webhook_endpoint: `${backendApiUrl}/order/webhook/chargili`,
       failure_url: `${backendApiUrl}/order/redirect/${orderId}`,
@@ -407,7 +434,6 @@ export class OrderService {
   ): Promise<PaginationResponseDto<OrderListItemDto>> {
     const { limit, page } = paginationQuery;
 
-    // First, get paginated order IDs
     const orderIdsQuery = this.orderRepo
       .createQueryBuilder('orders')
       .where('orders.buyerId = :userId', { userId })
@@ -435,7 +461,6 @@ export class OrderService {
 
     const orderIds = paginatedIds.map((o) => o.id);
 
-    // Now fetch full data for these order IDs
     const queryBuilder = this.orderRepo
       .createQueryBuilder('orders')
       .where('orders.id IN (:...orderIds)', { orderIds })
@@ -814,7 +839,6 @@ export class OrderService {
       const trackingRepo = manager.getRepository(Tracking);
       const productRepo = manager.getRepository(Product);
 
-      // 1. Find order with relations
       const order = await orderRepo.findOne({
         where: { id: orderId },
         relations: ['orderProducts', 'orderProducts.product'],
@@ -824,21 +848,16 @@ export class OrderService {
         throw new NotFoundException(`Order #${orderId} not found`);
       }
 
-      // 2. Check if already cancelled
-      if (order.isCancelled) {
+        if (order.isCancelled) {
         throw new BadRequestException('Order is already cancelled');
       }
 
-      // 3. Validate cancellation rules
       this.validateCancellation(order, userId, cancelledBy);
 
-      // 4. Get current order status
       const currentTracking = await trackingRepo.findOne({
         where: { orderId },
         order: { createdAt: 'DESC' },
       });
-
-      // 5. Validate status for cancellation
       if (currentTracking?.status === ORDER_STATUS.DELIVERED) {
         throw new BadRequestException(
           'Cannot cancel delivered order. Please contact support for returns.',
@@ -854,26 +873,20 @@ export class OrderService {
         );
       }
 
-      // 6. Restore inventory (return products to stock)
       await this.restoreInventory(order.orderProducts, productRepo);
 
-      // 7. Update order status
       order.isCancelled = true;
       order.cancellationReason = reason;
       order.cancelledBy = cancelledBy;
       order.cancelledAt = new Date();
       await orderRepo.save(order);
 
-      // 8. Create cancellation tracking
       await trackingRepo.save({
         orderId,
         status: ORDER_STATUS.CANCELLED,
       });
-
-      // 9. Send notifications
       await this.sendCancellationNotifications(order, cancelledBy, reason);
 
-      // 10. Create refund if order was paid
       let refundId: number | undefined;
       if (this.refundService) {
         const refund = await this.refundService.createRefundForCancelledOrder(
@@ -887,7 +900,6 @@ export class OrderService {
         }
       }
 
-      // 11. Invalidate cache
       await this.redisService.del(`order:${orderId}`);
 
       this.logger.log(

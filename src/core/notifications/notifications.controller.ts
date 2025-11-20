@@ -11,6 +11,7 @@ import {
   HttpCode,
   HttpStatus,
   ParseIntPipe,
+  Logger,
 } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { SendNotificationDto } from './dto/send-notification.dto';
@@ -36,6 +37,8 @@ import { UpdateResult, DeleteResult } from 'typeorm'; // New import for update/d
 @Controller('notifications')
 @UseGuards(AccessTokenGuard)
 export class NotificationsController {
+  private readonly logger = new Logger(NotificationsController.name);
+
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Post('send-fcm-notification')
@@ -59,6 +62,13 @@ export class NotificationsController {
     @USER('id') userId: number,
   ): Promise<SendNotificationResponseDto> {
     const { title, body, type } = sendNotificationDto;
+    this.logger.log({
+      message: 'Sending FCM notification',
+      userId,
+      title,
+      type,
+      context: 'Notifications',
+    });
     return this.notificationsService.sendNotification(
       title,
       body,
@@ -83,6 +93,12 @@ export class NotificationsController {
    * @returns A promise that resolves to a success message.
    */
   registerToken(@Body() dto: CreateTokenDto, @USER('id') userId: number) {
+    this.logger.log({
+      message: 'Registering FCM token',
+      userId,
+      deviceType: dto.os,
+      context: 'Notifications',
+    });
     return this.notificationsService.registerToken(dto, userId);
   }
 
@@ -138,6 +154,12 @@ export class NotificationsController {
     description: 'Notification not found',
   })
   remove(@Param('id', ParseIntPipe) id: number, @USER('id') userId: number) {
+    this.logger.log({
+      message: 'Deleting notification',
+      notificationId: id,
+      userId,
+      context: 'Notifications',
+    });
     return this.notificationsService.remove(id, userId);
   }
 }

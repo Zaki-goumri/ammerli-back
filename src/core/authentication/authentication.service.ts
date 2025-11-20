@@ -60,6 +60,11 @@ export class AuthenticationService {
     const user =
       await this.userService.findByPhoneNumberWithoutException(phoneNumber);
     if (!user) {
+      this.logger.log({
+        message: 'User not found, issuing registration token',
+        phoneNumber,
+        context: 'Authentication',
+      });
       const registrationToken = await this.issueRegistrationToken(phoneNumber);
       return {
         accessToken: registrationToken,
@@ -67,6 +72,13 @@ export class AuthenticationService {
       };
     }
     const tokens = await this.issueTokens(user);
+
+    this.logger.log({
+      message: 'User logged in successfully',
+      userId: user.id,
+      phoneNumber,
+      context: 'Authentication',
+    });
 
     return {
       user: tokens.user,
@@ -90,6 +102,11 @@ export class AuthenticationService {
       await this.userService.findByPhoneNumberWithoutException(phoneNumber);
 
     if (!user) {
+      this.logger.log({
+        message: 'User not found (Firebase), issuing registration token',
+        phoneNumber,
+        context: 'Authentication',
+      });
       const registrationToken = await this.issueRegistrationToken(phoneNumber);
       return {
         accessToken: registrationToken,
@@ -97,6 +114,13 @@ export class AuthenticationService {
       };
     }
     const tokens = await this.issueTokens(user);
+
+    this.logger.log({
+      message: 'User logged in successfully (Firebase)',
+      userId: user.id,
+      phoneNumber,
+      context: 'Authentication',
+    });
 
     return {
       user: tokens.user,
@@ -175,6 +199,11 @@ export class AuthenticationService {
   async sendVerificationCode(phoneNumber: string): Promise<SendOtpDto> {
     await this.checkBlacklistAndThrow(phoneNumber);
     await this.otpStrategy.send(phoneNumber);
+    this.logger.log({
+      message: 'OTP sent successfully',
+      phoneNumber,
+      context: 'Authentication',
+    });
     return { message: `OTP sent to ${phoneNumber}` };
   }
 
@@ -199,6 +228,14 @@ export class AuthenticationService {
       phoneNumber,
     });
     const tokens = await this.issueTokens(user);
+    
+    this.logger.log({
+      message: 'User registered',
+      userId: user.id,
+      phoneNumber,
+      context: 'Authentication',
+    });
+
     return { ...tokens, isRegistered: true };
   }
 }

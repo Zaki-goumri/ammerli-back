@@ -33,10 +33,18 @@ export class UploadProcessor extends WorkerHost {
   > {
     switch (job.name) {
       case UPLOAD_JOBS.UPLOAD_FILE:
-        this.logger.log(`Processing upload file job: ${job.id}`);
+        this.logger.log({
+          message: 'Processing upload file job',
+          jobId: job.id,
+          context: 'UploadProcessor',
+        });
         return this.handleUploading(job.data as UploadJobDto);
       case UPLOAD_JOBS.DELETE_FILE:
-        this.logger.log(`Processing delete file job: ${job.id}`);
+        this.logger.log({
+          message: 'Processing delete file job',
+          jobId: job.id,
+          context: 'UploadProcessor',
+        });
         const deleteData = job.data as DeleteFileDto;
         await this.objectStorageService.deleteFile(
           deleteData.objectName,
@@ -44,12 +52,20 @@ export class UploadProcessor extends WorkerHost {
         );
         return { message: 'File deleted', jobId: job.id };
       case UPLOAD_JOBS.DELETE_FILES_BULK:
-        this.logger.log(`Processing bulk delete files job: ${job.id}`);
+        this.logger.log({
+          message: 'Processing bulk delete files job',
+          jobId: job.id,
+          context: 'UploadProcessor',
+        });
         const deleteBulkData = job.data as DeleteFilesBulkDto;
         await this.objectStorageService.deleteBulkFiles(deleteBulkData.files);
         return { message: 'Bulk files deleted', jobId: job.id };
       case UPLOAD_JOBS.UPLOAD_FILES_BULK:
-        this.logger.log(`Processing bulk upload files job: ${job.id}`);
+        this.logger.log({
+          message: 'Processing bulk upload files job',
+          jobId: job.id,
+          context: 'UploadProcessor',
+        });
         return this.handleBulkUploading(job.data as UploadFilesBulkDto);
       default:
         throw new Error('Method not implemented.');
@@ -63,11 +79,20 @@ export class UploadProcessor extends WorkerHost {
       this.logger.error(`Job is missing targetType in metadata`);
       throw new Error(`Job is missing targetType in metadata`);
     }
+    this.logger.log({
+      message: 'Handling uploading',
+      bucketName,
+      context: 'UploadProcessor',
+    });
     const result = await this.objectStorageService.uploadFile(data.file, {
       ...data.options,
       bucketName,
     });
-    this.logger.log('Uploading handled...');
+    this.logger.log({
+      message: 'Uploading handled',
+      fileUrl: result.fileUrl,
+      context: 'UploadProcessor',
+    });
     return {
       fileUrl: result.fileUrl,
       objectName: result.objectName,
@@ -93,7 +118,11 @@ export class UploadProcessor extends WorkerHost {
         bucketName,
       },
     );
-    this.logger.log('Bulk uploading handled.');
+    this.logger.log({
+      message: 'Bulk uploading handled',
+      count: results.length,
+      context: 'UploadProcessor',
+    });
     return results.map((result) => ({
       fileUrl: result.fileUrl,
       objectName: result.objectName,
@@ -123,9 +152,12 @@ export class UploadProcessor extends WorkerHost {
       if (results && results.length > 0) {
         const { targetId, targetType } = results[0];
         const eventName = `file.uploaded.bulk.${targetType}`;
-        this.logger.log(
-          `Dispatching NestJS event: ${eventName} for target ID: ${targetId}`,
-        );
+        this.logger.log({
+          message: 'Dispatching NestJS event',
+          eventName,
+          targetId,
+          context: 'UploadProcessor',
+        });
         this.eventEmitter.emit(eventName, {
           targetId,
           files: results.map((r) => ({
@@ -139,8 +171,12 @@ export class UploadProcessor extends WorkerHost {
 
   @OnWorkerEvent('failed')
   onFailed(job: Job, error?: Error) {
-    this.logger.log(`Job failed: ${job.id}`);
-    this.logger.error(`Job failure reason:`, error?.message || 'Unknown error');
+    this.logger.error({
+      message: 'Job failed',
+      jobId: job.id,
+      error: error?.message || 'Unknown error',
+      context: 'UploadProcessor',
+    });
 
     // Add null checks
     if (!job.data) {

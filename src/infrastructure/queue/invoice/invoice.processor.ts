@@ -26,7 +26,11 @@ export class InvoiceProcessor extends WorkerHost {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
     switch (job.name) {
       case INVOICE_JOBS.GENERATE_INVOICE:
-        this.logger.log(`Generating invoice for order ID: ${job.data.orderId}`);
+        this.logger.log({
+          message: 'Generating invoice',
+          orderId: job.data.orderId,
+          context: 'InvoiceProcessor',
+        });
         const invoicePath = await this.invoiceGeneratorService.generateInvoice(
           job.data.orderId,
         );
@@ -45,7 +49,11 @@ export class InvoiceProcessor extends WorkerHost {
 
   @OnWorkerEvent('completed')
   async onCompleted(job: Job<GenerateInvoiceDto>) {
-    this.logger.log(`Invoice generation job completed: ${job.id}`);
+    this.logger.log({
+      message: 'Invoice generation job completed',
+      jobId: job.id,
+      context: 'InvoiceProcessor',
+    });
     const { orderId } = job.data;
 
     const buyerId =
@@ -58,16 +66,21 @@ export class InvoiceProcessor extends WorkerHost {
       NOTIFICATION_TYPE.ORDERS,
     );
 
-    this.logger.log(
-      `Notification sent for invoice generation for order ${orderId}`,
-    );
+    this.logger.log({
+      message: 'Notification sent for invoice generation',
+      orderId,
+      context: 'InvoiceProcessor',
+    });
   }
 
   @OnWorkerEvent('failed')
   async onFailed(job: Job<GenerateInvoiceDto>, error: Error) {
-    this.logger.error(
-      `Invoice generation job failed: ${job.id}, Error: ${error.message}`,
-    );
+    this.logger.error({
+      message: 'Invoice generation job failed',
+      jobId: job.id,
+      error: error.message,
+      context: 'InvoiceProcessor',
+    });
     const { orderId } = job.data;
 
     const buyerId =
@@ -79,8 +92,10 @@ export class InvoiceProcessor extends WorkerHost {
       buyerId,
       NOTIFICATION_TYPE.ORDERS,
     );
-    this.logger.log(
-      `Failure notification sent for invoice generation for order ${orderId}`,
-    );
+    this.logger.log({
+      message: 'Failure notification sent for invoice generation',
+      orderId,
+      context: 'InvoiceProcessor',
+    });
   }
 }

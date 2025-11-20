@@ -13,6 +13,7 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFiles,
+  Logger,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -73,6 +74,8 @@ import { categories } from 'src/seed/seeds-data';
 @ApiInternalServerErrorResponse({ description: 'Internal server error' })
 @Controller('products')
 export class ProductController {
+  private readonly logger = new Logger(ProductController.name);
+
   constructor(private readonly productService: ProductService) {}
 
   /**
@@ -207,7 +210,6 @@ export class ProductController {
         'quantity',
         'brandId',
         'categoryId',
-        // Added the new required field
         'quantityPerBatch',
       ],
     },
@@ -233,6 +235,7 @@ export class ProductController {
     const uploadOptions = {
       pathPrefix: `products/${userId}/`,
     } as UploadingOptions;
+    this.logger.log(`User ${userId} creating product: ${createProductDto.name}`);
     return this.productService.create(
       createProductDto,
       userId,
@@ -353,6 +356,7 @@ export class ProductController {
       files,
       uploadOptions,
     );
+    this.logger.log(`User ${userId} updated product ${id}`);
     return { message: 'Product successfully updated' };
   }
 
@@ -370,6 +374,7 @@ export class ProductController {
   @ApiNotFoundResponse({ description: 'Product not found' })
   @ApiParam({ name: 'id', type: Number, description: 'Product ID' })
   remove(@Param('id', ParseIntPipe) id: number, @USER('id') userId: number) {
+    this.logger.log(`User ${userId} deleting product ${id}`);
     return this.productService.remove(id, userId);
   }
 
@@ -400,6 +405,7 @@ export class ProductController {
     @Param('productId', ParseIntPipe) productId: number,
     @Body() dto: DeleteProductPicturesDto,
   ) {
+    this.logger.log(`Deleting pictures for product ${productId}: ${dto.pictureIds.join(', ')}`);
     return this.productService.deleteProductImages(productId, dto.pictureIds);
   }
 

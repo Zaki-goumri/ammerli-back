@@ -81,6 +81,7 @@ export class OrderController {
     @Body() dto: CreateOrderDto,
     @USER('id') buyerId: number,
   ): Promise<CreateOrderResDto> {
+    this.logger.log(`Creating order for buyer ID: ${buyerId}`);
     return this.orderService.createOrderProductWithPayement(dto, buyerId);
   }
 
@@ -246,6 +247,7 @@ export class OrderController {
     @USER('role') userRole: string,
     @Body() dto: CancelOrderDto,
   ): Promise<{ message: string }> {
+    this.logger.log(`Request to cancel order ${orderId} by user ${userId} (${userRole})`);
     const cancelledBy =
       userRole === USER_ROLES.ADMIN
         ? 'ADMIN'

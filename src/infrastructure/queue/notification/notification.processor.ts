@@ -48,7 +48,11 @@ export class NotificationProcessor extends WorkerHost {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
     switch (job.name) {
       case NOTIFICATION_JOBS.SEND_NOTIFICATION:
-        this.logger.log(`Processing notification job: ${job.id}`);
+        this.logger.log({
+          message: 'Processing notification job',
+          jobId: job.id,
+          context: 'NotificationProcessor',
+        });
         await this.handleSendingNotification(job.data as SendNotificationJob);
         return Promise.resolve({
           message: 'Notification job processed',
@@ -83,14 +87,22 @@ export class NotificationProcessor extends WorkerHost {
   }
 
   sendNotificationToOneDevice(message: NotificationMessage): Promise<string> {
-    this.logger.log(
-      `Sending notification to token: ${message.token.substring(0, 20)}...`,
-    );
+    this.logger.debug({
+      message: 'Sending notification to token',
+      tokenPrefix: message.token.substring(0, 20),
+      context: 'NotificationProcessor',
+    });
     return this.firebaseService.getFcm().send(message);
   }
 
   async handleSendingNotification(data: SendNotificationJob): Promise<void> {
-    this.logger.log('Handling sending notification...');
+    this.logger.log({
+      message: 'Handling sending notification',
+      userId: data.userId,
+      title: data.title,
+      type: data.type,
+      context: 'NotificationProcessor',
+    });
     const tokens = await this.notificationsService.getActiveTokensForUser(
       data.userId,
     );
@@ -142,7 +154,12 @@ export class NotificationProcessor extends WorkerHost {
       );
     }
 
-    this.logger.log('Sending notification handled.');
+    this.logger.log({
+      message: 'Sending notification handled',
+      totalTokens: tokens.length,
+      invalidTokens: invalidTokens.length,
+      context: 'NotificationProcessor',
+    });
   }
 
   /**
@@ -172,7 +189,11 @@ export class NotificationProcessor extends WorkerHost {
 
     // Only save regular notifications
     if (job.name === NOTIFICATION_JOBS.SEND_NOTIFICATION) {
-      this.logger.log(`Job completed: ${job.id}`);
+      this.logger.log({
+        message: 'Job completed',
+        jobId: job.id,
+        context: 'NotificationProcessor',
+      });
       const { title, body, userId, type } = job.data as SendNotificationJob;
       await this.notificationsService.saveNotificationRecord(
         title,
@@ -180,7 +201,11 @@ export class NotificationProcessor extends WorkerHost {
         userId,
         type,
       );
-      this.logger.log(`Notification saved to DB for job ${job.id}`);
+      this.logger.log({
+        message: 'Notification saved to DB',
+        jobId: job.id,
+        context: 'NotificationProcessor',
+      });
     }
   }
 
@@ -195,6 +220,11 @@ export class NotificationProcessor extends WorkerHost {
     }
 
     // Log regular notification failures
-    this.logger.error(`Job failed: ${job.id} - ${job.failedReason}`);
+    this.logger.error({
+      message: 'Job failed',
+      jobId: job.id,
+      reason: job.failedReason,
+      context: 'NotificationProcessor',
+    });
   }
 }
