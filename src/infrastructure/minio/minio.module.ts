@@ -15,7 +15,7 @@ const minioClientProvider = {
       accessKey: config.accessKey,
       secretKey: config.secretKey,
       region: config.region,
-      useSSL: config.useSSL,
+      useSSL: false,
     });
   },
   inject: [minioConfig.KEY],
