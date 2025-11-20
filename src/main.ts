@@ -147,9 +147,26 @@ async function bootstrap() {
         },
       }),
     );
-    console.log('✓ Swagger documentation enabled at /api-docs');
+    console.log('Swagger documentation enabled at /api-docs');
   } else {
-    console.log('✗ Swagger documentation disabled');
+    console.log('Swagger documentation disabled');
+  }
+
+  try {
+    try {
+      console.log('3. Testing MinIO connection...');
+      const minio = app.get('MINIO_CLIENT');
+      await minio.listBuckets();
+      console.log('✅ MinIO connected');
+    } catch (error) {
+      console.log('❌ MinIO connection failed:', error.message);
+    }
+    console.log('3. Testing MinIO connection...');
+    const minio = app.get('MINIO_CLIENT');
+    await minio.listBuckets();
+    console.log('✅ MinIO connected');
+  } catch (error) {
+    console.log('❌ MinIO connection failed:', error.message);
   }
 
   //RUNNING THE APPLICATION
