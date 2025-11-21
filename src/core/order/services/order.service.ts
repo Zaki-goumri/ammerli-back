@@ -805,7 +805,7 @@ export class OrderService {
       this.getBuyerInfosForOrder(orderId),
       this.getPaymentInfo(orderId),
     ]);
-    return { products, buyerInfo };
+    return { products, buyerInfo, paymentInfo };
   }
 
   /**
