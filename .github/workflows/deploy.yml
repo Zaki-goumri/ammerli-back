@@ -43,16 +43,6 @@ jobs:
             echo "Authenticating with Docker Hub..."
             echo $DOCKERHUB_TOKEN | docker login -u $DOCKERHUB_USERNAME --password-stdin
             
-            # Get current running image for rollback
-            echo "📸 Taking deployment snapshot for rollback..."
-            CURRENT_IMAGE=$(docker compose images server -q 2>/dev/null || echo "")
-            if [ -n "$CURRENT_IMAGE" ]; then
-              echo "Current running image: $CURRENT_IMAGE"
-              docker tag $CURRENT_IMAGE 3ammerli-backend:previous
-            else
-              echo "No current deployment found"
-            fi
-            
             # Build base image first
             echo "Building base image..."
             docker build -t 3ammerli-base:latest -f Dockerfile.base .
@@ -61,13 +51,10 @@ jobs:
             echo "Pulling latest images..."
             docker pull $IMAGE_NAME:latest
             
-            # Tag the new image
-            docker tag $IMAGE_NAME:latest 3ammerli-backend:latest
-            
             # Health check before stopping
             echo "Running pre-deployment health check..."
             if ! curl -f http://localhost/api/v1/health/status 2>/dev/null; then
-              echo "⚠️ Warning: Health check failed, but continuing..."
+              echo " Warning: Health check failed, but continuing..."
             fi
             
             # Stop old containers gracefully
@@ -86,68 +73,29 @@ jobs:
             echo "Running post-deployment health check..."
             RETRY_COUNT=0
             MAX_RETRIES=12
-            HEALTH_CHECK_PASSED=false
             
             while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
               if curl -f http://localhost/api/v1/health/status 2>/dev/null; then
-                echo "✅ Health check passed!"
-                HEALTH_CHECK_PASSED=true
+                echo "Health check passed!"
                 break
               fi
               RETRY_COUNT=$((RETRY_COUNT + 1))
-              echo "⏳ Waiting for service to be ready... ($RETRY_COUNT/$MAX_RETRIES)"
+              echo "Waiting for service to be ready... ($RETRY_COUNT/$MAX_RETRIES)"
               sleep 5
             done
             
-            # Rollback if health check fails
-            if [ "$HEALTH_CHECK_PASSED" = false ]; then
-              echo "❌ Health check failed after deployment! Initiating rollback..."
-              
-              # Get container logs for debugging
-              echo "📋 Container logs before rollback:"
+            if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+              echo "Health check failed after deployment!"
+              echo "Container logs:"
               docker compose logs --tail=50 server
-              
-              # Rollback to previous version
-              if [ -n "$CURRENT_IMAGE" ]; then
-                echo "🔄 Rolling back to previous version..."
-                
-                # Stop current containers
-                docker compose down --timeout 30
-                
-                # Tag previous image as latest
-                docker tag 3ammerli-backend:previous 3ammerli-backend:latest
-                
-                # Start previous version
-                docker compose up -d
-                
-                echo "✅ Rollback completed successfully!"
-                
-                # Verify rollback
-                echo "🔍 Verifying rollback..."
-                sleep 10
-                if curl -f http://localhost/api/v1/health/status 2>/dev/null; then
-                  echo "✅ Rollback verification passed!"
-                else
-                  echo "⚠️ Rollback verification failed, but previous version is running"
-                fi
-              else
-                echo "❌ No previous version to rollback to!"
-              fi
-              
               exit 1
             fi
             
-            # Clean up old images (keep previous for potential future rollbacks)
-            echo "🧹 Cleaning up unused images (keeping rollback image)..."
+            # Clean up old images
+            echo "Cleaning up old images..."
             docker image prune -f
             
-            # Remove the previous tag after successful deployment
-            if [ -n "$CURRENT_IMAGE" ]; then
-              echo "🗑️ Removing old rollback image..."
-              docker rmi 3ammerli-backend:previous 2>/dev/null || true
-            fi
-            
-            echo "🎉 Deployment completed successfully!"
+            echo "Deployment completed successfully!"
 
       - name: Deployment notification
         if: always()
@@ -159,5 +107,5 @@ jobs:
           else
             echo "## ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "⚠️ Deployment failed. Rollback was attempted if possible." >> $GITHUB_STEP_SUMMARY
+            echo "⚠️  Deployment failed. Check logs above." >> $GITHUB_STEP_SUMMARY
           fi
