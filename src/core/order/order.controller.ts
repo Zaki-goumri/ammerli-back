@@ -136,7 +136,7 @@ export class OrderController {
     description: 'A paginated list of orders',
   })
   @Get('/all')
-  @ConvertToPresignedUrls(['picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
+  @ConvertToPresignedUrls(['products.picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
   getAllOrders(
     @Query() { page, limit }: PaginationQueryDto,
     @USER('id') userId: number,
@@ -247,7 +247,9 @@ export class OrderController {
     @USER('role') userRole: string,
     @Body() dto: CancelOrderDto,
   ): Promise<{ message: string }> {
-    this.logger.log(`Request to cancel order ${orderId} by user ${userId} (${userRole})`);
+    this.logger.log(
+      `Request to cancel order ${orderId} by user ${userId} (${userRole})`,
+    );
     const cancelledBy =
       userRole === USER_ROLES.ADMIN
         ? 'ADMIN'

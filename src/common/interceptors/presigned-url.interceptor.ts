@@ -79,46 +79,68 @@ export class PresignedUrlInterceptor implements NestInterceptor {
     expiry: number,
   ): Promise<any> {
     if (!obj || typeof obj !== 'object') return obj;
-
     const result = { ...obj };
 
     for (const field of fields) {
-      if (field in result) {
-        const value = result[field];
+      if (field.includes('.')) {
+        const parts = field.split('.');
+        const firstPart = parts[0];
+        const restPath = parts.slice(1).join('.');
 
-        if (typeof value === 'string' && value) {
-          result[field] = await this.objectStorageService.getPresignedUrl(
-            value,
-            bucket,
-          );
-        } else if (Array.isArray(value)) {
-          if (value.length > 0 && typeof value[0] === 'string') {
-            result[field] = await Promise.all(
-              value.map(async (v) => {
-                if (typeof v === 'string' && v) {
-                  const url = await this.objectStorageService.getPresignedUrl(
-                    v,
-                    bucket,
-                  );
-                  return url;
-                }
-                return v;
-              }),
-            );
-          } else if (value.length > 0 && typeof value[0] === 'object') {
-            result[field] = await Promise.all(
+        if (firstPart in result) {
+          const value = result[firstPart];
+
+          if (Array.isArray(value)) {
+            result[firstPart] = await Promise.all(
               value.map((item) =>
-                this.convertFields(item, fields, bucket, expiry),
+                this.convertFields(item, [restPath], bucket, expiry),
               ),
             );
+          } else if (value && typeof value === 'object') {
+            result[firstPart] = await this.convertFields(
+              value,
+              [restPath],
+              bucket,
+              expiry,
+            );
           }
-        } else if (value && typeof value === 'object') {
-          result[field] = await this.convertFields(
-            value,
-            fields,
-            bucket,
-            expiry,
-          );
+        }
+      } else {
+        if (field in result) {
+          const value = result[field];
+          if (typeof value === 'string' && value) {
+            result[field] = await this.objectStorageService.getPresignedUrl(
+              value,
+              bucket,
+            );
+          } else if (Array.isArray(value)) {
+            if (value.length > 0 && typeof value[0] === 'string') {
+              result[field] = await Promise.all(
+                value.map(async (v) => {
+                  if (typeof v === 'string' && v) {
+                    return await this.objectStorageService.getPresignedUrl(
+                      v,
+                      bucket,
+                    );
+                  }
+                  return v;
+                }),
+              );
+            } else if (value.length > 0 && typeof value[0] === 'object') {
+              result[field] = await Promise.all(
+                value.map((item) =>
+                  this.convertFields(item, fields, bucket, expiry),
+                ),
+              );
+            }
+          } else if (value && typeof value === 'object') {
+            result[field] = await this.convertFields(
+              value,
+              fields,
+              bucket,
+              expiry,
+            );
+          }
         }
       }
     }

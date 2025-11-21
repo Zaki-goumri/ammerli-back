@@ -120,7 +120,7 @@ export class OrderService {
 
     const orderId =
       await this.CheckoutService.findOrderIdByCheckoutId(checkoutId);
-    
+
     this.logger.log({
       message: 'Webhook processed for order',
       orderId,
@@ -240,7 +240,7 @@ export class OrderService {
               BUCKET_TARGETS.PRODUCT_PICTURES,
             )
           : null;
-        
+
         return {
           id: op?.product.id,
           name: op?.product.name,
@@ -350,7 +350,7 @@ export class OrderService {
         }),
       );
       await orderProductRepo.save(items);
-      
+
       this.logger.log({
         message: 'Order created successfully',
         orderId: order.id,
@@ -359,7 +359,7 @@ export class OrderService {
         paymentWay: order.paymentWay,
         context: 'Order',
       });
-      
+
       return order;
     });
     const orderResponse: CreateOrderResponseDto = {
@@ -430,7 +430,7 @@ export class OrderService {
   async getAllOrders(
     paginationQuery: PaginationQueryDto,
     userId: number,
-    withProducts: boolean = false,
+    withProducts: boolean,
   ): Promise<PaginationResponseDto<OrderListItemDto>> {
     const { limit, page } = paginationQuery;
 
@@ -525,7 +525,7 @@ export class OrderService {
         .leftJoin('p.pictures', 'pic', 'pic.isMain = :isMain', { isMain: true })
         .where('op.orderId IN (:...orderIds)', { orderIds })
         .select([
-          'op.orderId AS orderId',
+          'op.orderId AS "orderId"',
           'p.id AS id',
           'p.name AS name',
           'p.price AS price',
@@ -535,20 +535,7 @@ export class OrderService {
         .withDeleted()
         .getRawMany();
 
-      const productsWithPresignedUrls = await Promise.all(
-        products.map(async (p) => ({
-          ...p,
-          picture: p.picture
-            ? await this.objectStorageService.getPresignedUrl(
-                p.picture,
-                BUCKET_TARGETS.PRODUCT_PICTURES,
-              )
-            : null,
-          price: parseFloat(p.price),
-        })),
-      );
-
-      const productsByOrderId = productsWithPresignedUrls.reduce(
+      const productsByOrderId = products.reduce(
         (acc, p) => {
           if (!acc[p.orderId]) {
             acc[p.orderId] = [];
@@ -848,7 +835,7 @@ export class OrderService {
         throw new NotFoundException(`Order #${orderId} not found`);
       }
 
-        if (order.isCancelled) {
+      if (order.isCancelled) {
         throw new BadRequestException('Order is already cancelled');
       }
 
