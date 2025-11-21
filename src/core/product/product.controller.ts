@@ -235,7 +235,9 @@ export class ProductController {
     const uploadOptions = {
       pathPrefix: `products/${userId}/`,
     } as UploadingOptions;
-    this.logger.log(`User ${userId} creating product: ${createProductDto.name}`);
+    this.logger.log(
+      `User ${userId} creating product: ${createProductDto.name}`,
+    );
     return this.productService.create(
       createProductDto,
       userId,
@@ -321,7 +323,7 @@ export class ProductController {
           description: 'The quantity of the product per batch.',
           example: 25,
         },
-        specifications: {
+        specification: {
           type: 'string',
           description:
             'Optional: Product specifications, submitted as a single comma-separated string.',
@@ -405,7 +407,9 @@ export class ProductController {
     @Param('productId', ParseIntPipe) productId: number,
     @Body() dto: DeleteProductPicturesDto,
   ) {
-    this.logger.log(`Deleting pictures for product ${productId}: ${dto.pictureIds.join(', ')}`);
+    this.logger.log(
+      `Deleting pictures for product ${productId}: ${dto.pictureIds.join(', ')}`,
+    );
     return this.productService.deleteProductImages(productId, dto.pictureIds);
   }
 
