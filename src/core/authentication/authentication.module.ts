@@ -41,7 +41,7 @@ import { BlackListModule } from '../user/black-list/black-list.module';
         smsSakStrategy: SmsSakOtpStrategy,
       ) => {
         const provider = configService.get<string>('OTP_PROVIDER');
-        if (provider !== 'SMSSAK') {
+        if (provider == 'SMSSAK') {
           return smsSakStrategy;
         }
         return defaultStrategy;

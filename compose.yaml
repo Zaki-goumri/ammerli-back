@@ -170,6 +170,36 @@ services:
       timeout: 5s
       retries: 5
 
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: pgbouncer
+    restart: unless-stopped
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      LISTEN_PORT: ${DB_PGBOUNCER_PORT}
+      AUTH_TYPE: scram-sha-256
+      AUTH_QUERY: "SELECT usename, passwd FROM pg_shadow WHERE usename=$1"
+      POOL_MODE: ${POOL_MODE}
+      MAX_CLIENT_CONN: ${MAX_CLIENT_CONN}
+      DEFAULT_POOL_SIZE: ${DEFAULT_POOL_SIZE}
+    ports:
+      - "${DB_PGBOUNCER_PORT}:${DB_PGBOUNCER_PORT}"
+    healthcheck:
+      test: ["CMD-SHELL", "PGPASSWORD=${DB_PASSWORD} psql -h 127.0.0.1 -p ${DB_PGBOUNCER_PORT} -U ${DB_USERNAME} -d ${DB_NAME} -c 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+
   db-backup:
     image: prodrigestivill/postgres-backup-local
     container_name: db-backup
