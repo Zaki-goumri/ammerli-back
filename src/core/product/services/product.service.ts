@@ -90,7 +90,6 @@ export class ProductService {
     const { page, limit } = paginationQuery;
     const offset = (page - 1) * limit;
 
-    // First, get paginated product IDs
     const productIdsQuery = this.productRepo
       .createQueryBuilder('product')
       .leftJoin('product.brand', 'brand')
@@ -135,7 +134,6 @@ export class ProductService {
 
     const productIds = paginatedIds.map((p) => p.id);
 
-    // Now fetch full data for these product IDs
     const queryBuilder = this.productRepo
       .createQueryBuilder('product')
       .leftJoin('product.pictures', 'mainPicture', 'mainPicture.isMain = TRUE')

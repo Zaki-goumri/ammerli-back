@@ -11,6 +11,7 @@ import {
   UseGuards,
   Header,
   Logger,
+  UseInterceptors,
 } from '@nestjs/common';
 import { InvoiceService } from './services/invoice.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
@@ -21,6 +22,9 @@ import { AccessTokenGuard } from 'src/core/authentication/guards/access-token.gu
 import { RoleGuard } from 'src/core/authentication/guards/role.guard';
 import { InvoiceGeneratorService } from './services/invoice-generator.service';
 import { USER } from '../authentication/decorators/user.decorartor';
+import { PresignedUrlInterceptor } from 'src/common/interceptors/presigned-url.interceptor';
+import { ConvertToPresignedUrls } from 'src/common/decorators/convert-to-presigned-urls.decorator';
+import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 
 @ApiTags('invoices')
 @Controller('invoices')
@@ -53,7 +57,9 @@ export class InvoiceController {
     return this.invoiceService.findAll();
   }
 
+  @UseInterceptors(PresignedUrlInterceptor)
   @Get('user')
+  @ConvertToPresignedUrls(['pdfUrl'], BUCKET_TARGETS.INVOICES)
   @ApiOperation({ summary: 'Get all invoices for a specific user' })
   findUserInvoices(@USER('id') userId: number) {
     return this.invoiceService.getManyInvoicesForUser(userId);

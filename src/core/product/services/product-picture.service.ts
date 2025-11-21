@@ -66,7 +66,7 @@ export class ProductPictureService {
       this.productPictureRepo.create({
         productId: payload.targetId,
         url: file.objectName,
-        isMain: index === 0, // First new picture is the main one
+        isMain: index === 0, 
       }),
     );
 

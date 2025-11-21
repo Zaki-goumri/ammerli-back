@@ -41,7 +41,6 @@ export class ProductPicture extends BaseEntity {
   })
   @Column({ type: 'boolean', default: false })
   isMain: boolean;
-  //TODO: change status to enum
   @ApiProperty({
     description: 'upload status of the picture',
     example: 'completed',

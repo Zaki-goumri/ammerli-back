@@ -20,8 +20,17 @@ import { Repository } from 'typeorm';
 import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
 import { PaymentMethodType } from 'src/core/order/enums/payment-method.enum';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
+import { Invoice } from '../entities/invoice.entity';
 
 const DELIVERY_ESTIMATION_DAYS = 2;
+
+interface GenerateInvoiceResult {
+  objectName: string;
+  invoiceNumber: string;
+  fileSize: number;
+  buyerId: number;
+  orderId: number;
+}
 
 @Injectable()
 export class InvoiceGeneratorService implements OnModuleInit {
@@ -32,6 +41,8 @@ export class InvoiceGeneratorService implements OnModuleInit {
   constructor(
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
+    @InjectRepository(Invoice)
+    private readonly invoiceRepo: Repository<Invoice>,
     private readonly objectService: ObjectService,
   ) {
     this.templatePath = path.join(
@@ -62,9 +73,7 @@ export class InvoiceGeneratorService implements OnModuleInit {
    * @param orderId - The ID of the order for which to generate the invoice.
    * @returns A promise that resolves to an object containing the invoice path and buyer ID.
    */
-  async generateInvoice(
-    orderId: number,
-  ): Promise<{ invoicePath: string; buyerId: number }> {
+  async generateInvoice(orderId: number): Promise<GenerateInvoiceResult> {
     const order = await this.findOneForInvoice(orderId);
     const invoiceData = this.prepareInvoiceData(order);
     const pdfBuffer = await this.generateInvoicePDF(invoiceData);
@@ -83,11 +92,34 @@ export class InvoiceGeneratorService implements OnModuleInit {
       path: '',
     };
 
-    const invoicePath = await this.objectService.uploadFile(file, {
+    const uploadResult = await this.objectService.uploadFile(file, {
       bucketName: BUCKET_TARGETS.INVOICES as string,
     });
 
-    return { invoicePath: invoicePath.fileUrl, buyerId: order.buyer.id };
+    return {
+      objectName: uploadResult.objectName,
+      invoiceNumber: invoiceData.invoiceNumber,
+      fileSize: pdfBuffer.length,
+      buyerId: order.buyer.id,
+      orderId: order.id,
+    };
+  }
+
+  async saveInvoiceRecord(data: {
+    orderId: number;
+    invoiceNumber: string;
+    objectName: string;
+    fileSize: number;
+  }): Promise<Invoice> {
+    this.logger.log(`Saving invoice record for order ID: ${data.orderId}`);
+    const { orderId, invoiceNumber, objectName, fileSize } = data;
+    const newInvoice = this.invoiceRepo.create({
+      orderId,
+      invoiceNumber,
+      pdfUrl: objectName,
+      fileSize,
+    });
+    return this.invoiceRepo.save(newInvoice);
   }
 
   /**
@@ -96,7 +128,10 @@ export class InvoiceGeneratorService implements OnModuleInit {
    * @returns A promise that resolves to the buyer ID.
    */
   async getBuyerIdFromOrderId(orderId: number): Promise<number> {
-    const order = await this.findOneForInvoice(orderId);
+    const order = await this.orderRepo.findOneOrFail({
+      where: { id: orderId },
+      relations: ['buyer'],
+    });
     return order.buyer.id;
   }
 

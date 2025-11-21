@@ -1,4 +1,4 @@
-  import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Invoice, InvoiceStatus } from '../entities/invoice.entity';
@@ -91,20 +91,7 @@ export class InvoiceService {
       select: ['id', 'orderId', 'invoiceNumber', 'createdAt', 'pdfUrl'],
       order: { createdAt: 'DESC' },
     });
-
-    const invoicesWithPresignedUrls = await Promise.all(
-      invoices.map(async (invoice) => {
-        if (invoice.pdfUrl) {
-          invoice.pdfUrl = await this.objectStorageService.getPresignedUrl(
-            invoice.pdfUrl,
-            BUCKET_TARGETS.INVOICES,
-          );
-        }
-        return invoice;
-      }),
-    );
-
-    return invoicesWithPresignedUrls;
+    return invoices;
   }
 
   /**
@@ -319,7 +306,7 @@ export class InvoiceService {
       throw new NotFoundException(`Invoice with ID ${id} not found.`);
     }
     await this.invalidateInvoiceCache(invoice);
-    
+
     this.logger.log({
       message: 'Invoice deleted',
       invoiceId: id,

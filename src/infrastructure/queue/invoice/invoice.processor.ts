@@ -31,14 +31,7 @@ export class InvoiceProcessor extends WorkerHost {
           orderId: job.data.orderId,
           context: 'InvoiceProcessor',
         });
-        const invoicePath = await this.invoiceGeneratorService.generateInvoice(
-          job.data.orderId,
-        );
-        return {
-          message: 'Invoice generated successfully',
-          invoicePath,
-          orderId: job.data.orderId,
-        };
+        return this.invoiceGeneratorService.generateInvoice(job.data.orderId);
       default:
         return Promise.resolve({
           message: 'Unknown job processed',
@@ -54,10 +47,16 @@ export class InvoiceProcessor extends WorkerHost {
       jobId: job.id,
       context: 'InvoiceProcessor',
     });
-    const { orderId } = job.data;
 
-    const buyerId =
-      await this.invoiceGeneratorService.getBuyerIdFromOrderId(orderId);
+    const { orderId, buyerId, ...invoiceData } = job.returnvalue;
+this.logger.log({
+      message: 'Saving invoice record',
+      context: 'InvoiceProcessor',
+    });
+    await this.invoiceGeneratorService.saveInvoiceRecord({
+      orderId,
+      ...invoiceData,
+    });
 
     await this.notificationsService.sendNotification(
       'Invoice Generated',
