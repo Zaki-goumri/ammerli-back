@@ -59,36 +59,45 @@ export class TrackingService {
   }
 
   async addNextTrackingStatus(orderId: number): Promise<Tracking> {
+    console.log(Date.now());
     const order = await this.orderRepo.findOne({
       where: { id: orderId },
     });
 
+    console.log(Date.now());
     if (!order) {
       throw new NotFoundException(`Order with ID ${orderId} not found.`);
     }
+    console.log('t1', Date.now());
     const latestTracking = await this.trackingRepo.findOne({
       where: { orderId },
       order: { createdAt: 'DESC' },
     });
 
+    console.log('t2', Date.now());
     if (!latestTracking) {
       throw new NotFoundException(
         `No tracking history found for order with ID ${orderId}.`,
       );
     }
 
+    console.log('t3', Date.now());
     const currentStatusIndex = this.statusSequence.indexOf(
       latestTracking.status,
     );
     if (currentStatusIndex === this.statusSequence.length - 1) {
       throw new BadRequestException('The order has already been delivered.');
     }
+    console.log('t4', Date.now());
     const nextStatus = this.statusSequence[currentStatusIndex + 1];
+    console.log('t5', Date.now());
     const newTracking = this.trackingRepo.create({
       orderId,
       status: nextStatus,
     });
+    console.log('t6', Date.now());
     const savedTracking = await this.trackingRepo.save(newTracking);
+    console.log('t7', Date.now());
     const title = `Order Status Update`;
     const body = `Your order #${order.id} is now ${nextStatus}.`;
     await this.notificationsService.sendNotification(
@@ -97,6 +106,7 @@ export class TrackingService {
       order.buyerId,
       NOTIFICATION_TYPE.STATUS_UPDATE,
     );
+    console.log('t8', Date.now());
     return savedTracking;
   }
 }
