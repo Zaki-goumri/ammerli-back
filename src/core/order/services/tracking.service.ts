@@ -3,9 +3,10 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { Tracking } from '../entities/tracking.entity';
 import { Order } from '../entities/order.entity';
 import { ORDER_STATUS, OrderStatus } from '../enums/delivery.enum';
@@ -30,6 +31,7 @@ export class TrackingService {
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
     private readonly notificationsService: NotificationsService,
+    private readonly entityManager: EntityManager,
   ) {}
 
   @OnEvent('order.paid', { async: true })
@@ -59,54 +61,83 @@ export class TrackingService {
   }
 
   async addNextTrackingStatus(orderId: number): Promise<Tracking> {
-    console.log(Date.now());
-    const order = await this.orderRepo.findOne({
-      where: { id: orderId },
-    });
+    const result = await this.entityManager.transaction(
+      async (transactionalEntityManager) => {
+        try {
+          console.log(Date.now());
+          const latestTracking = await transactionalEntityManager.findOne(
+            Tracking,
+            {
+              where: { orderId },
+              relations: ['order'],
+              order: { createdAt: 'DESC' },
+            },
+          );
+          console.log('t1', Date.now());
+          if (!latestTracking) {
+            throw new NotFoundException(
+              `No tracking history found for order with ID ${orderId}.`,
+            );
+          }
+          if (!latestTracking.order) {
+            throw new NotFoundException(`Order with ID ${orderId} not found.`);
+          }
 
-    console.log(Date.now());
-    if (!order) {
-      throw new NotFoundException(`Order with ID ${orderId} not found.`);
-    }
-    console.log('t1', Date.now());
-    const latestTracking = await this.trackingRepo.findOne({
-      where: { orderId },
-      order: { createdAt: 'DESC' },
-    });
+          console.log('t2', Date.now());
 
-    console.log('t2', Date.now());
-    if (!latestTracking) {
-      throw new NotFoundException(
-        `No tracking history found for order with ID ${orderId}.`,
-      );
-    }
+          const currentStatusIndex = this.statusSequence.indexOf(
+            latestTracking.status,
+          );
 
-    console.log('t3', Date.now());
-    const currentStatusIndex = this.statusSequence.indexOf(
-      latestTracking.status,
+          if (currentStatusIndex === this.statusSequence.length - 1) {
+            throw new BadRequestException(
+              'The order has already been delivered.',
+            );
+          }
+
+          console.log('t3', Date.now());
+
+          const nextStatus = this.statusSequence[currentStatusIndex + 1];
+          const newTracking = transactionalEntityManager.create(Tracking, {
+            orderId,
+            status: nextStatus,
+          });
+
+          console.log('t4', Date.now());
+
+          const savedTracking =
+            await transactionalEntityManager.save(newTracking);
+
+          console.log('t5', Date.now());
+
+          return { savedTracking, order: latestTracking.order, nextStatus };
+        } catch (error) {
+          console.error(
+            `Failed to update tracking status for order ${orderId}:`,
+            error,
+          );
+          // Re-throw specific errors or wrap in a generic one
+          if (
+            error instanceof NotFoundException ||
+            error instanceof BadRequestException
+          ) {
+            throw error;
+          }
+          throw new InternalServerErrorException(
+            `Failed to update tracking status for order ${orderId}. Please try again later.`,
+          );
+        }
+      },
     );
-    if (currentStatusIndex === this.statusSequence.length - 1) {
-      throw new BadRequestException('The order has already been delivered.');
-    }
-    console.log('t4', Date.now());
-    const nextStatus = this.statusSequence[currentStatusIndex + 1];
-    console.log('t5', Date.now());
-    const newTracking = this.trackingRepo.create({
-      orderId,
-      status: nextStatus,
-    });
-    console.log('t6', Date.now());
-    const savedTracking = await this.trackingRepo.save(newTracking);
-    console.log('t7', Date.now());
     const title = `Order Status Update`;
-    const body = `Your order #${order.id} is now ${nextStatus}.`;
+    const body = `Your order #${result.order.id} is now ${result.nextStatus}.`;
     await this.notificationsService.sendNotification(
       title,
       body,
-      order.buyerId,
+      result.order.buyerId,
       NOTIFICATION_TYPE.STATUS_UPDATE,
     );
-    console.log('t8', Date.now());
-    return savedTracking;
+    console.log('t6', Date.now());
+    return result.savedTracking;
   }
 }
