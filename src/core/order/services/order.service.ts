@@ -541,6 +541,7 @@ export class OrderService {
             acc[p.orderId] = [];
           }
           const { orderId, ...productData } = p;
+          productData.price = parseFloat(productData.price);
           acc[p.orderId].push(productData);
           return acc;
         },

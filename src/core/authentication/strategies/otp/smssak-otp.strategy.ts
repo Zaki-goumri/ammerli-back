@@ -3,9 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { OtpStrategy } from './otp.strategy';
-import { sendOtp, verifyOtp } from 'smssak';
+import { sendOtp, verifyOtp, sendMessage } from 'smssak';
 import { QUEUE_NAME } from 'src/common/constants/queues';
 import { SMS_JOBS } from 'src/common/constants/jobs';
+import { RedisService } from 'nestjs-redis-client';
 
 @Injectable()
 export class SmsSakOtpStrategy extends OtpStrategy {
@@ -19,6 +20,7 @@ export class SmsSakOtpStrategy extends OtpStrategy {
   constructor(
     private configService: ConfigService,
     @InjectQueue(QUEUE_NAME.SMS) private readonly smsQueue: Queue,
+    private readonly redisService: RedisService,
   ) {
     super();
     this.country = this.configService.get<string>('sms.smssak.country')!;
@@ -27,22 +29,51 @@ export class SmsSakOtpStrategy extends OtpStrategy {
     this.type = this.configService.get<string>('sms.smssak.type')!;
   }
 
+  private generateOtp(): string {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+  }
+
   async sendOtp(phoneNumber: string): Promise<void> {
-    try {
-      await sendOtp(
-        this.country,
-        this.projectId,
-        phoneNumber,
-        this.key,
-        this.type,
-      );
-      this.logger.log(`OTP sent via smssak to ${phoneNumber}`);
-    } catch (error) {
-      this.logger.error(
-        `Failed to send OTP via smssak to ${phoneNumber}: ${error.message}`,
-        error.stack,
-      );
-      throw new Error('Failed to send OTP via SMS provider');
+    if (this.type === 'sms') {
+      try {
+        await sendOtp(
+          this.country,
+          this.projectId,
+          phoneNumber,
+          this.key,
+          this.type,
+        );
+        this.logger.log(`OTP sent via smssak to ${phoneNumber}`);
+      } catch (error) {
+        this.logger.error(
+          `Failed to send OTP via smssak to ${phoneNumber}: ${error.message}`,
+          error.stack,
+        );
+        throw new Error('Failed to send OTP via SMS provider');
+      }
+    } else {
+      const otp = this.generateOtp();
+      const message = `Your verification code is: ${otp}`;
+
+      try {
+        await this.redisService.set(`otp:${phoneNumber}`, otp, 5 * 60); // 5 minutes expiration
+        await sendMessage(
+          this.country,
+          this.projectId,
+          phoneNumber,
+          this.key,
+          message,
+        );
+        this.logger.log(`OTP message sent via smssak to ${phoneNumber}`);
+      } catch (error) {
+        this.logger.error(
+          `Failed to send OTP message via smssak to ${phoneNumber}: ${error.message}`,
+          error.stack,
+        );
+        // Attempt to clean up Redis key if SMS sending fails
+        await this.redisService.del(`otp:${phoneNumber}`);
+        throw new Error('Failed to send OTP via SMS provider');
+      }
     }
   }
 
@@ -62,16 +93,44 @@ export class SmsSakOtpStrategy extends OtpStrategy {
   }
 
   async verify(phoneNumber: string, otp: string): Promise<boolean> {
-    try {
-      await verifyOtp(this.country, phoneNumber, this.projectId, otp, this.key);
-      this.logger.log(`OTP verified via smssak for ${phoneNumber}`);
+    if (this.type === 'sms') {
+      try {
+        const response = await verifyOtp(
+          this.country,
+          phoneNumber,
+          this.projectId,
+          otp,
+          this.key,
+        );
+        if (response.status !== 200) {
+          this.logger.warn(`Invalid OTP for ${phoneNumber}`);
+          return false;
+        }
+        this.logger.log(`OTP verified via smssak for ${phoneNumber}`);
+        return true;
+      } catch (error) {
+        this.logger.error(
+          `Failed to verify OTP via smssak for ${phoneNumber}: ${error.message}`,
+          error.stack,
+        );
+        return false;
+      }
+    } else {
+      const storedOtp = await this.redisService.get(`otp:${phoneNumber}`);
+
+      if (!storedOtp) {
+        this.logger.warn(`No OTP found in Redis for ${phoneNumber}`);
+        return false;
+      }
+
+      if (storedOtp !== otp) {
+        this.logger.warn(`Invalid OTP for ${phoneNumber}`);
+        return false;
+      }
+
+      await this.redisService.del(`otp:${phoneNumber}`);
+      this.logger.log(`OTP verified for ${phoneNumber}`);
       return true;
-    } catch (error) {
-      this.logger.error(
-        `Failed to verify OTP via smssak for ${phoneNumber}: ${error.message}`,
-        error.stack,
-      );
-      return false;
     }
   }
 }
