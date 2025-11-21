@@ -230,7 +230,6 @@ export class OrderService {
         quantity: true,
       },
     });
-    console.log('Order products fetched:', order);
     const productsWithUrls = await Promise.all(
       order.map(async (op) => {
         const mainPicUrl = op?.product?.pictures.find((pic) => pic.isMain)?.url;
@@ -801,9 +800,10 @@ export class OrderService {
   }
 
   async orderInfos(orderId: number) {
-    const [products, buyerInfo] = await Promise.all([
+    const [products, buyerInfo, paymentInfo] = await Promise.all([
       this.findProductsByOrder(orderId),
       this.getBuyerInfosForOrder(orderId),
+      this.getPaymentInfo(orderId),
     ]);
     return { products, buyerInfo };
   }

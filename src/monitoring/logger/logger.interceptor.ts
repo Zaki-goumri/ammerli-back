@@ -17,10 +17,12 @@ export class LoggerInterceptor implements NestInterceptor {
     const startTime = Date.now();
     const request = context.switchToHttp().getRequest<Request>();
     const response = context.switchToHttp().getResponse<Response>();
-    
+
     const { method, originalUrl, ip } = request;
     const userAgent = request.get('user-agent') || '';
-    const traceId = (request.headers['x-request-id'] as string) || `trace-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const traceId =
+      (request.headers['x-request-id'] as string) ||
+      `trace-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
     // Log Request
     this.logger.log({
@@ -40,7 +42,6 @@ export class LoggerInterceptor implements NestInterceptor {
           const duration = endTime - startTime;
           const statusCode = response.statusCode;
 
-          // Log Response
           this.logger.log({
             message: `Request Completed: ${method} ${originalUrl} ${statusCode}`,
             context: 'HTTP',
@@ -54,8 +55,7 @@ export class LoggerInterceptor implements NestInterceptor {
         error: (error) => {
           const endTime = Date.now();
           const duration = endTime - startTime;
-          
-          // Log Error
+
           this.logger.error({
             message: `Request Failed: ${method} ${originalUrl}`,
             context: 'HTTP',
