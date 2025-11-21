@@ -201,27 +201,13 @@ export class NotificationsService {
    * @param fcmToken - Optional specific FCM token to remove.
    * @returns A promise that resolves to a success message.
    */
-  async deleteToken(
-    userId: number,
-    fcmToken?: string,
-  ): Promise<{ message: string }> {
-    if (fcmToken) {
-      await this.revokeToken(fcmToken);
-      this.logger.log({
-        message: 'Logged out from device',
-        userId,
-        context: 'Notifications',
-      });
-      return { message: 'Logged out from device successfully' };
-    } else {
-      await this.revokeAllTokensForUser(userId);
-      this.logger.log({
-        message: 'Logged out from all devices',
-        userId,
-        context: 'Notifications',
-      });
-      return { message: 'Logged out from all devices successfully' };
-    }
+  async deleteToken(fcmToken: string): Promise<{ message: string }> {
+    await this.revokeToken(fcmToken);
+    this.logger.log({
+      message: 'Logged out from device',
+      context: 'Notifications',
+    });
+    return { message: 'Logged out from device successfully' };
   }
 
   // FcmService methods

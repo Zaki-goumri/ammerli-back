@@ -204,7 +204,6 @@ export class AuthenticationController {
    * @param {LogoutDto} dto -  DTO containing fcmToken to remove.
    * @returns {Promise<MessageDto>} Success message.
    */
-  @UseGuards(AccessTokenGuard)
   @Post('logout')
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
@@ -222,12 +221,9 @@ export class AuthenticationController {
     },
   })
   @ApiBody({ type: LogoutDto })
-  async logout(
-    @USER('id') userId: number,
-    @Body() dto: LogoutDto,
-  ): Promise<MessageDto> {
-    this.logger.log(`Logging out user ID: ${userId}`);
-    await this.notificationsService.deleteToken(userId, dto.fcmToken);
+  async logout(@Body() dto: LogoutDto): Promise<MessageDto> {
+    this.logger.log(`Logging out user`);
+    await this.notificationsService.deleteToken(dto.fcmToken);
     return { message: 'Logged out from device successfully' };
   }
 }
