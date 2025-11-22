@@ -4,6 +4,6 @@
   "sourceRoot": "src",
   "compilerOptions": {
     "deleteOutDir": true,
-    "assets": ["**/*.templates/**/*", "/i18n/**/*.json"]
+    "assets": ["**/templates/**/*", "/i18n/**/*.json"]
   }
 }
