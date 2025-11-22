@@ -9,6 +9,12 @@ import { OsType } from '../enums/os-type.enum';
  * @module core/authentication/entities/token
  */
 
+export enum Language {
+  AR = 'ar',
+  FR = 'fr',
+  EN = 'en',
+}
+
 @Entity('tokens')
 export class Token extends BaseEntity {
   @ApiProperty({
@@ -32,6 +38,18 @@ export class Token extends BaseEntity {
   })
   @Column({ type: 'enum', enum: OsType })
   os: OsType;
+
+  @ApiProperty({
+    description: 'User preferred language',
+    enum: Language,
+    example: Language.EN,
+  })
+  @Column({
+    type: 'enum',
+    enum: Language,
+    default: Language.FR,
+  })
+  lang: Language;
 
   @ManyToOne(() => User, (user) => user.tokens)
   user: User;

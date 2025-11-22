@@ -8,12 +8,14 @@ import { FirebaseService } from 'src/infrastructure/firebase/firebase.service';
 import { NotificationType } from 'src/core/notifications/enums/notification-type.enum';
 import { from, retry, catchError, throwError, Observable } from 'rxjs';
 import { delay, lastValueFrom } from 'rxjs';
+import { Language } from 'src/core/notifications/entities/token.entity';
 
 interface SendNotificationJob {
-  title: string;
-  body: string;
+  titleKey: string;
+  bodyKey: string;
   userId: number;
   type: NotificationType;
+  translationArgs?: Record<string, any>;
 }
 
 class NotificationMessage {
@@ -103,7 +105,6 @@ export class NotificationProcessor extends WorkerHost {
       retry({
         count: 3,
         delay: (error, retryCount) => {
-          // Don't retry if it's an invalid token error
           if (this.isInvalidTokenError(error)) {
             this.logger.warn({
               message: 'Invalid token detected, skipping retry',
@@ -113,7 +114,6 @@ export class NotificationProcessor extends WorkerHost {
             return throwError(() => error);
           }
 
-          // Retry for transient errors with exponential backoff
           this.logger.warn({
             message: 'Retrying notification send (transient error)',
             tokenPrefix: message.token.substring(0, 20),
@@ -142,31 +142,41 @@ export class NotificationProcessor extends WorkerHost {
     this.logger.log({
       message: 'Handling sending notification',
       userId: data.userId,
-      title: data.title,
+      title: data.titleKey,
       type: data.type,
       context: 'NotificationProcessor',
     });
 
-    const tokens = await this.notificationsService.getActiveTokensForUser(
-      data.userId,
-    );
+    const tokensWithLangs =
+      await this.notificationsService.getActiveTokensForUser(data.userId);
 
-    if (tokens.length === 0) {
+    if (tokensWithLangs.length === 0) {
       this.logger.warn(`No active tokens found for user ${data.userId}`);
       return;
     }
 
-    const messages: NotificationMessage[] = tokens.map((token) => ({
-      notification: {
-        title: data.title,
-        body: data.body,
+    const messages: NotificationMessage[] = tokensWithLangs.map(
+      (tokenWithLang) => {
+        const transalatedNotification =
+          this.notificationsService.translateNotification(
+            tokenWithLang.lang as Language,
+            data.bodyKey,
+            data.titleKey,
+            data.translationArgs,
+          );
+        const messages = {
+          notification: {
+            title: transalatedNotification.title as string,
+            body: transalatedNotification.body as string,
+          },
+          token: tokenWithLang.token,
+          data: {
+            type: data.type,
+          },
+        };
+        return messages;
       },
-      token,
-      data: {
-        type: data.type,
-      },
-    }));
-
+    );
     // Convert observables to promises and handle results
     const results = await Promise.allSettled(
       messages.map((message) =>
@@ -174,6 +184,7 @@ export class NotificationProcessor extends WorkerHost {
       ),
     );
 
+    console.log(results);
     // Auto-cleanup invalid FCM tokens
     const invalidTokens: string[] = [];
     results.forEach((result, index) => {
@@ -181,14 +192,13 @@ export class NotificationProcessor extends WorkerHost {
         const error = result.reason;
         // Check if the error is related to invalid token
         if (this.isInvalidTokenError(error)) {
-          invalidTokens.push(tokens[index]);
+          invalidTokens.push(tokensWithLangs[index].token);
           this.logger.warn(
-            `Invalid FCM token detected after retries: ${tokens[index].substring(0, 20)}...`,
+            `Invalid FCM token detected after retries: ${tokensWithLangs[index].token.substring(0, 20)}...`,
           );
         }
       }
     });
-
     // Remove invalid tokens from database
     if (invalidTokens.length > 0) {
       await Promise.all(
@@ -203,7 +213,7 @@ export class NotificationProcessor extends WorkerHost {
 
     this.logger.log({
       message: 'Sending notification handled',
-      totalTokens: tokens.length,
+      totalTokens: tokensWithLangs.length,
       successfulTokens: results.filter((r) => r.status === 'fulfilled').length,
       invalidTokens: invalidTokens.length,
       context: 'NotificationProcessor',
@@ -257,12 +267,14 @@ export class NotificationProcessor extends WorkerHost {
         jobId: job.id,
         context: 'NotificationProcessor',
       });
-      const { title, body, userId, type } = job.data as SendNotificationJob;
+      const { titleKey, bodyKey, userId, type, translationArgs } =
+        job.data as SendNotificationJob;
       await this.notificationsService.saveNotificationRecord(
-        title,
-        body,
+        titleKey,
+        bodyKey,
         userId,
         type,
+        translationArgs as Record<string, any>,
       );
       this.logger.log({
         message: 'Notification saved to DB',
@@ -271,10 +283,8 @@ export class NotificationProcessor extends WorkerHost {
       });
     }
   }
-
   @OnWorkerEvent('failed')
   onFailed(job: Job<SendNotificationJob | TestNotificationJob>) {
-    // Skip logging for test notification failures (if needed)
     if (job.name === NOTIFICATION_JOBS.SEND_TEST_NOTIFICATION) {
       this.logger.error(
         `Test notification job failed: ${job.id} - ${job.failedReason}`,
@@ -282,7 +292,6 @@ export class NotificationProcessor extends WorkerHost {
       return;
     }
 
-    // Log regular notification failures
     this.logger.error({
       message: 'Job failed',
       jobId: job.id,

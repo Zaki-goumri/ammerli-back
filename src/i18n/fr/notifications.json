@@ -70,5 +70,10 @@
       "title": "Échec de Génération de Facture",
       "body": "Échec de la génération de la facture pour la commande {orderId}. Veuillez contacter le support."
     }
+  },
+ "product": {
+  "expiring": {
+    "title": "Produit Expirant Bientôt",
+    "body": "Votre produit {product.name} expirera dans {daysRemaining} jours"
   }
-}
+}}

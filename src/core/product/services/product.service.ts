@@ -69,12 +69,12 @@ export class ProductService {
         (product.expirationDate.getTime() - today.getTime()) /
           (1000 * 60 * 60 * 24),
       );
-      const message = `Your product "${product.name}" will expire in ${daysRemaining} days`;
-      return this.notificationsService.saveNotificationRecord(
-        'Product Expiration',
-        message,
+      return this.notificationsService.sendNotification(
+        'notifications.product.expiring.title',
+        'notifications.product.expiring.body',
         sellerId,
         NOTIFICATION_TYPE.EXPIRING_SOON,
+        { productName: product.name, daysRemaining },
       );
     });
 
@@ -340,7 +340,6 @@ export class ProductService {
       );
     });
 
-    
     this.logger.log({
       message: 'Product created successfully',
       productId,

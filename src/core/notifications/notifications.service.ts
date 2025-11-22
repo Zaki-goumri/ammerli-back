@@ -4,19 +4,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Notification } from './entities/notification.entity';
 import { Repository, LessThan } from 'typeorm';
 import { PaginationQueryDto } from 'src/common/dtos/pagination.dto';
-import { Token } from './entities/token.entity';
+import { Language, Token } from './entities/token.entity';
 import { InjectQueue } from '@nestjs/bullmq';
 import { QUEUE_NAME } from 'src/common/constants/queues';
 import { Queue } from 'bullmq';
-import {
-  NOTIFICATION_TYPE,
-  NotificationType,
-} from './enums/notification-type.enum';
+import { NotificationType } from './enums/notification-type.enum';
 import { NOTIFICATION_JOBS } from 'src/common/constants/jobs';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SendNotificationResponseDto } from './dto/send-notification-response.dto';
 import { CreateTokenDto } from './dto/create-token.dto';
-import { I18nContext, I18nService } from 'nestjs-i18n';
+import { I18nService } from 'nestjs-i18n';
 
 const OLD_NOTIFICATION_DELETE_DAYS = 7;
 
@@ -72,12 +69,30 @@ export class NotificationsService {
    * @param paginationaQuery - The pagination query parameters.
    * @returns A promise that resolves to a list of notifications.
    */
-  findAll(paginationaQuery: PaginationQueryDto) {
+  async findAll(
+    paginationaQuery: PaginationQueryDto,
+    userId: number,
+    lang: Language,
+  ) {
     const { limit, page } = paginationaQuery;
-    return this.notificationRepo.find({
+    const notification = await this.notificationRepo.find({
       skip: (page - 1) * limit,
       take: limit,
+      where: { receiverId: userId },
       order: { createdAt: 'DESC' },
+    });
+    return notification.map((notif) => {
+      const translated = this.translateNotification(
+        lang,
+        notif.title,
+        notif.body,
+        notif.meta,
+      );
+      return {
+        ...notif,
+        title: translated.title,
+        body: translated.body,
+      };
     });
   }
 
@@ -127,13 +142,15 @@ export class NotificationsService {
     body: string,
     receiverId: number,
     type: NotificationType,
+    data: Record<string, any>,
   ): Promise<Notification> {
     const createNotificationDto: CreateNotificationDto = {
       title,
       body,
       receiverId,
       type,
-      isRead: false, // Default to unread
+      isRead: false,
+      meta: data,
     };
     return this.create(createNotificationDto);
   }
@@ -169,12 +186,19 @@ export class NotificationsService {
    * @returns A promise that resolves to an array of FCM tokens.
    * @throws {BadRequestException} If no active tokens are found for the user.
    */
-  async getActiveTokensForUser(userId: number): Promise<string[]> {
+  async getActiveTokensForUser(userId: number): Promise<
+    {
+      token: string;
+      lang: string;
+    }[]
+  > {
     const tokens = await this.tokenRepo.find({ where: { userId } });
     if (!tokens || tokens.length === 0) {
       throw new BadRequestException('No active tokens found for the user');
     }
-    return tokens.map((token) => token.fcmToken);
+    return tokens.map((token) => {
+      return { token: token.fcmToken, lang: token.lang };
+    });
   }
 
   /**
@@ -226,36 +250,46 @@ export class NotificationsService {
     bodyKey: string,
     userId: number,
     type: NotificationType,
-    data: Record<string, any>,
+    data?: Record<string, any>,
   ): Promise<SendNotificationResponseDto> {
-    const lang = I18nContext.current()?.lang;
-    const title = await this.i18nService.translate(titleKey, {
-      lang,
-    });
-    const body = await this.i18nService.t(bodyKey, {
-      lang,
-      args: data,
-    });
     await this.notificationQueue.add(NOTIFICATION_JOBS.SEND_NOTIFICATION, {
-      title,
-      body,
+      titleKey,
+      bodyKey,
       userId,
       type,
+      translationArgs: data,
     });
     this.logger.log({
       message: 'Notification job added to queue',
       userId,
-      title,
+      titleKey,
       type,
       context: 'Notifications',
     });
     return { success: true, message: 'Notification job added to queue' };
   }
 
+  translateNotification(
+    lang: Language,
+    titleKey: string,
+    bodyKey: string,
+    data?: Record<string, any>,
+  ) {
+    this.logger.debug(data, 'Translation data');
+    const title = this.i18nService.translate(titleKey, {
+      lang: lang as string,
+      args: data,
+    });
+    const body = this.i18nService.translate(bodyKey, {
+      lang: lang as string,
+      args: data,
+    });
+    return { title, body };
+  }
   //TODO: remove it
   async sendOtpViaNotification(token: string, otp: string): Promise<void> {
-    const title = await this.i18nService.translate('notifications.otp.title');
-    const body = await this.i18nService.translate('notifications.otp.body', {
+    const title = this.i18nService.translate('notifications.otp.title');
+    const body = this.i18nService.translate('notifications.otp.body', {
       args: { otp },
     });
     await this.notificationQueue.add(NOTIFICATION_JOBS.SEND_TEST_NOTIFICATION, {
@@ -263,5 +297,31 @@ export class NotificationsService {
       body,
       token,
     });
+  }
+
+  async updateLanguage(
+    userId: number,
+    fcmToken: string,
+    lang: Language,
+  ): Promise<void> {
+    try {
+      await this.tokenRepo.update({ userId, fcmToken }, { lang });
+      this.logger.log({
+        message: 'Updated language for FCM token',
+        userId,
+        fcmToken,
+        context: 'Notifications',
+      });
+    } catch (error) {
+      this.logger.error({
+        message: 'Failed to update language for FCM token',
+        userId,
+        fcmToken,
+        error: error.message,
+        context: 'Notifications',
+      });
+      throw new BadRequestException('You dont have this token registered');
+    }
+    return;
   }
 }

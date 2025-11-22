@@ -70,5 +70,11 @@
       "title": "Invoice Generation Failed",
       "body": "Failed to generate invoice for order {orderId}. Please contact support."
     }
+  },
+  "product": {
+    "expiring": {
+      "title": "Product Expiring Soon",
+      "body": "Your product {product.name} will expire in {daysRemaining} days"
+    }
   }
 }

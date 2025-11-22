@@ -26,11 +26,13 @@ import {
   ApiResponse,
   ApiBody,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { SendNotificationResponseDto } from './dto/send-notification-response.dto'; // New import
 import { RegisterTokenResponseDto } from './dto/register-token-response.dto'; // New import
 import { Notification } from './entities/notification.entity'; // New import
 import { UpdateResult, DeleteResult } from 'typeorm'; // New import for update/delete results
+import { Language } from './entities/token.entity';
 
 @ApiTags('Notifications')
 @ApiBearerAuth()
@@ -111,13 +113,20 @@ export class NotificationsController {
     description: 'Notifications retrieved successfully',
     type: [Notification], // Added response type for array of Notification
   })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'lang', required: false, enum: Language })
   /**
    * Retrieves all notifications for the current user.
    * @param paginationQuery - The pagination query parameters.
    * @returns A promise that resolves to a list of notifications.
    */
-  findAll(@Query() paginationQuery: PaginationQueryDto) {
-    return this.notificationsService.findAll(paginationQuery);
+  findAll(
+    @Query() paginationQuery: PaginationQueryDto,
+    @USER('id') userId: number,
+    @Query('lang') lang: Language,
+  ) {
+    return this.notificationsService.findAll(paginationQuery, userId, lang);
   }
 
   /**
@@ -163,5 +172,40 @@ export class NotificationsController {
       context: 'Notifications',
     });
     return this.notificationsService.remove(id, userId);
+  }
+
+  @Patch('/language')
+  @ApiOperation({ summary: 'Update notification language preference' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        fcmToken: { type: 'string', example: 'example_fcm_token' },
+        language: { type: 'string', example: 'en' },
+      },
+      required: ['language', 'fcmToken'],
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Notification language updated successfully',
+  })
+  /**
+   * Updates the notification language preference for the current user.
+   * @param language - The new language preference.
+   * @param userId - The ID of the current user.
+   * @returns A promise that resolves when the update is complete.
+   */
+  updateLanguage(
+    @Body('language') lang: Language,
+    @Body('fcmToken') fcmToken: string,
+    @USER('id') userId: number,
+  ) {
+    this.logger.log({
+      message: 'Updating notification language preference',
+      userId,
+    });
+    return this.notificationsService.updateLanguage(userId, fcmToken, lang);
   }
 }
