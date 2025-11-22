@@ -95,10 +95,10 @@ export class OrderService {
     private readonly objectStorageService: ObjectService,
   ) {}
 
-  @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async clearOldUnpaidCheckouts() {
     const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getMinutes() - 1);
+    cutoffDate.setDate(cutoffDate.getDay() - 1);
 
     this.logger.log(
       `Clearing unpaid checkouts created before ${cutoffDate.toISOString()}`,
