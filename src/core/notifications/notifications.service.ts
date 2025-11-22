@@ -16,6 +16,7 @@ import { NOTIFICATION_JOBS } from 'src/common/constants/jobs';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SendNotificationResponseDto } from './dto/send-notification-response.dto';
 import { CreateTokenDto } from './dto/create-token.dto';
+import { I18nContext, I18nService } from 'nestjs-i18n';
 
 const OLD_NOTIFICATION_DELETE_DAYS = 7;
 
@@ -28,6 +29,7 @@ export class NotificationsService {
     private readonly tokenRepo: Repository<Token>,
     @InjectQueue(QUEUE_NAME.NOTIFICATION)
     private readonly notificationQueue: Queue,
+    private readonly i18nService: I18nService,
   ) {}
 
   logger = new Logger(NotificationsService.name);
@@ -220,11 +222,20 @@ export class NotificationsService {
    * @returns A promise that resolves to a success response indicating the job was added.
    */
   async sendNotification(
-    title: string,
-    body: string,
+    titleKey: string,
+    bodyKey: string,
     userId: number,
     type: NotificationType,
+    data: Record<string, any>,
   ): Promise<SendNotificationResponseDto> {
+    const lang = I18nContext.current()?.lang;
+    const title = await this.i18nService.translate(titleKey, {
+      lang,
+    });
+    const body = await this.i18nService.t(bodyKey, {
+      lang,
+      args: data,
+    });
     await this.notificationQueue.add(NOTIFICATION_JOBS.SEND_NOTIFICATION, {
       title,
       body,
@@ -243,9 +254,10 @@ export class NotificationsService {
 
   //TODO: remove it
   async sendOtpViaNotification(token: string, otp: string): Promise<void> {
-    const title = 'Your Verification Code';
-    const body = `Your OTP is: ${otp}`;
-
+    const title = await this.i18nService.translate('notifications.otp.title');
+    const body = await this.i18nService.translate('notifications.otp.body', {
+      args: { otp },
+    });
     await this.notificationQueue.add(NOTIFICATION_JOBS.SEND_TEST_NOTIFICATION, {
       title,
       body,

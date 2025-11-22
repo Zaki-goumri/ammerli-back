@@ -1,0 +1,74 @@
+{
+  "payment": {
+    "successful": {
+      "title": "Payment Successful",
+      "body": "Your payment for order with checkout ID {checkoutId} has been received successfully."
+    },
+    "failed": {
+      "title": "Payment Failed",
+      "body": "Your payment for order with checkout ID {checkoutId} has failed. Please try again."
+    }
+  },
+  "order": {
+    "cancelled": {
+      "buyer": {
+        "title": "Order Cancelled",
+        "body": "Your order #{orderId} has been cancelled. Reason: {reason}"
+      },
+      "seller": {
+        "title": "Order Cancelled",
+        "body": "Order #{orderId} has been cancelled by {cancelledBy}."
+      }
+    },
+    "status_updated": {
+      "title": "Order Status Updated",
+      "body": "Your order #{orderId} status has been updated to {status}."
+    }
+  },
+  "refund": {
+    "new_request": {
+      "title": "New Refund Request",
+      "body": "Order #{orderId} - Refund request for {amount} DZD"
+    },
+    "processing": {
+      "title": "Refund Processing",
+      "body": "Your refund of {amount} DZD is being processed"
+    },
+    "completed": {
+      "title": "Refund Completed",
+      "body": "Your refund of {amount} DZD has been completed. Money will arrive in 3-5 business days."
+    },
+    "failed": {
+      "title": "Refund Failed",
+      "body": "Your refund request failed. {adminNote}"
+    },
+    "cancelled": {
+      "title": "Refund Cancelled",
+      "body": "Your refund request has been cancelled. {adminNote}"
+    },
+    "approved": {
+      "title": "Refund Approved",
+      "body": "Your refund request for order #{orderId} has been approved. Amount: {amount} DZD"
+    },
+    "rejected": {
+      "title": "Refund Rejected",
+      "body": "Your refund request for order #{orderId} has been rejected. Reason: {reason}"
+    }
+  },
+  "admin": {
+    "bulk_deletion_failed": {
+      "title": "Bulk Deletion Partially Failed",
+      "body": "Failed to delete the following user IDs: {failedIds}. Please check the logs."
+    }
+  },
+  "invoice": {
+    "generated": {
+      "title": "Invoice Generated",
+      "body": "Your invoice for order {orderId} has been generated and is available."
+    },
+    "generation_failed": {
+      "title": "Invoice Generation Failed",
+      "body": "Failed to generate invoice for order {orderId}. Please contact support."
+    }
+  }
+}

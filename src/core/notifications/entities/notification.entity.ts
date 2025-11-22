@@ -16,7 +16,7 @@ import {
 @Entity('notifications')
 export class Notification extends BaseEntity {
   @ApiProperty({
-    description: 'The title of the notification.',
+    description: 'The title i18 key of the notification.',
     example: 'New Message',
   })
   @Column()
@@ -34,7 +34,7 @@ export class Notification extends BaseEntity {
   type: NotificationType;
 
   @ApiProperty({
-    description: 'The body of the notification.',
+    description: 'The i18 body key of the notification.',
     example: 'You have a new message from John Doe.',
   })
   @Column()

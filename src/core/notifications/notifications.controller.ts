@@ -69,11 +69,13 @@ export class NotificationsController {
       type,
       context: 'Notifications',
     });
+    //TODO: remove empty meta object once meta is handled
     return this.notificationsService.sendNotification(
       title,
       body,
       userId,
       type,
+      {},
     );
   }
 

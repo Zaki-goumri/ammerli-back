@@ -360,13 +360,13 @@ export class UserService {
       await this.userRepo.save(user);
       await this.redisService.del(UserService.getCacheKey(id, 'id'));
       await this.redisService.del(UserService.getCacheKey(id, 'admin-details')); // Invalidate admin details cache
-      
+
       this.logger.log({
         message: 'User updated successfully',
         userId: id,
         context: 'User',
       });
-      
+
       return user as UserDto;
     });
   }
@@ -435,7 +435,7 @@ export class UserService {
         metadata: { targetId: id, targetType: BUCKET_TARGETS.USER_PROFILE },
       });
     }
-    
+
     this.logger.log({
       message: 'User soft deleted',
       userId: id,
@@ -538,12 +538,11 @@ export class UserService {
 
     if (failedDeletes.length > 0) {
       await this.notificationsService.sendNotification(
-        'Bulk Deletion Partially Failed',
-        `Failed to delete the following user IDs: ${failedDeletes.join(
-          ', ',
-        )}. Please check the logs.`,
+        'notifications.admin.bulk_deletion_failed.title',
+        'notifications.admin.bulk_deletion_failed.body',
         currentAdminId,
         NOTIFICATION_TYPE.ADMIN_ALERTS,
+        { failedIds: failedDeletes.join(', ') },
       );
     }
 

@@ -6,10 +6,7 @@ import { Logger } from '@nestjs/common';
 import { GenerateInvoiceDto } from './dto/generate-invoice.dto';
 import { InvoiceGeneratorService } from 'src/core/invoice/services/invoice-generator.service';
 import { NotificationsService } from 'src/core/notifications/notifications.service';
-import {
-  NOTIFICATION_TYPE,
-  NotificationType,
-} from 'src/core/notifications/enums/notification-type.enum';
+import { NOTIFICATION_TYPE } from 'src/core/notifications/enums/notification-type.enum';
 
 @Processor(QUEUE_NAME.INVOICE)
 export class InvoiceProcessor extends WorkerHost {
@@ -49,7 +46,7 @@ export class InvoiceProcessor extends WorkerHost {
     });
 
     const { orderId, buyerId, ...invoiceData } = job.returnvalue;
-this.logger.log({
+    this.logger.log({
       message: 'Saving invoice record',
       context: 'InvoiceProcessor',
     });
@@ -59,10 +56,11 @@ this.logger.log({
     });
 
     await this.notificationsService.sendNotification(
-      'Invoice Generated',
-      `Your invoice for order ${orderId} has been generated and is available.`,
+      'notifications.invoice.generated.title',
+      'notifications.invoice.generated.body',
       buyerId,
       NOTIFICATION_TYPE.ORDERS,
+      { orderId },
     );
 
     this.logger.log({
@@ -86,10 +84,11 @@ this.logger.log({
       await this.invoiceGeneratorService.getBuyerIdFromOrderId(orderId);
 
     await this.notificationsService.sendNotification(
-      'Invoice Generation Failed',
-      `Failed to generate invoice for order ${orderId}. Please contact support.`,
+      'notifications.invoice.generation_failed.title',
+      'notifications.invoice.generation_failed.body',
       buyerId,
       NOTIFICATION_TYPE.ORDERS,
+      { orderId },
     );
     this.logger.log({
       message: 'Failure notification sent for invoice generation',

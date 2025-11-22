@@ -1,0 +1,74 @@
+{
+  "payment": {
+    "successful": {
+      "title": "Paiement Réussi",
+      "body": "Votre paiement pour la commande avec l'ID de paiement {checkoutId} a été reçu avec succès."
+    },
+    "failed": {
+      "title": "Échec du Paiement",
+      "body": "Votre paiement pour la commande avec l'ID de paiement {checkoutId} a échoué. Veuillez réessayer."
+    }
+  },
+  "order": {
+    "cancelled": {
+      "buyer": {
+        "title": "Commande Annulée",
+        "body": "Votre commande #{orderId} a été annulée. Raison : {reason}"
+      },
+      "seller": {
+        "title": "Commande Annulée",
+        "body": "La commande #{orderId} a été annulée par {cancelledBy}."
+      }
+    },
+    "status_updated": {
+      "title": "Statut de Commande Mis à Jour",
+      "body": "Le statut de votre commande #{orderId} a été mis à jour à {status}."
+    }
+  },
+  "refund": {
+    "new_request": {
+      "title": "Nouvelle Demande de Remboursement",
+      "body": "Commande #{orderId} - Demande de remboursement de {amount} DZD"
+    },
+    "processing": {
+      "title": "Remboursement en Cours",
+      "body": "Votre remboursement de {amount} DZD est en cours de traitement"
+    },
+    "completed": {
+      "title": "Remboursement Terminé",
+      "body": "Votre remboursement de {amount} DZD a été effectué. L'argent arrivera dans 3-5 jours ouvrables."
+    },
+    "failed": {
+      "title": "Échec du Remboursement",
+      "body": "Votre demande de remboursement a échoué. {adminNote}"
+    },
+    "cancelled": {
+      "title": "Remboursement Annulé",
+      "body": "Votre demande de remboursement a été annulée. {adminNote}"
+    },
+    "approved": {
+      "title": "Remboursement Approuvé",
+      "body": "Votre demande de remboursement pour la commande #{orderId} a été approuvée. Montant : {amount} DZD"
+    },
+    "rejected": {
+      "title": "Remboursement Rejeté",
+      "body": "Votre demande de remboursement pour la commande #{orderId} a été rejetée. Raison : {reason}"
+    }
+  },
+  "admin": {
+    "bulk_deletion_failed": {
+      "title": "Suppression en Masse Partiellement Échouée",
+      "body": "Échec de la suppression des ID utilisateurs suivants : {failedIds}. Veuillez vérifier les journaux."
+    }
+  },
+  "invoice": {
+    "generated": {
+      "title": "Facture Générée",
+      "body": "Votre facture pour la commande {orderId} a été générée et est disponible."
+    },
+    "generation_failed": {
+      "title": "Échec de Génération de Facture",
+      "body": "Échec de la génération de la facture pour la commande {orderId}. Veuillez contacter le support."
+    }
+  }
+}

@@ -6,6 +6,8 @@ import { NOTIFICATION_JOBS } from 'src/common/constants/jobs';
 import { NotificationsService } from 'src/core/notifications/notifications.service';
 import { FirebaseService } from 'src/infrastructure/firebase/firebase.service';
 import { NotificationType } from 'src/core/notifications/enums/notification-type.enum';
+import { from, retry, catchError, throwError, Observable } from 'rxjs';
+import { delay, lastValueFrom } from 'rxjs';
 
 interface SendNotificationJob {
   title: string;
@@ -69,7 +71,9 @@ export class NotificationProcessor extends WorkerHost {
           },
           token,
         };
-        const response = await this.sendNotificationToOneDevice(message);
+        const response = await lastValueFrom(
+          this.sendNotificationToOneDevice(message),
+        );
         return Promise.resolve({
           message: 'Test notification sent',
           jobId: job.id,
@@ -86,13 +90,52 @@ export class NotificationProcessor extends WorkerHost {
     }
   }
 
-  sendNotificationToOneDevice(message: NotificationMessage): Promise<string> {
-    this.logger.debug({
+  sendNotificationToOneDevice(
+    message: NotificationMessage,
+  ): Observable<string> {
+    this.logger.log({
       message: 'Sending notification to token',
       tokenPrefix: message.token.substring(0, 20),
       context: 'NotificationProcessor',
     });
-    return this.firebaseService.getFcm().send(message);
+
+    return from(this.firebaseService.getFcm().send(message)).pipe(
+      retry({
+        count: 3,
+        delay: (error, retryCount) => {
+          // Don't retry if it's an invalid token error
+          if (this.isInvalidTokenError(error)) {
+            this.logger.warn({
+              message: 'Invalid token detected, skipping retry',
+              tokenPrefix: message.token.substring(0, 20),
+              context: 'NotificationProcessor',
+            });
+            return throwError(() => error);
+          }
+
+          // Retry for transient errors with exponential backoff
+          this.logger.warn({
+            message: 'Retrying notification send (transient error)',
+            tokenPrefix: message.token.substring(0, 20),
+            attempt: retryCount,
+            error: error.message,
+            context: 'NotificationProcessor',
+          });
+
+          const delayMs = Math.pow(2, retryCount - 1) * 1000;
+          return throwError(() => error).pipe(delay(delayMs));
+        },
+      }),
+      catchError((error) => {
+        this.logger.error({
+          message: 'Failed to send notification',
+          tokenPrefix: message.token.substring(0, 20),
+          error: error.message,
+          context: 'NotificationProcessor',
+        });
+        return throwError(() => error);
+      }),
+    );
   }
 
   async handleSendingNotification(data: SendNotificationJob): Promise<void> {
@@ -103,6 +146,7 @@ export class NotificationProcessor extends WorkerHost {
       type: data.type,
       context: 'NotificationProcessor',
     });
+
     const tokens = await this.notificationsService.getActiveTokensForUser(
       data.userId,
     );
@@ -112,7 +156,7 @@ export class NotificationProcessor extends WorkerHost {
       return;
     }
 
-    const messages = tokens.map((token) => ({
+    const messages: NotificationMessage[] = tokens.map((token) => ({
       notification: {
         title: data.title,
         body: data.body,
@@ -123,8 +167,11 @@ export class NotificationProcessor extends WorkerHost {
       },
     }));
 
+    // Convert observables to promises and handle results
     const results = await Promise.allSettled(
-      messages.map((message) => this.sendNotificationToOneDevice(message)),
+      messages.map((message) =>
+        lastValueFrom(this.sendNotificationToOneDevice(message)),
+      ),
     );
 
     // Auto-cleanup invalid FCM tokens
@@ -136,7 +183,7 @@ export class NotificationProcessor extends WorkerHost {
         if (this.isInvalidTokenError(error)) {
           invalidTokens.push(tokens[index]);
           this.logger.warn(
-            `Invalid FCM token detected: ${tokens[index].substring(0, 20)}...`,
+            `Invalid FCM token detected after retries: ${tokens[index].substring(0, 20)}...`,
           );
         }
       }
@@ -150,31 +197,47 @@ export class NotificationProcessor extends WorkerHost {
         ),
       );
       this.logger.log(
-        `Auto-removed ${invalidTokens.length} invalid FCM token(s)`,
+        `Auto-removed ${invalidTokens.length} invalid FCM token(s) after retry attempts`,
       );
     }
 
     this.logger.log({
       message: 'Sending notification handled',
       totalTokens: tokens.length,
+      successfulTokens: results.filter((r) => r.status === 'fulfilled').length,
       invalidTokens: invalidTokens.length,
       context: 'NotificationProcessor',
     });
   }
 
-  /**
-   * Checks if the error is related to an invalid FCM token.
-   * @param error - The error object from Firebase.
-   * @returns True if the error indicates an invalid token.
-   */
   private isInvalidTokenError(error: any): boolean {
-    const errorCode = error?.code || error?.errorInfo?.code;
-    const invalidErrorCodes = [
+    if (!error) return false;
+
+    const errorCode = error.code || error.errorInfo?.code;
+    const invalidTokenCodes = [
       'messaging/invalid-registration-token',
       'messaging/registration-token-not-registered',
       'messaging/invalid-argument',
     ];
-    return invalidErrorCodes.includes(errorCode);
+
+    return invalidTokenCodes.includes(errorCode);
+  }
+
+  private isTransientError(error: any): boolean {
+    if (!error) return false;
+
+    const errorCode = error.code || error.errorInfo?.code;
+    const transientErrorCodes = [
+      'messaging/server-unavailable',
+      'messaging/internal-error',
+      'messaging/unavailable',
+    ];
+
+    return (
+      transientErrorCodes.includes(errorCode) ||
+      error.message?.includes('ECONNRESET') ||
+      error.message?.includes('ETIMEDOUT')
+    );
   }
 
   @OnWorkerEvent('completed')

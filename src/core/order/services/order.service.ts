@@ -148,10 +148,11 @@ export class OrderService {
         context: 'Order',
       });
       await this.notificationService.sendNotification(
-        'Payment Successful',
-        `Your payment for order with checkout ID ${checkoutId} has been received successfully.`,
+        'notifications.payment.successful.title',
+        'notifications.payment.successful.body',
         buyerId,
         NOTIFICATION_TYPE.ORDERS,
+        { checkoutId },
       );
 
       await this.invoiceQueue.add(INVOICE_JOBS.GENERATE_INVOICE, {
@@ -168,10 +169,11 @@ export class OrderService {
       });
       finalDataForClient.errorMessage = 'Payment failed or was canceled.';
       await this.notificationService.sendNotification(
-        'Payment Failed',
-        `Your payment for order with checkout ID ${checkoutId} has failed. Please try again.`,
+        'notifications.payment.failed.title',
+        'notifications.payment.failed.body',
         buyerId,
         NOTIFICATION_TYPE.ORDERS,
+        { checkoutId },
       );
     }
 
@@ -954,27 +956,29 @@ export class OrderService {
     cancelledBy: string,
     reason: string,
   ): Promise<void> {
-    // Notify buyer
     await this.notificationService.sendNotification(
-      'Order Cancelled',
-      `Your order #${order.id} has been cancelled. Reason: ${reason}`,
+      'notifications.order.cancelled.buyer.title',
+      'notifications.order.cancelled.buyer.body',
       order.buyerId,
       NOTIFICATION_TYPE.ORDERS,
+      { orderId: order.id, reason },
     );
 
-    // Notify seller(s)
     const sellerIds = [
       ...new Set(order.orderProducts.map((op) => op.product.sellerId)),
     ];
-    for (const sellerId of sellerIds) {
-      if (sellerId !== order.buyerId) {
-        await this.notificationService.sendNotification(
-          'Order Cancelled',
-          `Order #${order.id} has been cancelled by ${cancelledBy}.`,
-          sellerId,
-          NOTIFICATION_TYPE.ORDERS,
-        );
-      }
-    }
+    await Promise.allSettled(
+      sellerIds
+        .filter((sellerId) => sellerId !== order.buyerId)
+        .map((sellerId) =>
+          this.notificationService.sendNotification(
+            'notifications.order.cancelled.seller.title',
+            'notifications.order.cancelled.seller.body',
+            sellerId,
+            NOTIFICATION_TYPE.ORDERS,
+            { orderId: order.id, cancelledBy },
+          ),
+        ),
+    );
   }
 }

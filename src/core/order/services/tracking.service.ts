@@ -64,7 +64,6 @@ export class TrackingService {
     const result = await this.entityManager.transaction(
       async (transactionalEntityManager) => {
         try {
-          console.log(Date.now());
           const latestTracking = await transactionalEntityManager.findOne(
             Tracking,
             {
@@ -73,7 +72,6 @@ export class TrackingService {
               order: { createdAt: 'DESC' },
             },
           );
-          console.log('t1', Date.now());
           if (!latestTracking) {
             throw new NotFoundException(
               `No tracking history found for order with ID ${orderId}.`,
@@ -82,8 +80,6 @@ export class TrackingService {
           if (!latestTracking.order) {
             throw new NotFoundException(`Order with ID ${orderId} not found.`);
           }
-
-          console.log('t2', Date.now());
 
           const currentStatusIndex = this.statusSequence.indexOf(
             latestTracking.status,
@@ -95,20 +91,14 @@ export class TrackingService {
             );
           }
 
-          console.log('t3', Date.now());
-
           const nextStatus = this.statusSequence[currentStatusIndex + 1];
           const newTracking = transactionalEntityManager.create(Tracking, {
             orderId,
             status: nextStatus,
           });
 
-          console.log('t4', Date.now());
-
           const savedTracking =
             await transactionalEntityManager.save(newTracking);
-
-          console.log('t5', Date.now());
 
           return { savedTracking, order: latestTracking.order, nextStatus };
         } catch (error) {
@@ -116,7 +106,6 @@ export class TrackingService {
             `Failed to update tracking status for order ${orderId}:`,
             error,
           );
-          // Re-throw specific errors or wrap in a generic one
           if (
             error instanceof NotFoundException ||
             error instanceof BadRequestException
@@ -129,15 +118,13 @@ export class TrackingService {
         }
       },
     );
-    const title = `Order Status Update`;
-    const body = `Your order #${result.order.id} is now ${result.nextStatus}.`;
     await this.notificationsService.sendNotification(
-      title,
-      body,
+      'notifications.order.status_updated.title',
+      'notifications.order.status_updated.body',
       result.order.buyerId,
       NOTIFICATION_TYPE.STATUS_UPDATE,
+      { orderId: result.order.id, status: result.nextStatus },
     );
-    console.log('t6', Date.now());
     return result.savedTracking;
   }
 }

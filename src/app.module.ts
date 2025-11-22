@@ -22,7 +22,8 @@ import { AppController } from './app.controller';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { GlobalThrottlerGuard } from './security/rate-limiting/global-throttler.guard';
 import { RealIpMiddleware } from './common/middlewares/real-ip.middleware';
-
+import { I18nModule, AcceptLanguageResolver, QueryResolver } from 'nestjs-i18n';
+import path from 'path';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -68,6 +69,17 @@ import { RealIpMiddleware } from './common/middlewares/real-ip.middleware';
     SecurityModule,
     CommonModule,
     CoreModule,
+    I18nModule.forRoot({
+      fallbackLanguage: 'en',
+      loaderOptions: {
+        path: path.join(__dirname, '/i18n/'),
+        watch: true,
+      },
+      resolvers: [
+        { use: QueryResolver, options: ['lang'] },
+        AcceptLanguageResolver,
+      ],
+    }),
   ],
   controllers: [AppController],
   providers: [

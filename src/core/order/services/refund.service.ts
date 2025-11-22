@@ -270,14 +270,25 @@ export class RefundService {
     try {
       const admins = await this.userService.findUsersByRole(USER_ROLES.ADMIN);
 
-      for (const admin of admins) {
-        await this.notificationService.sendNotification(
-          'New Refund Request',
-          `Order #${order.id} - Refund request for ${refund.amount} DZD`,
-          admin.id,
-          NOTIFICATION_TYPE.ORDERS,
-        );
-      }
+      await Promise.all(
+        admins.map((admin) =>
+          this.notificationService
+            .sendNotification(
+              'notifications.refund.new_request.title',
+              'notifications.refund.new_request.body',
+              admin.id,
+              NOTIFICATION_TYPE.ORDERS,
+              { orderId: order.id, amount: refund.amount },
+            )
+            .catch((error) => {
+              this.logger.error(
+                `Failed to send notification to admin ${admin.id}`,
+                error,
+              );
+              return null;
+            }),
+        ),
+      );
     } catch (error) {
       this.logger.error('Failed to notify admins about refund', error);
     }
@@ -288,34 +299,38 @@ export class RefundService {
    */
   private async notifyCustomerRefundStatus(refund: Refund): Promise<void> {
     try {
-      let title = '';
-      let message = '';
+      const statusMap = {
+        [REFUND_STATUS.PROCESSING]: {
+          titleKey: 'notifications.refund.processing.title',
+          bodyKey: 'notifications.refund.processing.body',
+          data: { amount: refund.amount },
+        },
+        [REFUND_STATUS.COMPLETED]: {
+          titleKey: 'notifications.refund.completed.title',
+          bodyKey: 'notifications.refund.completed.body',
+          data: { amount: refund.amount },
+        },
+        [REFUND_STATUS.FAILED]: {
+          titleKey: 'notifications.refund.failed.title',
+          bodyKey: 'notifications.refund.failed.body',
+          data: { adminNote: refund.adminNote || 'Please contact support.' },
+        },
+        [REFUND_STATUS.CANCELLED]: {
+          titleKey: 'notifications.refund.cancelled.title',
+          bodyKey: 'notifications.refund.cancelled.body',
+          data: { adminNote: refund.adminNote || '' },
+        },
+      };
 
-      switch (refund.status) {
-        case REFUND_STATUS.PROCESSING:
-          title = 'Refund Processing';
-          message = `Your refund of ${refund.amount} DZD is being processed`;
-          break;
-        case REFUND_STATUS.COMPLETED:
-          title = 'Refund Completed';
-          message = `Your refund of ${refund.amount} DZD has been completed. Money will arrive in 3-5 business days.`;
-          break;
-        case REFUND_STATUS.FAILED:
-          title = 'Refund Failed';
-          message = `Your refund request failed. ${refund.adminNote || 'Please contact support.'}`;
-          break;
-        case REFUND_STATUS.CANCELLED:
-          title = 'Refund Cancelled';
-          message = `Your refund request has been cancelled. ${refund.adminNote || ''}`;
-          break;
-      }
+      const notification = statusMap[refund.status];
 
-      if (title) {
+      if (notification) {
         await this.notificationService.sendNotification(
-          title,
-          message,
+          notification.titleKey,
+          notification.bodyKey,
           refund.order.buyerId,
           NOTIFICATION_TYPE.ORDERS,
+          notification.data,
         );
       }
     } catch (error) {
