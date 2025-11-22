@@ -44,6 +44,7 @@ export class Checkout extends BaseEntity {
     type: 'enum',
     enum: PAYMENT_WAY_VALUES,
     nullable: true,
+    default: null,
   })
   paymentWay?: PaymentWay;
 

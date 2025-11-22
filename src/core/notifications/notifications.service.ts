@@ -275,7 +275,6 @@ export class NotificationsService {
     bodyKey: string,
     data?: Record<string, any>,
   ) {
-    this.logger.debug(data, 'Translation data');
     const title = this.i18nService.translate(titleKey, {
       lang: lang as string,
       args: data,

@@ -4,7 +4,7 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { EntityManager } from 'typeorm';
+import { EntityManager, IsNull, LessThan } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ChargiliService } from 'src/core/chargili/chargili.service';
@@ -50,6 +50,7 @@ import { PaymentWay } from '../enums/payment-way.enum';
 import { RefundService } from './refund.service';
 import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 export type PaymentStatus =
   | 'paid'
@@ -93,6 +94,32 @@ export class OrderService {
     private readonly refundService: RefundService,
     private readonly objectStorageService: ObjectService,
   ) {}
+
+  @Cron(CronExpression.EVERY_MINUTE)
+  async clearOldUnpaidCheckouts() {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getMinutes() - 1);
+
+    this.logger.log(
+      `Clearing unpaid checkouts created before ${cutoffDate.toISOString()}`,
+    );
+    const ordersToDelete = await this.orderRepo
+      .createQueryBuilder('order')
+      .leftJoin('order.checkouts', 'checkout')
+      .where('order.createdAt < :cutoffDate', { cutoffDate })
+      .andWhere('order.paymentWay = :paymentWay', {
+        paymentWay: ORDER_PAYMENT_METHOD.EPAYMENT,
+      })
+      .andWhere('checkout."isPaid" = FALSE')
+      .getMany();
+
+    if (ordersToDelete.length > 0) {
+      await this.orderRepo.remove(ordersToDelete);
+      this.logger.log(`Removed ${ordersToDelete.length} expired unpaid orders`);
+    } else {
+      this.logger.log('No expired unpaid orders to remove');
+    }
+  }
 
   async processWebhook(
     data: CheckoutDataDto,
@@ -197,6 +224,7 @@ export class OrderService {
     if (!redisData) {
       this.logger.error(
         `Payment token for order ${orderId} not found or expired.`,
+        orderId,
       );
       return 'amerli://payment/status?status=error&message=SyncError';
     }
@@ -410,18 +438,27 @@ export class OrderService {
     orderId?: number,
   ): Promise<CreateCheckoutRes> {
     const backendApiUrl = this.configService.get<string>('BACKEND_API_URL');
-
-    console.log('Backend API URL:', backendApiUrl);
-    const checkout = await this.chargilyService.createCheckout({
-      amount: totalAmount,
-      currency: 'dzd',
-      //NOTE: Update URLs to actual frontend pages in production
-      //TODO: Update URLs to actual frontend pages in production
-      success_url: `${backendApiUrl}/order/redirect/${orderId}`,
-      webhook_endpoint: `${backendApiUrl}/order/webhook/chargili`,
-      failure_url: `${backendApiUrl}/order/redirect/${orderId}`,
-    });
-    return { checkoutUrl: checkout.checkout_url, checkoutId: checkout.id };
+    try {
+      const checkout = await this.chargilyService.createCheckout({
+        amount: totalAmount,
+        currency: 'dzd',
+        //NOTE: Update URLs to actual frontend pages in production
+        //TODO: Update URLs to actual frontend pages in production
+        success_url: `${backendApiUrl}/order/redirect/${orderId}`,
+        webhook_endpoint: `${backendApiUrl}/order/webhook/chargili`,
+        failure_url: `${backendApiUrl}/order/redirect/${orderId}`,
+      });
+      return { checkoutUrl: checkout.checkout_url, checkoutId: checkout.id };
+    } catch (error) {
+      this.logger.error({
+        message: 'Error creating Chargili checkout',
+        error,
+        context: 'Order',
+      });
+      throw new ForbiddenException(
+        'Unable to create payment checkout at this time. Please try again later.',
+      );
+    }
   }
 
   async getOrderById(orderId: number): Promise<Order | null> {

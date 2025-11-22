@@ -89,10 +89,16 @@ export class Order extends BaseEntity {
   @Column({ nullable: true, type: 'timestamp' })
   cancelledAt?: Date;
 
-  @OneToMany(() => Checkout, (checkout) => checkout.order)
+  @OneToMany(() => Checkout, (checkout) => checkout.order, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
   checkouts: Relation<Checkout[]>;
 
-  @OneToMany(() => OrderProduct, (op) => op.order, { cascade: true })
+  @OneToMany(() => OrderProduct, (op) => op.order, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
   orderProducts: Relation<OrderProduct[]>;
 
   @OneToMany(() => Refund, (refund) => refund.order)
