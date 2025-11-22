@@ -1,0 +1,10 @@
+{
+  "welcome": {
+    "title": "¡Bienvenido!",
+    "body": "Gracias por unirte, {{name}}"
+  },
+  "order_shipped": {
+    "title": "Pedido Enviado",
+    "body": "Tu pedido #{{orderId}} ha sido enviado"
+  }
+}
