@@ -1,0 +1,32 @@
+{
+  "resourceNotFound": {
+    "message": "Resource not found",
+    "error": "Not Found"
+  },
+  "databaseError": {
+    "message": "Database error occurred",
+    "error": "Internal Server Error"
+  },
+  "uniqueViolation": {
+    "message": "{field} already exists",
+    "defaultMessage": "Resource already exists",
+    "error": "Conflict"
+  },
+  "foreignKeyViolation": {
+    "message": "Referenced resource does not exist",
+    "error": "Bad Request"
+  },
+  "notNullViolation": {
+    "message": "{field} is required",
+    "defaultMessage": "Required field is missing",
+    "error": "Bad Request"
+  },
+  "checkViolation": {
+    "message": "Data validation failed",
+    "error": "Bad Request"
+  },
+  "exclusionViolation": {
+    "message": "Data conflict detected",
+    "error": "Conflict"
+  }
+}

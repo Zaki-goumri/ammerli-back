@@ -1,0 +1,5 @@
+{
+  "notFound": "Invoice with ID {id} not found.",
+  "notFoundForOrder": "Invoice for order ID {id} not found.",
+  "pdfNotAvailable": "PDF not available for this invoice."
+}

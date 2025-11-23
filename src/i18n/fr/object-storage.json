@@ -1,0 +1,22 @@
+{
+  "noSuchBucket": {
+    "message": "Le compartiment spécifié n'existe pas.",
+    "error": "Introuvable"
+  },
+  "noSuchKey": {
+    "message": "La clé spécifiée n'existe pas.",
+    "error": "Introuvable"
+  },
+  "accessDenied": {
+    "message": "L'accès à la ressource est refusé.",
+    "error": "Interdit"
+  },
+  "internalError": {
+    "message": "Une erreur interne s'est produite dans le service de stockage d'objets.",
+    "error": "Erreur Interne du Serveur"
+  },
+  "default": {
+    "message": "Une erreur inconnue s'est produite dans le service de stockage d'objets.",
+    "error": "Erreur Interne du Serveur"
+  }
+}

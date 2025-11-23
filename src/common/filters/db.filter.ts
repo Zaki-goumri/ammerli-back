@@ -8,6 +8,7 @@ import {
 import { Request, Response } from 'express';
 import { QueryFailedError, EntityNotFoundError } from 'typeorm';
 import { PostgresErrorCode, isPostgresError } from '../constants/db-code';
+import { I18nService } from 'nestjs-i18n';
 
 interface PostgresDriverError {
   code?: string;
@@ -25,6 +26,8 @@ interface DatabaseErrorResult {
 @Catch(QueryFailedError, EntityNotFoundError)
 export class DatabaseExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(DatabaseExceptionFilter.name);
+
+  constructor(private readonly i18n: I18nService) {}
 
   catch(
     exception: QueryFailedError | EntityNotFoundError,
@@ -60,8 +63,8 @@ export class DatabaseExceptionFilter implements ExceptionFilter {
     if (this.isEntityNotFoundError(exception)) {
       return {
         status: HttpStatus.NOT_FOUND,
-        message: 'Resource not found',
-        error: 'Not Found',
+        message: this.i18n.t('db.resourceNotFound.message'),
+        error: this.i18n.t('db.resourceNotFound.error'),
       };
     }
 
@@ -71,8 +74,8 @@ export class DatabaseExceptionFilter implements ExceptionFilter {
 
     return {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
-      message: 'Database error occurred',
-      error: 'Internal Server Error',
+      message: this.i18n.t('db.databaseError.message'),
+      error: this.i18n.t('db.databaseError.error'),
     };
   }
 
@@ -97,50 +100,50 @@ export class DatabaseExceptionFilter implements ExceptionFilter {
           return {
             status: HttpStatus.CONFLICT,
             message: this.extractUniqueViolationMessage(driverError),
-            error: 'Conflict',
+            error: this.i18n.t('db.uniqueViolation.error'),
           };
 
         case PostgresErrorCode.FOREIGN_KEY_VIOLATION:
           return {
             status: HttpStatus.BAD_REQUEST,
-            message: 'Referenced resource does not exist',
-            error: 'Bad Request',
+            message: this.i18n.t('db.foreignKeyViolation.message'),
+            error: this.i18n.t('db.foreignKeyViolation.error'),
           };
 
         case PostgresErrorCode.NOT_NULL_VIOLATION:
           return {
             status: HttpStatus.BAD_REQUEST,
             message: this.extractNotNullViolationMessage(driverError),
-            error: 'Bad Request',
+            error: this.i18n.t('db.notNullViolation.error'),
           };
 
         case PostgresErrorCode.CHECK_VIOLATION:
           return {
             status: HttpStatus.BAD_REQUEST,
-            message: 'Data validation failed',
-            error: 'Bad Request',
+            message: this.i18n.t('db.checkViolation.message'),
+            error: this.i18n.t('db.checkViolation.error'),
           };
 
         case PostgresErrorCode.EXCLUSION_VIOLATION:
           return {
             status: HttpStatus.CONFLICT,
-            message: 'Data conflict detected',
-            error: 'Conflict',
+            message: this.i18n.t('db.exclusionViolation.message'),
+            error: this.i18n.t('db.exclusionViolation.error'),
           };
 
         default:
           return {
             status: HttpStatus.INTERNAL_SERVER_ERROR,
-            message: 'Database error occurred',
-            error: 'Internal Server Error',
+            message: this.i18n.t('db.databaseError.message'),
+            error: this.i18n.t('db.databaseError.error'),
           };
       }
     }
 
     return {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
-      message: 'Database error occurred',
-      error: 'Internal Server Error',
+      message: this.i18n.t('db.databaseError.message'),
+      error: this.i18n.t('db.databaseError.error'),
     };
   }
 
@@ -191,11 +194,13 @@ export class DatabaseExceptionFilter implements ExceptionFilter {
       const match = detail.match(/Key \(([^)]+)\)=/);
       if (match && match[1]) {
         const field = match[1].replace(/_/g, ' ');
-        return `${field} already exists`;
+        return this.i18n.t('db.uniqueViolation.message', {
+          args: { field },
+        });
       }
     }
 
-    return 'Resource already exists';
+    return this.i18n.t('db.uniqueViolation.defaultMessage');
   }
 
   private extractNotNullViolationMessage(
@@ -205,9 +210,11 @@ export class DatabaseExceptionFilter implements ExceptionFilter {
 
     if (column) {
       const fieldName = column.replace(/_/g, ' ');
-      return `${fieldName} is required`;
+      return this.i18n.t('db.notNullViolation.message', {
+        args: { field: fieldName },
+      });
     }
 
-    return 'Required field is missing';
+    return this.i18n.t('db.notNullViolation.defaultMessage');
   }
 }

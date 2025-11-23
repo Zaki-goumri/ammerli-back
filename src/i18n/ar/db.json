@@ -1,0 +1,32 @@
+{
+  "resourceNotFound": {
+    "message": "المورد غير موجود",
+    "error": "غير موجود"
+  },
+  "databaseError": {
+    "message": "حدث خطأ في قاعدة البيانات",
+    "error": "خطأ داخلي في الخادم"
+  },
+  "uniqueViolation": {
+    "message": "{field} موجود بالفعل",
+    "defaultMessage": "المورد موجود بالفعل",
+    "error": "تضارب"
+  },
+  "foreignKeyViolation": {
+    "message": "المورد المشار إليه غير موجود",
+    "error": "طلب غير صالح"
+  },
+  "notNullViolation": {
+    "message": "{field} مطلوب",
+    "defaultMessage": "حقل مطلوب مفقود",
+    "error": "طلب غير صالح"
+  },
+  "checkViolation": {
+    "message": "فشل التحقق من صحة البيانات",
+    "error": "طلب غير صالح"
+  },
+  "exclusionViolation": {
+    "message": "تم الكشف عن تضارب في البيانات",
+    "error": "تضارب"
+  }
+}

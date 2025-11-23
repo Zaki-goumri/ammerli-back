@@ -1,0 +1,10 @@
+{
+  "templateNotFound": "Fichier de modèle introuvable : {path}",
+  "pdfGenerationFailed": "Impossible de générer le PDF de la facture.",
+  "htmlToPdfFailed": "La conversion HTML en PDF a échoué.",
+  "locale": "fr-FR",
+  "paymentMethod": {
+    "cash": "Espèces",
+    "epayment": "Paiement électronique"
+  }
+}

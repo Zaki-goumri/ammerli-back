@@ -15,6 +15,7 @@ import { OrderForInvoice } from '../interfaces/invoice.interface';
 import { RedisService } from 'nestjs-redis-client';
 import { ConfigService } from '@nestjs/config';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
+import { I18nService } from 'nestjs-i18n';
 
 @Injectable()
 export class InvoiceService {
@@ -31,6 +32,7 @@ export class InvoiceService {
     private readonly objectStorageService: ObjectService,
     private readonly redisService: RedisService,
     private readonly configService: ConfigService,
+    private readonly i18nService: I18nService,
   ) {
     this.CACHE_TTL = this.configService.get<number>('CACHE_TTL') ?? 5 * 60;
   }
@@ -109,7 +111,9 @@ export class InvoiceService {
 
     const invoice = await this.invoiceRepository.findOne({ where: { id } });
     if (!invoice) {
-      throw new NotFoundException(`Invoice with ID ${id} not found.`);
+      throw new NotFoundException(
+        this.i18nService.t('invoice.notFound', { args: { id } }),
+      );
     }
     if (invoice.pdfUrl) {
       invoice.pdfUrl = await this.objectStorageService.getPresignedUrl(
@@ -139,7 +143,9 @@ export class InvoiceService {
       where: { orderId },
     });
     if (!invoice) {
-      throw new NotFoundException(`Invoice for order ID ${orderId} not found.`);
+      throw new NotFoundException(
+        this.i18nService.t('invoice.notFoundForOrder', { args: { id: orderId } }),
+      );
     }
     if (invoice.pdfUrl) {
       invoice.pdfUrl = await this.objectStorageService.getPresignedUrl(
@@ -189,7 +195,7 @@ export class InvoiceService {
 
     const invoice = await this.findOne(id);
     if (!invoice.pdfUrl) {
-      throw new NotFoundException('PDF not available for this invoice.');
+      throw new NotFoundException(this.i18nService.t('invoice.pdfNotAvailable'));
     }
     const objectName = this.objectStorageService.getFileNameFromUrl(
       invoice.pdfUrl,
@@ -303,7 +309,9 @@ export class InvoiceService {
   async delete(id: number): Promise<void> {
     const invoice = await this.findOne(id);
     if (!invoice) {
-      throw new NotFoundException(`Invoice with ID ${id} not found.`);
+      throw new NotFoundException(
+        this.i18nService.t('invoice.notFound', { args: { id } }),
+      );
     }
     await this.invalidateInvoiceCache(invoice);
 
@@ -315,7 +323,9 @@ export class InvoiceService {
 
     const result = await this.invoiceRepository.delete(id);
     if (result.affected === 0) {
-      throw new NotFoundException(`Invoice with ID ${id} not found.`);
+      throw new NotFoundException(
+        this.i18nService.t('invoice.notFound', { args: { id } }),
+      );
     }
   }
 

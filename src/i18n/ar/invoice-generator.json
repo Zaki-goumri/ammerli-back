@@ -1,0 +1,10 @@
+{
+  "templateNotFound": "ملف القالب غير موجود: {path}",
+  "pdfGenerationFailed": "تعذر إنشاء فاتورة PDF.",
+  "htmlToPdfFailed": "فشل تحويل HTML إلى PDF.",
+  "locale": "ar-DZ",
+  "paymentMethod": {
+    "cash": "نقداً",
+    "epayment": "الدفع الإلكتروني"
+  }
+}

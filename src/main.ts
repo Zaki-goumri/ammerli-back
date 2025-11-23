@@ -10,6 +10,9 @@ import { LoggerBuilder } from './monitoring/logger/logger.builder';
 import helmet from 'helmet';
 import BasicAuth = require('express-basic-auth');
 import * as http from 'http';
+import { HttpExceptionFilter } from './common/filters/httpException.filter';
+import { ObjectStorageExceptionFilter } from './common/filters/object-storage.filter';
+import { I18nService } from 'nestjs-i18n';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -90,7 +93,13 @@ async function bootstrap() {
   );
 
   //FILTERS
-  app.useGlobalFilters(new DatabaseExceptionFilter());
+  const i18nService =
+    app.get<I18nService<Record<string, unknown>>>(I18nService);
+  app.useGlobalFilters(
+    new DatabaseExceptionFilter(i18nService),
+    new HttpExceptionFilter(i18nService),
+    new ObjectStorageExceptionFilter(i18nService),
+  );
 
   app.enableShutdownHooks();
   //Those to are for handling the shutdown of the server

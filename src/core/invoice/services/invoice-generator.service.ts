@@ -21,6 +21,7 @@ import { ObjectService } from 'src/infrastructure/object-storage/object-storage.
 import { PaymentMethodType } from 'src/core/order/enums/payment-method.enum';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 import { Invoice } from '../entities/invoice.entity';
+import { I18nService } from 'nestjs-i18n';
 
 const DELIVERY_ESTIMATION_DAYS = 2;
 
@@ -44,6 +45,7 @@ export class InvoiceGeneratorService implements OnModuleInit {
     @InjectRepository(Invoice)
     private readonly invoiceRepo: Repository<Invoice>,
     private readonly objectService: ObjectService,
+    private readonly i18nService: I18nService,
   ) {
     this.templatePath = path.join(
       process.cwd(),
@@ -63,7 +65,9 @@ export class InvoiceGeneratorService implements OnModuleInit {
     } catch (error) {
       this.logger.error(`Failed to load template: ${this.templatePath}`, error);
       throw new InternalServerErrorException(
-        `Template file not found: ${this.templatePath}`,
+        this.i18nService.t('invoice-generator.templateNotFound', {
+          args: { path: this.templatePath },
+        }),
       );
     }
   }
@@ -170,7 +174,9 @@ export class InvoiceGeneratorService implements OnModuleInit {
       return await this.generatePDFFromHTML(renderedHtml);
     } catch (error) {
       this.logger.error('Failed to generate invoice PDF', error.stack);
-      throw new InternalServerErrorException('Could not generate invoice PDF.');
+      throw new InternalServerErrorException(
+        this.i18nService.t('invoice-generator.pdfGenerationFailed'),
+      );
     }
   }
 
@@ -205,7 +211,9 @@ export class InvoiceGeneratorService implements OnModuleInit {
       return Buffer.from(pdfBuffer);
     } catch (error) {
       this.logger.error('Puppeteer PDF generation failed:', error);
-      throw new InternalServerErrorException('HTML to PDF conversion failed.');
+      throw new InternalServerErrorException(
+        this.i18nService.t('invoice-generator.htmlToPdfFailed'),
+      );
     } finally {
       if (browser) {
         await browser.close();
@@ -220,7 +228,8 @@ export class InvoiceGeneratorService implements OnModuleInit {
    */
   formatCurrency(amount: number): string {
     if (amount === null || amount === undefined) return '0.00';
-    return new Intl.NumberFormat('fr-FR', {
+    const locale = this.i18nService.t('invoice-generator.locale');
+    return new Intl.NumberFormat(locale, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })
@@ -250,15 +259,17 @@ export class InvoiceGeneratorService implements OnModuleInit {
 
     const paymentMethod =
       order?.paymentWay === 'CASH'
-        ? 'CASH'
-        : order.checkouts[0]?.paymentWay || 'EPAYMENT';
+        ? this.i18nService.t('invoice-generator.paymentMethod.cash')
+        : order.checkouts[0]?.paymentWay ||
+          this.i18nService.t('invoice-generator.paymentMethod.epayment');
 
+    const locale = this.i18nService.t('invoice-generator.locale');
     return {
       invoiceNumber: this.generateInvoiceNumber(order.id),
-      invoiceDate: new Date().toLocaleDateString('fr-FR'),
+      invoiceDate: new Date().toLocaleDateString(locale),
       deliveryDate: new Date(
         Date.now() + DELIVERY_ESTIMATION_DAYS * 24 * 60 * 60 * 1000,
-      ).toLocaleDateString('fr-FR'),
+      ).toLocaleDateString(locale),
       clientName: `${order?.buyer?.name}`,
       clientAddress: `${order.address.street}, ${order.address.district}, ${order.address.city}`,
       clientPhone: order.buyer.phoneNumber,

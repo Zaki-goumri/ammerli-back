@@ -1,0 +1,32 @@
+{
+  "resourceNotFound": {
+    "message": "Ressource non trouvée",
+    "error": "Introuvable"
+  },
+  "databaseError": {
+    "message": "Une erreur de base de données s'est produite",
+    "error": "Erreur Interne du Serveur"
+  },
+  "uniqueViolation": {
+    "message": "{field} existe déjà",
+    "defaultMessage": "La ressource existe déjà",
+    "error": "Conflit"
+  },
+  "foreignKeyViolation": {
+    "message": "La ressource référencée n'existe pas",
+    "error": "Mauvaise Requête"
+  },
+  "notNullViolation": {
+    "message": "{field} est requis",
+    "defaultMessage": "Champ obligatoire manquant",
+    "error": "Mauvaise Requête"
+  },
+  "checkViolation": {
+    "message": "La validation des données a échoué",
+    "error": "Mauvaise Requête"
+  },
+  "exclusionViolation": {
+    "message": "Conflit de données détecté",
+    "error": "Conflit"
+  }
+}

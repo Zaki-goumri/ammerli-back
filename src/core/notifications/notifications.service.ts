@@ -298,6 +298,7 @@ export class NotificationsService {
     });
   }
 
+  //TODO: need to test it
   async updateLanguage(
     userId: number,
     fcmToken: string,

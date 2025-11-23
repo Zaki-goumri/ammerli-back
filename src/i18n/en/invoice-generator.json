@@ -1,0 +1,10 @@
+{
+  "templateNotFound": "Template file not found: {path}",
+  "pdfGenerationFailed": "Could not generate invoice PDF.",
+  "htmlToPdfFailed": "HTML to PDF conversion failed.",
+  "locale": "en-US",
+  "paymentMethod": {
+    "cash": "Cash",
+    "epayment": "E-Payment"
+  }
+}

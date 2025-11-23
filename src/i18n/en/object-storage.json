@@ -1,0 +1,22 @@
+{
+  "noSuchBucket": {
+    "message": "The specified bucket does not exist.",
+    "error": "Not Found"
+  },
+  "noSuchKey": {
+    "message": "The specified key does not exist.",
+    "error": "Not Found"
+  },
+  "accessDenied": {
+    "message": "Access to the resource is denied.",
+    "error": "Forbidden"
+  },
+  "internalError": {
+    "message": "An internal error occurred in the object storage service.",
+    "error": "Internal Server Error"
+  },
+  "default": {
+    "message": "An unknown error occurred in the object storage service.",
+    "error": "Internal Server Error"
+  }
+}
