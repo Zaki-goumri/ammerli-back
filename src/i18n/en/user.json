@@ -1,0 +1,6 @@
+{
+  "user.alreadyExists": "User with phone number {phoneNumber} already exists.",
+  "user.registrationError": "An error occurred while registering user information.",
+  "user.notFoundByPhone": "User with phone number {phoneNumber} not found.",
+  "user.notFoundById": "User with ID {id} not found."
+}

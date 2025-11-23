@@ -250,9 +250,10 @@ export class ProductService {
       .select([
         'product.id AS id',
         'product.name AS name',
-        'product.quantityPerBatch as quantityPerBatch',
+        'product.quantityPerBatch as "quantityPerBatch"',
         'ARRAY_AGG(DISTINCT pictures.url) FILTER (WHERE pictures.url IS NOT NULL) AS pictures',
         'product.price AS price',
+        'product.quantity AS quantity',
         'brand.label AS brand',
         'category.label AS category',
         'product.createdAt AS createdAt',
@@ -272,6 +273,8 @@ export class ProductService {
       brand: p?.brand,
       category: p?.category,
       pictures: p?.pictures || [],
+      quantityPerBatch: p?.quantityPerBatch,
+      quantity: p?.quantity,
       isLoved: p?.isLoved || false,
     }));
 

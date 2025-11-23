@@ -319,7 +319,9 @@ export class UserController {
     @Query() dto: BulkDeleteUserDto,
     @USER('id') currentAdminId: number,
   ): Promise<MessageDto> {
-    this.logger.log(`Admin ${currentAdminId} initiating bulk delete of users: ${dto.userIds.join(', ')}`);
+    this.logger.log(
+      `Admin ${currentAdminId} initiating bulk delete of users: ${dto.userIds.join(', ')}`,
+    );
     return this.userService.deleteBulk(dto.userIds, currentAdminId);
   }
 

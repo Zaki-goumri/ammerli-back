@@ -10,10 +10,7 @@ export class DefaultOtpStrategy extends OtpStrategy {
   private static readonly OTP_LENGTH = 4;
   private readonly logger = new Logger(DefaultOtpStrategy.name);
 
-  constructor(
-    private readonly redisService: RedisService,
-    private readonly notificationsService: NotificationsService,
-  ) {
+  constructor(private readonly redisService: RedisService) {
     super();
   }
 
@@ -31,11 +28,6 @@ export class DefaultOtpStrategy extends OtpStrategy {
       otp,
       DefaultOtpStrategy.OTP_EXPIRATION_SECONDS,
     );
-    // TODO: replace with actual fcm token
-    const fcmToken =
-      'dHa4QQkTRJqOauLbM2Uksu:APA91bEpr4tr1qoVNhk7TGJrk2jXg89onaBREZwKgTFtEhwL9h1JKPsE9n9vUnGgWTUNTPX0NdImIaQbm5TV3aiLH_e8RVk6UUHOzxs9FPb8BJnREgQ6a6Y';
-    await this.notificationsService.sendOtpViaNotification(fcmToken, otp);
-
     this.logger.log(`OTP for ${phoneNumber} is ${otp}`);
   }
   async verify(phoneNumber: string, otp: string): Promise<boolean> {

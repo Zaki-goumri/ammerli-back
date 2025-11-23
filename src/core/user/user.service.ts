@@ -18,7 +18,7 @@ import { Address } from './entities/address.entity';
 import { RedisService } from 'nestjs-redis-client';
 import { QUEUE_NAME } from 'src/common/constants/queues';
 import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
+import { Queue, tryCatch } from 'bullmq';
 import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
 import { GetMeDto } from './dtos/response/get-me.dto';
 import { RegisterUserDto } from '../authentication/dtos/requests/register-user.dto';
@@ -41,6 +41,7 @@ import { catchError, map, retry } from 'rxjs/operators';
 import { NOTIFICATION_TYPE } from '../notifications/enums/notification-type.enum';
 import { MessageDto } from './dtos/response/message.dto';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
+import { I18nContext, I18nService } from 'nestjs-i18n';
 
 /**
  * @class UserService
@@ -61,6 +62,7 @@ export class UserService {
     private readonly objectService: ObjectService,
     private readonly configService: ConfigService,
     private readonly notificationsService: NotificationsService,
+    private readonly i18nService: I18nService,
   ) {}
 
   private readonly logger = new Logger(UserService.name);
@@ -100,7 +102,9 @@ export class UserService {
       });
       if (existingUser) {
         throw new ConflictException(
-          `User with phone number ${dto.phoneNumber} already exists.`,
+          this.i18nService.t('user.alreadyExists', {
+            args: { phoneNumber: dto.phoneNumber },
+          }),
         );
       }
       const user = userRepo.create({
@@ -131,17 +135,22 @@ export class UserService {
   async registerUserInfo(
     dto: RegisterUserDto & { phoneNumber: string },
   ): Promise<User> {
-    return this.entityManager.transaction(async (em) => {
+    const registredUser = await this.entityManager.transaction(async (em) => {
       const userRepo = em.getRepository(User);
       const user = userRepo.create({ ...dto });
       const { id } = await userRepo.save(user);
       if (dto.address) {
         await this.createAddress(id, dto.address, em);
       }
-      await this.redisService.del(UserService.getCacheKey(id, 'id'));
-      await this.redisService.del(UserService.getCacheKey(id, 'admin-details'));
       return user;
     });
+    await this.redisService.del(
+      UserService.getCacheKey(registredUser.id, 'id'),
+    );
+    await this.redisService.del(
+      UserService.getCacheKey(registredUser.id, 'admin-details'),
+    );
+    return registredUser;
   }
 
   /**
@@ -179,7 +188,12 @@ export class UserService {
         },
       },
     });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user)
+      throw new NotFoundException(
+        this.i18nService.t('user.notFoundByPhone', {
+          args: { phoneNumber },
+        }),
+      );
 
     if (user.profilePic) {
       user.profilePic = await this.objectService.getPresignedUrl(
@@ -229,7 +243,10 @@ export class UserService {
       ]);
 
     const user = await queryBuilder.getOne();
-    if (!user) throw new NotFoundException('User not found');
+    if (!user)
+      throw new NotFoundException(
+        this.i18nService.t('user.notFoundById', { args: { id } }),
+      );
 
     if (user.profilePic) {
       user.profilePic = await this.objectService.getPresignedUrl(
@@ -256,7 +273,9 @@ export class UserService {
   async findUserEntityById(id: number): Promise<User> {
     const user = await this.userRepo.findOne({ where: { id } });
     if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+      throw new NotFoundException(
+        this.i18nService.t('user.notFoundById', { args: { id } }),
+      );
     }
     return user;
   }

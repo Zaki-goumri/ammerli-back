@@ -1,0 +1,6 @@
+{
+  "user.alreadyExists": "المستخدم بالرقم {phoneNumber} موجود بالفعل.",
+  "user.registrationError": "حدث خطأ أثناء تسجيل معلومات المستخدم.",
+  "user.notFoundByPhone": "المستخدم بالرقم {phoneNumber} غير موجود.",
+  "user.notFoundById": "المستخدم بالمعرف {id} غير موجود."
+}
