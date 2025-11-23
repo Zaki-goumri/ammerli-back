@@ -98,7 +98,7 @@ async function bootstrap() {
   app.useGlobalFilters(
     new DatabaseExceptionFilter(i18nService),
     new HttpExceptionFilter(i18nService),
-    new ObjectStorageExceptionFilter(i18nService),
+    //   new ObjectStorageExceptionFilter(i18nService),
   );
 
   app.enableShutdownHooks();
