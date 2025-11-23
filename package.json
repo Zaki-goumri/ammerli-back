@@ -19,7 +19,6 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "migration:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/data-source.ts",
     "db:update": "npm run migration:run",
     "seed": "ts-node -r tsconfig-paths/register src/seed/seed-runner.ts",
     "seed:prod": "node dist/seed/seed-runner.js",
@@ -30,7 +29,13 @@
     "load-test:orders": "./load-tests/run-tests.sh orders-flow",
     "load-test:payment": "./load-tests/run-tests.sh payment-flow",
     "load-test:mixed": "./load-tests/run-tests.sh mixed-load",
-    "push:config": "./push-configs.sh"
+    "push:config": "./push-configs.sh",
+    "typeorm": "typeorm-ts-node-commonjs",
+    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/data-source.ts",
+    "migration:create": "typeorm-ts-node-commonjs migration:create",
+    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/data-source.ts",
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/data-source.ts",
+    "migration:show": "typeorm-ts-node-commonjs migration:show -d src/data-source.ts"
   },
   "dependencies": {
     "@nest-lab/throttler-storage-redis": "^1.1.0",

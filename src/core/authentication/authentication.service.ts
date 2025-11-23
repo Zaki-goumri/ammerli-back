@@ -204,7 +204,8 @@ export class AuthenticationService {
       phoneNumber,
       context: 'Authentication',
     });
-    return { message: `OTP sent to ${phoneNumber}` };
+    const otp = await this.redisService.get<string>(`otp:${phoneNumber}`);
+    return { message: `OTP sent to ${phoneNumber} otp: ${otp}` };
   }
 
   private async issueRegistrationToken(phoneNumber: string): Promise<string> {
@@ -228,7 +229,7 @@ export class AuthenticationService {
       phoneNumber,
     });
     const tokens = await this.issueTokens(user);
-    
+
     this.logger.log({
       message: 'User registered',
       userId: user.id,

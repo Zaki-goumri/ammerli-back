@@ -12,8 +12,9 @@ export default registerAs(
     database: process.env.APP_DB_NAME || '3ammerli',
     entities: [__dirname + '/../**/*.entity{.ts,.js}'],
     migrations: [__dirname + '/../migrations/*{.ts,.js}'],
-    synchronize: process.env.NODE_ENV !== 'prod',
+    synchronize: false,
     logging: process.env.NODE_ENV !== 'prod',
+    migrationsRun: true,
     extra: {
       max: parseInt(process.env.MAX_APP_CONNECTIONS || '50', 10),
       min: 10,

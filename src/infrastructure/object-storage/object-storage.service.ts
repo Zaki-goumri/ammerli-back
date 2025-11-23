@@ -358,10 +358,6 @@ export class ObjectService implements ObjectStorageService {
         objectName,
         7 * 24 * 60 * 60, // 7 days
       );
-
-      this.logger.log(
-        `Generated presigned URL for ${objectName}: ${presignedUrl}`,
-      );
       return presignedUrl;
     } catch (error) {
       this.logger.error({

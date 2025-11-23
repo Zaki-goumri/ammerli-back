@@ -304,7 +304,13 @@ export class NotificationsService {
     lang: Language,
   ): Promise<void> {
     try {
-      await this.tokenRepo.update({ userId, fcmToken }, { lang });
+      const update = await this.tokenRepo.update(
+        { userId, fcmToken },
+        { lang },
+      );
+      if (update.affected === 0) {
+        throw new Error('No token updated');
+      }
       this.logger.log({
         message: 'Updated language for FCM token',
         userId,
