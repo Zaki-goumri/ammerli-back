@@ -18,7 +18,7 @@ import { Address } from './entities/address.entity';
 import { RedisService } from 'nestjs-redis-client';
 import { QUEUE_NAME } from 'src/common/constants/queues';
 import { InjectQueue } from '@nestjs/bullmq';
-import { Queue, tryCatch } from 'bullmq';
+import { Queue } from 'bullmq';
 import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
 import { GetMeDto } from './dtos/response/get-me.dto';
 import { RegisterUserDto } from '../authentication/dtos/requests/register-user.dto';
@@ -41,7 +41,7 @@ import { catchError, map, retry } from 'rxjs/operators';
 import { NOTIFICATION_TYPE } from '../notifications/enums/notification-type.enum';
 import { MessageDto } from './dtos/response/message.dto';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
-import { I18nContext, I18nService } from 'nestjs-i18n';
+import { I18nService } from 'nestjs-i18n';
 
 /**
  * @class UserService
@@ -245,7 +245,9 @@ export class UserService {
     const user = await queryBuilder.getOne();
     if (!user)
       throw new NotFoundException(
-        this.i18nService.t('user.notFoundById', { args: { id } }),
+        this.i18nService.t('user.notFoundById', {
+          args: { id },
+        }),
       );
 
     if (user.profilePic) {
@@ -274,7 +276,9 @@ export class UserService {
     const user = await this.userRepo.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException(
-        this.i18nService.t('user.notFoundById', { args: { id } }),
+        this.i18nService.t('user.notFoundById', {
+          args: { id },
+        }),
       );
     }
     return user;
@@ -296,7 +300,7 @@ export class UserService {
       return cachedUserDetail;
     }
 
-    const user = await this.userRepo.findOneOrFail({
+    const user = await this.userRepo.findOne({
       where: { id: userId },
       relations: ['addresses'],
       withDeleted: true,
@@ -325,7 +329,9 @@ export class UserService {
     });
 
     if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
+      throw new NotFoundException(
+        this.i18nService.t('user.notFoundById', { args: { id: userId } }),
+      );
     }
 
     const lastAddress =
@@ -428,18 +434,20 @@ export class UserService {
    * @returns {Promise<{ message: string }>} A success message.
    * @throws {NotFoundException} If the user with the provided ID is not found.
    */
+  //TODO: use one query
   async deleteUser(id: number): Promise<{ message: string }> {
     await this.redisService.del(UserService.getCacheKey(id, 'id'));
     await this.redisService.del(UserService.getCacheKey(id, 'admin-details'));
     const user = await this.entityManager.transaction(async (manager) => {
       const u = await manager.findOne(User, { where: { id } });
       if (!u) {
-        throw new NotFoundException(`User with ID ${id} not found`);
+        const message = this.i18nService.t('user.notFoundById', {
+          args: { id },
+        });
+        throw new NotFoundException(message);
       }
-
       await manager.softDelete(User, { id });
       await manager.softDelete(Address, { userId: id });
-
       return u;
     });
 
@@ -461,7 +469,9 @@ export class UserService {
       context: 'User',
     });
 
-    return { message: 'User soft deleted successfully' };
+    return {
+      message: this.i18nService.t('user.deletedSuccessfully'),
+    };
   }
 
   /**
@@ -479,27 +489,41 @@ export class UserService {
   ): Promise<MessageDto> {
     const filteredUserIds = userIds.filter((id) => id !== currentAdminId);
     if (filteredUserIds.length === 0 && userIds.length > 0) {
-      return { message: 'Admin cannot delete their own account.' };
+      return {
+        message: this.i18nService.t(
+          'user.bulkDelete.adminSelfDeleteForbidden',
+        ),
+      };
     }
 
-    const usersToDelete = await this.userRepo.find({
-      where: { id: In(filteredUserIds) },
-    });
+    const { usersToDelete } = await this.entityManager.transaction(
+      async (manager) => {
+        const userRepo = manager.getRepository(User);
+        const usersToDelete = await userRepo.find({
+          where: { id: In(filteredUserIds) },
+        });
 
-    if (usersToDelete.length === 0) {
-      throw new NotFoundException('No valid users found for deletion.');
-    }
+        if (usersToDelete.length === 0) {
+          throw new NotFoundException(
+            this.i18nService.t('user.bulkDelete.noValidUsersFound'),
+          );
+        }
 
-    const adminsToDeleteCount = usersToDelete.filter(
-      (user) => user.role === USER_ROLES.ADMIN,
-    ).length;
-    const totalAdminsCount = await this.userRepo.count({
-      where: { role: USER_ROLES.ADMIN },
-    });
+        const totalAdminsCount = await userRepo.count({
+          where: { role: USER_ROLES.ADMIN },
+        });
+        const adminsToDeleteCount = usersToDelete.filter(
+          (user) => user.role === USER_ROLES.ADMIN,
+        ).length;
 
-    if (totalAdminsCount - adminsToDeleteCount < 1) {
-      throw new ForbiddenException('Cannot delete all admins in the system.');
-    }
+        if (totalAdminsCount - adminsToDeleteCount < 1) {
+          throw new ForbiddenException(
+            this.i18nService.t('user.bulkDelete.allAdminsDeletionForbidden'),
+          );
+        }
+        return { usersToDelete };
+      },
+    );
 
     const profilePicsToDelete = usersToDelete
       .map((user) => user.profilePic)
@@ -574,7 +598,12 @@ export class UserService {
     });
 
     return {
-      message: `Bulk delete process completed. Successfully deleted: ${successfulDeletes.length}. Failed: ${failedDeletes.length}.`,
+      message: this.i18nService.t('user.bulkDelete.summary', {
+        args: {
+          successful: successfulDeletes.length,
+          failed: failedDeletes.length,
+        },
+      }),
     };
   }
 
@@ -589,12 +618,14 @@ export class UserService {
     const restoreResult = await this.userRepo.restore(id);
     if (restoreResult.affected === 0) {
       throw new NotFoundException(
-        `User with ID ${id} not found or not deleted.`,
+        this.i18nService.t('user.restore.notFoundOrNotDeleted', {
+          args: { id },
+        }),
       );
     }
     await this.redisService.del(UserService.getCacheKey(id, 'id'));
     await this.redisService.del(UserService.getCacheKey(id, 'admin-details')); // Invalidate admin details cache
-    return { message: 'User restored successfully' };
+    return { message: this.i18nService.t('user.restore.success') };
   }
 
   /**
@@ -691,7 +722,9 @@ export class UserService {
         .getRepository(User)
         .findOneBy({ id: userId });
       if (!existingUser) {
-        throw new NotFoundException(`User with ID ${userId} not found`);
+        throw new NotFoundException(
+          this.i18nService.t('user.notFoundById', { args: { id: userId } }),
+        );
       }
       const address = addressRepo.create({ ...createAddressDto, userId });
       const created = await addressRepo.save(address);
@@ -768,14 +801,14 @@ export class UserService {
     });
     if (userAddressesCount <= 1) {
       throw new BadRequestException(
-        'Cannot delete the only address associated with the user',
+        this.i18nService.t('user.address.deleteOnlyAddressForbidden'),
       );
     }
     await this.addressRepo.softDelete(addressId);
     await this.redisService.del(
       UserService.getCacheKey(userId, 'admin-details'),
     ); // Invalidate admin details cache
-    return { message: 'Address deleted successfully' };
+    return { message: this.i18nService.t('user.address.deletedSuccessfully') };
   }
 
   /**

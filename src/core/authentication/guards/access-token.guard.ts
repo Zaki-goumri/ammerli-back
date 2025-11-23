@@ -11,10 +11,14 @@ import {
   isAccessTokenPayload,
   isRegistrationTokenPayload,
 } from '../interfaces/access-token-payload.interface';
+import { I18nContext, I18nService } from 'nestjs-i18n';
 
 @Injectable()
 export class AccessTokenGuard extends AuthGuard('access-token') {
-  constructor(private reflector: Reflector) {
+  constructor(
+    private reflector: Reflector,
+    private readonly i18n: I18nService,
+  ) {
     super();
   }
 
@@ -38,9 +42,9 @@ export class AccessTokenGuard extends AuthGuard('access-token') {
     }
 
     if (!isAccessTokenPayload(user)) {
-      throw new ForbiddenException('User is not registered');
+      const message = this.i18n.translate('errors.FORBIDDEN_RESOURCE_ACCESS');
+      throw new ForbiddenException(message);
     }
-
     return true;
   }
 }

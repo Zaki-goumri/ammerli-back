@@ -1,0 +1,6 @@
+{
+  "notFound": "Brand not found.",
+  "delete": {
+    "hasProducts": "Cannot delete brand. {count} product(s) are linked to this brand."
+  }
+}

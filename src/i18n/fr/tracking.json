@@ -1,0 +1,6 @@
+{
+  "historyNotFound": "Aucun historique de suivi trouvé pour la commande avec l'ID {id}.",
+  "orderNotFound": "Commande avec l'ID {id} non trouvée.",
+  "alreadyDelivered": "La commande a déjà été livrée.",
+  "updateFailed": "Échec de la mise à jour du statut de suivi pour la commande {id}. Veuillez réessayer plus tard."
+}

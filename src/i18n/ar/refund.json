@@ -1,0 +1,12 @@
+{
+  "orderNotFound": "الطلب رقم {id} غير موجود.",
+  "ownOrderForbidden": "يمكنك فقط طلب استرداد لطلباتك الخاصة.",
+  "cashOrderForbidden": "لا يمكن استرداد الطلبات النقدية.",
+  "notPaid": "لم يتم دفع الطلب بعد.",
+  "amountExceedsTotal": "لا يمكن أن يتجاوز مبلغ الاسترداد إجمالي الطلب.",
+  "amountExceedsRemaining": "لا يمكن استرداد {amount} دينار جزائري. تم استرداد {refunded} دينار جزائري بالفعل.",
+  "notFound": "الاسترداد رقم {id} غير موجود.",
+  "viewOwnForbidden": "يمكنك فقط عرض عمليات الاسترداد الخاصة بك.",
+  "invalidStatusTransition": "لا يمكن الانتقال من الحالة {current} إلى {new}.",
+  "defaultAdminNote": "يرجى الاتصال بالدعم."
+}

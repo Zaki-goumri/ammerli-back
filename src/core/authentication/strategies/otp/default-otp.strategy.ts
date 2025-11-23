@@ -38,8 +38,6 @@ export class DefaultOtpStrategy extends OtpStrategy {
     if (!cachedOtp || cachedOtp !== otp) {
       return false;
     }
-
-    // OTP is valid, delete it from Redis
     await this.redisService.del(DefaultOtpStrategy.getCacheKey(phoneNumber));
     return true;
   }

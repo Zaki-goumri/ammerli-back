@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { Brand } from '../entities/brand.entity';
 import { BrandResDto } from '../dtos/brand/brand.res.dto';
 import { Product } from '../entities/product.entity';
+import { I18nService } from 'nestjs-i18n';
 
 @Injectable()
 export class BrandService {
@@ -16,6 +17,7 @@ export class BrandService {
     private readonly brandRepo: Repository<Brand>,
     @InjectRepository(Product)
     private readonly productRepo: Repository<Product>,
+    private readonly i18nService: I18nService,
   ) {}
 
   async getAll(): Promise<BrandResDto[]> {
@@ -31,7 +33,7 @@ export class BrandService {
 
   async update(id: number, label: string): Promise<BrandResDto> {
     const brand = await this.brandRepo.findOne({ where: { id } });
-    if (!brand) throw new NotFoundException('Brand not found');
+    if (!brand) throw new NotFoundException(this.i18nService.t('brand.notFound'));
 
     brand.label = label;
     const updatedBrand = await this.brandRepo.save(brand);
@@ -40,7 +42,7 @@ export class BrandService {
 
   async remove(id: number): Promise<void> {
     const brand = await this.brandRepo.findOne({ where: { id } });
-    if (!brand) throw new NotFoundException('Brand not found');
+    if (!brand) throw new NotFoundException(this.i18nService.t('brand.notFound'));
 
     const productsCount = await this.productRepo.count({
       where: { brandId: id },
@@ -48,7 +50,9 @@ export class BrandService {
 
     if (productsCount > 0) {
       throw new BadRequestException(
-        `Cannot delete brand. ${productsCount} product(s) are linked to this brand.`,
+        this.i18nService.t('brand.delete.hasProducts', {
+          args: { count: productsCount },
+        }),
       );
     }
 

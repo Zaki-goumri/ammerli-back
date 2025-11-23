@@ -18,6 +18,7 @@ import { CreateCategoryDto } from '../dtos/category/create-category.dto';
 import { CategoryResDto } from '../dtos/category/category.res.dto';
 import { Product } from '../entities/product.entity';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
+import { I18nService } from 'nestjs-i18n';
 
 @Injectable()
 export class CategoryService {
@@ -29,6 +30,7 @@ export class CategoryService {
     @InjectQueue(QUEUE_NAME.UPLOAD)
     private readonly uploadQueue: Queue,
     private readonly objectStorageService: ObjectService,
+    private readonly i18nService: I18nService,
   ) {}
 
   logger = new Logger(CategoryService.name);
@@ -97,7 +99,9 @@ export class CategoryService {
   ): Promise<{ message: string }> {
     const category = await this.categoryRepo.findOne({ where: { id } });
     if (!category) {
-      throw new NotFoundException(`Category with ID ${id} not found`);
+      throw new NotFoundException(
+        this.i18nService.t('category.notFound', { args: { id } }),
+      );
     }
 
     let pictureUrl: string | undefined;
@@ -135,13 +139,15 @@ export class CategoryService {
       ...dto,
       pictureUrl,
     });
-    return { message: 'Category updated successfully' };
+    return { message: this.i18nService.t('category.update.success') };
   }
 
   async remove(id: number): Promise<{ message: string }> {
     const category = await this.categoryRepo.findOne({ where: { id } });
     if (!category) {
-      throw new NotFoundException(`Category with ID ${id} not found`);
+      throw new NotFoundException(
+        this.i18nService.t('category.notFound', { args: { id } }),
+      );
     }
 
     const productsCount = await this.productRepo.count({
@@ -150,7 +156,9 @@ export class CategoryService {
 
     if (productsCount > 0) {
       throw new BadRequestException(
-        `Cannot delete category. ${productsCount} product(s) are linked to this category.`,
+        this.i18nService.t('category.delete.hasProducts', {
+          args: { count: productsCount },
+        }),
       );
     }
 
@@ -169,7 +177,7 @@ export class CategoryService {
         },
       });
     }
-    return { message: 'Category soft deleted successfully' };
+    return { message: this.i18nService.t('category.delete.success') };
   }
 
   private async clearPictureUrl(id: number): Promise<void> {

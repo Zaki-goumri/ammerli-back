@@ -32,6 +32,7 @@ import { NOTIFICATION_TYPE } from '../../notifications/enums/notification-type.e
 import { AdminProductDto } from '../dtos/product/admin-product.dto';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 import { parseInt } from 'lodash';
+import { I18nService } from 'nestjs-i18n';
 
 @Injectable()
 export class ProductService {
@@ -47,6 +48,7 @@ export class ProductService {
     private readonly uploadQueue: Queue,
     private readonly objectService: ObjectService,
     private readonly notificationsService: NotificationsService,
+    private readonly i18nService: I18nService,
   ) {}
 
   // Notify sellers about products expiring in the next 15 days - runs on 1st and 15th of each month
@@ -192,6 +194,7 @@ export class ProductService {
       .createQueryBuilder('product')
       .leftJoin('product.brand', 'brand')
       .leftJoin('product.category', 'category')
+      .where('product.quantity > 0')
       .select('product.id', 'id')
       .orderBy('product.createdAt', 'DESC');
 
@@ -297,7 +300,9 @@ export class ProductService {
     });
 
     if (!product) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
+      throw new NotFoundException(
+        this.i18nService.t('product.notFound', { args: { id } }),
+      );
     }
 
     const loveCount = await this.favProductRepo.count({
@@ -321,8 +326,6 @@ export class ProductService {
       pictures: product?.pictures.map((pic) => pic?.url) ?? [],
     };
   }
-
-  async initiateQueuedCreation() {}
 
   async create(
     dto: CreateProductDto,
@@ -366,7 +369,9 @@ export class ProductService {
     });
 
     if (!product) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
+      throw new NotFoundException(
+        this.i18nService.t('product.notFound', { args: { id } }),
+      );
     }
 
     await this.productRepo.update(id, dto);
@@ -396,7 +401,7 @@ export class ProductService {
       });
     }
 
-    return { message: 'Product update process initiated' };
+    return { message: this.i18nService.t('product.update.success') };
   }
 
   async remove(id: number, userId: number): Promise<{ message: string }> {
@@ -404,7 +409,9 @@ export class ProductService {
       where: { id, sellerId: userId },
     });
     if (!product) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
+      throw new NotFoundException(
+        this.i18nService.t('product.notFound', { args: { id } }),
+      );
     }
 
     await this.productRepo.softDelete(id);
@@ -416,7 +423,7 @@ export class ProductService {
       context: 'Product',
     });
 
-    return { message: 'Product soft deleted successfully' };
+    return { message: this.i18nService.t('product.delete.success') };
   }
 
   async deleteProductImages(
@@ -429,7 +436,7 @@ export class ProductService {
 
     if (picturesToDelete.length === 0) {
       throw new NotFoundException(
-        'No product pictures found with the given IDs for this product',
+        this.i18nService.t('product.pictures.delete.notFound'),
       );
     }
 
@@ -452,7 +459,7 @@ export class ProductService {
       });
     }
     return {
-      message: 'Product pictures soft deleted and queued for file deletion',
+      message: this.i18nService.t('product.pictures.delete.success'),
     };
   }
 
@@ -685,7 +692,9 @@ export class ProductService {
       const foundIds = products.map((p) => p.id);
       const missingIds = productIds.filter((id) => !foundIds.includes(id));
       throw new NotFoundException(
-        `Products not found: ${missingIds.join(', ')}`,
+        this.i18nService.t('product.stock.notFound', {
+          args: { ids: missingIds.join(', ') },
+        }),
       );
     }
 
@@ -695,8 +704,13 @@ export class ProductService {
       if (!product) continue;
       if (product.quantity < item.quantity) {
         throw new BadRequestException(
-          `Insufficient stock for "${product.name}". ` +
-            `Available: ${product.quantity}, Requested: ${item.quantity}`,
+          this.i18nService.t('product.stock.insufficient', {
+            args: {
+              name: product.name,
+              available: product.quantity,
+              requested: item.quantity,
+            },
+          }),
         );
       }
       product.quantity -= item.quantity;

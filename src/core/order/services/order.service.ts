@@ -51,6 +51,7 @@ import { RefundService } from './refund.service';
 import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { I18nService } from 'nestjs-i18n';
 
 export type PaymentStatus =
   | 'paid'
@@ -93,6 +94,7 @@ export class OrderService {
     private readonly redisService: RedisService,
     private readonly refundService: RefundService,
     private readonly objectStorageService: ObjectService,
+    private readonly i18nService: I18nService,
   ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
@@ -133,7 +135,9 @@ export class OrderService {
         checkoutUrl: data.checkout_url,
         context: 'Order',
       });
-      throw new BadRequestException('Invalid checkout URL');
+      throw new BadRequestException(
+        this.i18nService.t('order.invalidCheckoutUrl'),
+      );
     }
 
     const isPaymentSuccessful = data.status === 'paid';
@@ -194,7 +198,9 @@ export class OrderService {
         status: data.status,
         context: 'Order',
       });
-      finalDataForClient.errorMessage = 'Payment failed or was canceled.';
+      finalDataForClient.errorMessage = this.i18nService.t(
+        'order.payment.failedOrCanceled',
+      );
       await this.notificationService.sendNotification(
         'notifications.payment.failed.title',
         'notifications.payment.failed.body',
@@ -214,7 +220,9 @@ export class OrderService {
   async getPaymentRedirectUrl(orderId: string): Promise<string> {
     if (!orderId) {
       this.logger.error(`Redirect attempt without Order ID.`);
-      return 'amerli://payment/status?status=error&message=InvalidId';
+      return `amerli://payment/status?status=error&message=${this.i18nService.t(
+        'order.redirect.invalidId',
+      )}`;
     }
 
     const redisData = await this.redisService.get<PaymentClientData>(
@@ -226,7 +234,9 @@ export class OrderService {
         `Payment token for order ${orderId} not found or expired.`,
         orderId,
       );
-      return 'amerli://payment/status?status=error&message=SyncError';
+      return `amerli://payment/status?status=error&message=${this.i18nService.t(
+        'order.redirect.syncError',
+      )}`;
     }
 
     const statusPath = redisData.status === 'paid' ? 'success' : 'failure';
@@ -320,10 +330,12 @@ export class OrderService {
 
     const order = await this.orderRepo.findOneBy({ id: orderId });
     if (!order) {
-      throw new NotFoundException(`Order with ID ${orderId} not found.`);
+      throw new NotFoundException(
+        this.i18nService.t('order.notFound', { args: { id: orderId } }),
+      );
     }
     throw new NotFoundException(
-      `Order with ID ${orderId} not found for the current user.`,
+      this.i18nService.t('order.notFoundForUser', { args: { id: orderId } }),
     );
   }
 
@@ -358,7 +370,7 @@ export class OrderService {
         addressId = newAddress.id;
       } else {
         throw new BadRequestException(
-          'Either addressId or address must be provided',
+          this.i18nService.t('order.create.addressRequired'),
         );
       }
       const orderRepo = em.getRepository(Order);
@@ -425,7 +437,9 @@ export class OrderService {
       const product = productMap.get(item.productId);
       if (!product) {
         throw new BadRequestException(
-          `Product with ID ${item.productId} not found.`,
+          this.i18nService.t('order.product.notFound', {
+            args: { id: item.productId },
+          }),
         );
       }
       totalAmount += product.price * item.quantity;
@@ -456,7 +470,7 @@ export class OrderService {
         context: 'Order',
       });
       throw new ForbiddenException(
-        'Unable to create payment checkout at this time. Please try again later.',
+        this.i18nService.t('order.checkout.creationFailed'),
       );
     }
   }
@@ -723,12 +737,14 @@ export class OrderService {
       .getOne();
 
     if (!order) {
-      throw new NotFoundException(`Order with ID ${orderId} not found.`);
+      throw new NotFoundException(
+        this.i18nService.t('order.notFound', { args: { id: orderId } }),
+      );
     }
 
     if (!order.buyer) {
       throw new NotFoundException(
-        `Buyer for order with ID ${orderId} not found.`,
+        this.i18nService.t('order.buyerNotFound', { args: { id: orderId } }),
       );
     }
 
@@ -787,7 +803,9 @@ export class OrderService {
       .getRawOne();
 
     if (!order) {
-      throw new NotFoundException(`Order with ID ${orderId} not found.`);
+      throw new NotFoundException(
+        this.i18nService.t('order.notFound', { args: { id: orderId } }),
+      );
     }
 
     const paymentInfo: PaymentInfoDto = {
@@ -872,11 +890,17 @@ export class OrderService {
       });
 
       if (!order) {
-        throw new NotFoundException(`Order #${orderId} not found`);
+        throw new NotFoundException(
+          this.i18nService.t('order.cancel.notFound', {
+            args: { id: orderId },
+          }),
+        );
       }
 
       if (order.isCancelled) {
-        throw new BadRequestException('Order is already cancelled');
+        throw new BadRequestException(
+          this.i18nService.t('order.cancel.alreadyCancelled'),
+        );
       }
 
       this.validateCancellation(order, userId, cancelledBy);
@@ -887,7 +911,7 @@ export class OrderService {
       });
       if (currentTracking?.status === ORDER_STATUS.DELIVERED) {
         throw new BadRequestException(
-          'Cannot cancel delivered order. Please contact support for returns.',
+          this.i18nService.t('order.cancel.deliveredForbidden'),
         );
       }
 
@@ -896,7 +920,7 @@ export class OrderService {
         cancelledBy === 'BUYER'
       ) {
         throw new BadRequestException(
-          'Cannot cancel order while it is being delivered. Please contact seller.',
+          this.i18nService.t('order.cancel.onDeliveringForbidden'),
         );
       }
 
@@ -934,7 +958,7 @@ export class OrderService {
       );
 
       return {
-        message: 'Order cancelled successfully',
+        message: this.i18nService.t('order.cancel.success'),
         ...(refundId && { refundId, refundStatus: 'PENDING' }),
       };
     });
@@ -949,7 +973,9 @@ export class OrderService {
     cancelledBy: 'BUYER' | 'SELLER' | 'ADMIN',
   ): void {
     if (cancelledBy === 'BUYER' && order.buyerId !== userId) {
-      throw new ForbiddenException('You can only cancel your own orders');
+      throw new ForbiddenException(
+        this.i18nService.t('order.cancel.ownOrdersForbidden'),
+      );
     }
 
     if (cancelledBy === 'SELLER') {
@@ -959,7 +985,7 @@ export class OrderService {
       );
       if (!isOrderFromThisSeller) {
         throw new ForbiddenException(
-          'You can only cancel orders containing your products',
+          this.i18nService.t('order.cancel.sellerProductsForbidden'),
         );
       }
     }

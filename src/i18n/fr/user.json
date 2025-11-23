@@ -1,6 +1,21 @@
 {
-  "user.alreadyExists": "L'utilisateur avec le numéro de téléphone {phoneNumber} existe déjà.",
-  "user.registrationError": "Une erreur s'est produite lors de l'enregistrement des informations de l'utilisateur.",
-  "user.notFoundByPhone": "Utilisateur avec le numéro de téléphone {phoneNumber} non trouvé.",
-  "user.notFoundById": "Utilisateur avec l'ID {id} non trouvé."
+  "alreadyExists": "L'utilisateur avec le numéro de téléphone {phoneNumber} existe déjà.",
+  "registrationError": "Une erreur s'est produite lors de l'enregistrement des informations de l'utilisateur.",
+  "notFoundByPhone": "Utilisateur avec le numéro de téléphone {phoneNumber} non trouvé.",
+  "notFoundById": "Utilisateur avec l'ID {id} non trouvé.",
+  "deletedSuccessfully": "Utilisateur supprimé avec succès.",
+  "bulkDelete": {
+    "adminSelfDeleteForbidden": "L'administrateur ne peut pas supprimer son propre compte.",
+    "noValidUsersFound": "Aucun utilisateur valide trouvé pour la suppression.",
+    "allAdminsDeletionForbidden": "Impossible de supprimer tous les administrateurs du système.",
+    "summary": "Processus de suppression en masse terminé. Supprimés avec succès : {successful}. Échoués : {failed}."
+  },
+  "restore": {
+    "notFoundOrNotDeleted": "Utilisateur avec l'ID {id} non trouvé ou non supprimé.",
+    "success": "Utilisateur restauré avec succès."
+  },
+  "address": {
+    "deleteOnlyAddressForbidden": "Impossible de supprimer la seule adresse associée à l'utilisateur.",
+    "deletedSuccessfully": "Adresse supprimée avec succès."
+  }
 }

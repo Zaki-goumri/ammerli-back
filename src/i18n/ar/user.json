@@ -1,6 +1,21 @@
 {
-  "user.alreadyExists": "المستخدم بالرقم {phoneNumber} موجود بالفعل.",
-  "user.registrationError": "حدث خطأ أثناء تسجيل معلومات المستخدم.",
-  "user.notFoundByPhone": "المستخدم بالرقم {phoneNumber} غير موجود.",
-  "user.notFoundById": "المستخدم بالمعرف {id} غير موجود."
+  "alreadyExists": "المستخدم بالرقم {phoneNumber} موجود بالفعل.",
+  "registrationError": "حدث خطأ أثناء تسجيل معلومات المستخدم.",
+  "notFoundByPhone": "المستخدم بالرقم {phoneNumber} غير موجود.",
+  "notFoundById": "المستخدم بالمعرف {id} غير موجود.",
+  "deletedSuccessfully": "تم حذف المستخدم بنجاح.",
+  "bulkDelete": {
+    "adminSelfDeleteForbidden": "لا يمكن للمسؤول حذف حسابه الخاص.",
+    "noValidUsersFound": "لم يتم العثور على مستخدمين صالحين للحذف.",
+    "allAdminsDeletionForbidden": "لا يمكن حذف جميع المسؤولين في النظام.",
+    "summary": "اكتملت عملية الحذف الجماعي. تم الحذف بنجاح: {successful}. فشل: {failed}."
+  },
+  "restore": {
+    "notFoundOrNotDeleted": "المستخدم بالمعرف {id} غير موجود أو غير محذوف.",
+    "success": "تم استعادة المستخدم بنجاح."
+  },
+  "address": {
+    "deleteOnlyAddressForbidden": "لا يمكن حذف العنوان الوحيد المرتبط بالمستخدم.",
+    "deletedSuccessfully": "تم حذف العنوان بنجاح."
+  }
 }

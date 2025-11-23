@@ -1,0 +1,9 @@
+{
+  "restore": {
+    "notFoundOrDeleted": "Blacklisted user with ID {id} not found or already deleted.",
+    "success": "User removed from blacklist successfully."
+  },
+  "bulkDelete": {
+    "noUsersFound": "No blacklisted users found with the provided IDs."
+  }
+}

@@ -1,6 +1,21 @@
 {
-  "user.alreadyExists": "User with phone number {phoneNumber} already exists.",
-  "user.registrationError": "An error occurred while registering user information.",
-  "user.notFoundByPhone": "User with phone number {phoneNumber} not found.",
-  "user.notFoundById": "User with ID {id} not found."
+  "alreadyExists": "User with phone number {phoneNumber} already exists.",
+  "registrationError": "An error occurred while registering user information.",
+  "notFoundByPhone": "User with phone number {phoneNumber} not found.",
+  "notFoundById": "User with ID {id} not found.",
+  "deletedSuccessfully": "User soft deleted successfully.",
+  "bulkDelete": {
+    "adminSelfDeleteForbidden": "Admin cannot delete their own account.",
+    "noValidUsersFound": "No valid users found for deletion.",
+    "allAdminsDeletionForbidden": "Cannot delete all admins in the system.",
+    "summary": "Bulk delete process completed. Successfully deleted: {successful}. Failed: {failed}."
+  },
+  "restore": {
+    "notFoundOrNotDeleted": "User with ID {id} not found or is not deleted.",
+    "success": "User restored successfully."
+  },
+  "address": {
+    "deleteOnlyAddressForbidden": "Cannot delete the only address associated with the user.",
+    "deletedSuccessfully": "Address deleted successfully."
+  }
 }

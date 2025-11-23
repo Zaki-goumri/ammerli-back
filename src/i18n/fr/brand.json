@@ -1,0 +1,6 @@
+{
+  "notFound": "Marque non trouvée.",
+  "delete": {
+    "hasProducts": "Impossible de supprimer la marque. {count} produit(s) sont liés à cette marque."
+  }
+}

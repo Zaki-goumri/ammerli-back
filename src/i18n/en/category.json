@@ -1,0 +1,10 @@
+{
+  "notFound": "Category with ID {id} not found.",
+  "update": {
+    "success": "Category updated successfully."
+  },
+  "delete": {
+    "hasProducts": "Cannot delete category. {count} product(s) are linked to this category.",
+    "success": "Category soft deleted successfully."
+  }
+}

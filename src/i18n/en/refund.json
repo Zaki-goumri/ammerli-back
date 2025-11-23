@@ -1,0 +1,12 @@
+{
+  "orderNotFound": "Order #{id} not found.",
+  "ownOrderForbidden": "You can only request refund for your own orders.",
+  "cashOrderForbidden": "Cannot refund cash orders.",
+  "notPaid": "Order is not paid yet.",
+  "amountExceedsTotal": "Refund amount cannot exceed order total.",
+  "amountExceedsRemaining": "Cannot refund {amount} DZD. Already refunded {refunded} DZD.",
+  "notFound": "Refund #{id} not found.",
+  "viewOwnForbidden": "You can only view your own refunds.",
+  "invalidStatusTransition": "Cannot transition from {current} to {new}.",
+  "defaultAdminNote": "Please contact support."
+}

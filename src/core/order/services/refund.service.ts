@@ -19,6 +19,7 @@ import { NOTIFICATION_TYPE } from 'src/core/notifications/enums/notification-typ
 import { USER_ROLES } from 'src/common/enums/user-role.enum';
 import { UserService } from 'src/core/user/user.service';
 import { ORDER_PAYMENT_METHOD } from '../enums/order-payment-method.enum';
+import { I18nService } from 'nestjs-i18n';
 
 @Injectable()
 export class RefundService {
@@ -33,6 +34,7 @@ export class RefundService {
     private readonly checkoutRepo: Repository<Checkout>,
     private readonly notificationService: NotificationsService,
     private readonly userService: UserService,
+    private readonly i18nService: I18nService,
   ) {}
 
   /**
@@ -46,19 +48,23 @@ export class RefundService {
     });
 
     if (!order) {
-      throw new NotFoundException(`Order #${dto.orderId} not found`);
+      throw new NotFoundException(
+        this.i18nService.t('refund.orderNotFound', { args: { id: dto.orderId } }),
+      );
     }
 
     // Validate user owns the order
     if (order.buyerId !== userId) {
       throw new ForbiddenException(
-        'You can only request refund for your own orders',
+        this.i18nService.t('refund.ownOrderForbidden'),
       );
     }
 
     // Check if order was paid
     if (order.paymentWay !== ORDER_PAYMENT_METHOD.EPAYMENT) {
-      throw new BadRequestException('Cannot refund cash orders');
+      throw new BadRequestException(
+        this.i18nService.t('refund.cashOrderForbidden'),
+      );
     }
 
     // Get checkout info
@@ -68,7 +74,7 @@ export class RefundService {
     });
 
     if (!checkout || !checkout.isPaid) {
-      throw new BadRequestException('Order is not paid yet');
+      throw new BadRequestException(this.i18nService.t('refund.notPaid'));
     }
 
     // Calculate refund amount
@@ -76,7 +82,9 @@ export class RefundService {
 
     // Validate refund amount
     if (refundAmount > order.totalAmount) {
-      throw new BadRequestException('Refund amount cannot exceed order total');
+      throw new BadRequestException(
+        this.i18nService.t('refund.amountExceedsTotal'),
+      );
     }
 
     // Check existing refunds
@@ -91,7 +99,9 @@ export class RefundService {
 
     if (totalRefunded + refundAmount > order.totalAmount) {
       throw new BadRequestException(
-        `Cannot refund ${refundAmount} DZD. Already refunded ${totalRefunded} DZD`,
+        this.i18nService.t('refund.amountExceedsRemaining', {
+          args: { amount: refundAmount, refunded: totalRefunded },
+        }),
       );
     }
 
@@ -143,7 +153,9 @@ export class RefundService {
     });
 
     if (!refund) {
-      throw new NotFoundException(`Refund #${refundId} not found`);
+      throw new NotFoundException(
+        this.i18nService.t('refund.notFound', { args: { id: refundId } }),
+      );
     }
 
     // Validate status transition
@@ -198,12 +210,14 @@ export class RefundService {
     });
 
     if (!refund) {
-      throw new NotFoundException(`Refund #${refundId} not found`);
+      throw new NotFoundException(
+        this.i18nService.t('refund.notFound', { args: { id: refundId } }),
+      );
     }
 
     // If userId provided, check ownership
     if (userId && refund.order.buyerId !== userId) {
-      throw new ForbiddenException('You can only view your own refunds');
+      throw new ForbiddenException(this.i18nService.t('refund.viewOwnForbidden'));
     }
 
     return refund;
@@ -255,7 +269,9 @@ export class RefundService {
 
     if (!allowedTransitions[currentStatus].includes(newStatus)) {
       throw new BadRequestException(
-        `Cannot transition from ${currentStatus} to ${newStatus}`,
+        this.i18nService.t('refund.invalidStatusTransition', {
+          args: { current: currentStatus, new: newStatus },
+        }),
       );
     }
   }
@@ -313,7 +329,10 @@ export class RefundService {
         [REFUND_STATUS.FAILED]: {
           titleKey: 'notifications.refund.failed.title',
           bodyKey: 'notifications.refund.failed.body',
-          data: { adminNote: refund.adminNote || 'Please contact support.' },
+          data: {
+            adminNote:
+              refund.adminNote || this.i18nService.t('refund.defaultAdminNote'),
+          },
         },
         [REFUND_STATUS.CANCELLED]: {
           titleKey: 'notifications.refund.cancelled.title',

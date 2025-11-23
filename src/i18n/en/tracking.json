@@ -1,0 +1,6 @@
+{
+  "historyNotFound": "No tracking history found for order with ID {id}.",
+  "orderNotFound": "Order with ID {id} not found.",
+  "alreadyDelivered": "The order has already been delivered.",
+  "updateFailed": "Failed to update tracking status for order {id}. Please try again later."
+}

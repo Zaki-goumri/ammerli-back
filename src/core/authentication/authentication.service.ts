@@ -22,6 +22,7 @@ import { UserDto } from '../user/dtos/response/user.dto';
 import { plainToInstance } from 'class-transformer';
 import { OtpStrategy } from './strategies/otp/otp.strategy';
 import { RedisService } from 'nestjs-redis-client';
+import { I18nService } from 'nestjs-i18n';
 
 /**
  * @class AuthenticationService
@@ -38,6 +39,7 @@ export class AuthenticationService {
     private readonly blackListService: BlackListService,
     private readonly otpStrategy: OtpStrategy,
     private readonly redisService: RedisService,
+    private readonly i18nService: I18nService,
   ) {}
 
   /**
@@ -54,7 +56,9 @@ export class AuthenticationService {
 
     const isValid = await this.otpStrategy.verify(phoneNumber, otp);
     if (!isValid) {
-      throw new UnauthorizedException('Invalid or expired OTP');
+      throw new UnauthorizedException(
+        this.i18nService.t('auth.otp.invalidOrExpired'),
+      );
     }
 
     const user =
@@ -93,7 +97,7 @@ export class AuthenticationService {
       await this.firebaseService.verifyIdToken(firebaseToken);
     if (!decodedToken.phone_number)
       throw new UnauthorizedException(
-        'Firebase token does not contain a phone number',
+        this.i18nService.t('auth.firebase.noPhoneNumber'),
       );
 
     const phoneNumber = transformPhoneNumber(decodedToken.phone_number);
@@ -140,7 +144,9 @@ export class AuthenticationService {
     const isBlacklisted =
       await this.blackListService.isPhoneNumberBlacklisted(phoneNumber);
     if (isBlacklisted) {
-      throw new ForbiddenException('This phone number is blacklisted.');
+      throw new ForbiddenException(
+        this.i18nService.t('auth.blacklist.phoneBlacklisted'),
+      );
     }
   }
 
@@ -186,7 +192,9 @@ export class AuthenticationService {
       };
     } catch (error) {
       this.logger.error('Error issuing tokens', error);
-      throw new InternalServerErrorException('Failed to issue tokens');
+      throw new InternalServerErrorException(
+        this.i18nService.t('auth.token.issueFailed'),
+      );
     }
   }
 
@@ -205,7 +213,12 @@ export class AuthenticationService {
       context: 'Authentication',
     });
     const otp = await this.redisService.get<string>(`otp:${phoneNumber}`);
-    return { message: `OTP sent to ${phoneNumber} otp: ${otp}` };
+    return {
+      message: this.i18nService.t('auth.otp.sent', {
+        args: { phoneNumber },
+      }),
+      otp: otp ? otp : undefined,
+    };
   }
 
   private async issueRegistrationToken(phoneNumber: string): Promise<string> {

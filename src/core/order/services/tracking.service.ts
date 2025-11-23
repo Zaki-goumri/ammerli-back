@@ -14,6 +14,7 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { SendTrackingDto } from '../dtos/send-tracking.dto';
 import { NotificationsService } from 'src/core/notifications/notifications.service';
 import { NOTIFICATION_TYPE } from 'src/core/notifications/enums/notification-type.enum';
+import { I18nService } from 'nestjs-i18n';
 
 @Injectable()
 export class TrackingService {
@@ -32,6 +33,7 @@ export class TrackingService {
     private readonly orderRepo: Repository<Order>,
     private readonly notificationsService: NotificationsService,
     private readonly entityManager: EntityManager,
+    private readonly i18nService: I18nService,
   ) {}
 
   @OnEvent('order.paid', { async: true })
@@ -74,11 +76,17 @@ export class TrackingService {
           );
           if (!latestTracking) {
             throw new NotFoundException(
-              `No tracking history found for order with ID ${orderId}.`,
+              this.i18nService.t('tracking.historyNotFound', {
+                args: { id: orderId },
+              }),
             );
           }
           if (!latestTracking.order) {
-            throw new NotFoundException(`Order with ID ${orderId} not found.`);
+            throw new NotFoundException(
+              this.i18nService.t('tracking.orderNotFound', {
+                args: { id: orderId },
+              }),
+            );
           }
 
           const currentStatusIndex = this.statusSequence.indexOf(
@@ -87,7 +95,7 @@ export class TrackingService {
 
           if (currentStatusIndex === this.statusSequence.length - 1) {
             throw new BadRequestException(
-              'The order has already been delivered.',
+              this.i18nService.t('tracking.alreadyDelivered'),
             );
           }
 
@@ -113,7 +121,9 @@ export class TrackingService {
             throw error;
           }
           throw new InternalServerErrorException(
-            `Failed to update tracking status for order ${orderId}. Please try again later.`,
+            this.i18nService.t('tracking.updateFailed', {
+              args: { id: orderId },
+            }),
           );
         }
       },

@@ -11,6 +11,7 @@ import { GetBlackListedUserDto } from './dtos/get-black-listed-user.dto';
 import { RedisService } from 'nestjs-redis-client';
 import { ConfigService } from '@nestjs/config';
 import { UserRole } from 'src/common/enums/user-role.enum';
+import { I18nService } from 'nestjs-i18n';
 
 @Injectable()
 export class BlackListService {
@@ -19,6 +20,7 @@ export class BlackListService {
     private readonly userRepo: Repository<User>,
     private readonly redisService: RedisService,
     private readonly configService: ConfigService,
+    private readonly i18nService: I18nService,
   ) {}
 
   static CACHE_KEY_PREFIX = 'blacklist';
@@ -32,7 +34,9 @@ export class BlackListService {
   async create(userId: number): Promise<BlackListDto> {
     const user = await this.userRepo.findOneBy({ id: userId });
     if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found.`);
+      throw new NotFoundException(
+        this.i18nService.t('user.notFoundById', { args: { id: userId } }),
+      );
     }
     user.blackListedAt = new Date();
     const savedUser = await this.userRepo.save(user);
@@ -93,7 +97,9 @@ export class BlackListService {
 
         if (result.affected === 0) {
           throw new NotFoundException(
-            `Blacklisted user with ID ${userId} not found or already deleted.`,
+            this.i18nService.t('blacklist.restore.notFoundOrDeleted', {
+              args: { id: userId },
+            }),
           );
         }
 
@@ -108,7 +114,7 @@ export class BlackListService {
 
     await this.redisService.del(BlackListService.getCacheKey(phoneNumber));
 
-    return { message: 'User removed from blacklist successfully' };
+    return { message: this.i18nService.t('blacklist.restore.success') };
   }
 
   async isPhoneNumberBlacklisted(phoneNumber: string): Promise<boolean> {
@@ -144,7 +150,7 @@ export class BlackListService {
 
     if (users.length === 0) {
       throw new NotFoundException(
-        'No blacklisted users found with the provided IDs.',
+        this.i18nService.t('blacklist.bulkDelete.noUsersFound'),
       );
     }
 

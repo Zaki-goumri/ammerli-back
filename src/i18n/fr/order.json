@@ -1,0 +1,31 @@
+{
+  "invalidCheckoutUrl": "URL de paiement invalide.",
+  "payment": {
+    "failedOrCanceled": "Le paiement a échoué ou a été annulé."
+  },
+  "redirect": {
+    "invalidId": "ID invalide.",
+    "syncError": "Jeton de paiement non trouvé ou expiré."
+  },
+  "notFound": "Commande avec l'ID {id} non trouvée.",
+  "notFoundForUser": "Commande avec l'ID {id} non trouvée pour l'utilisateur actuel.",
+  "create": {
+    "addressRequired": "L'addressId ou l'adresse doit être fourni."
+  },
+  "product": {
+    "notFound": "Produit avec l'ID {id} non trouvé."
+  },
+  "checkout": {
+    "creationFailed": "Impossible de créer le paiement pour le moment. Veuillez réessayer plus tard."
+  },
+  "buyerNotFound": "Acheteur pour la commande avec l'ID {id} non trouvé.",
+  "cancel": {
+    "notFound": "Commande #{id} non trouvée.",
+    "alreadyCancelled": "La commande est déjà annulée.",
+    "deliveredForbidden": "Impossible d'annuler une commande livrée. Veuillez contacter le support pour les retours.",
+    "onDeliveringForbidden": "Impossible d'annuler la commande pendant sa livraison. Veuillez contacter le vendeur.",
+    "success": "Commande annulée avec succès.",
+    "ownOrdersForbidden": "Vous ne pouvez annuler que vos propres commandes.",
+    "sellerProductsForbidden": "Vous ne pouvez annuler que les commandes contenant vos produits."
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "orderNotFound": "Commande #{id} non trouvée.",
+  "ownOrderForbidden": "Vous ne pouvez demander un remboursement que pour vos propres commandes.",
+  "cashOrderForbidden": "Impossible de rembourser les commandes en espèces.",
+  "notPaid": "La commande n'est pas encore payée.",
+  "amountExceedsTotal": "Le montant du remboursement ne peut pas dépasser le total de la commande.",
+  "amountExceedsRemaining": "Impossible de rembourser {amount} DZD. Déjà remboursé {refunded} DZD.",
+  "notFound": "Remboursement #{id} non trouvé.",
+  "viewOwnForbidden": "Vous ne pouvez voir que vos propres remboursements.",
+  "invalidStatusTransition": "Impossible de passer de l'état {current} à {new}.",
+  "defaultAdminNote": "Veuillez contacter le support."
+}

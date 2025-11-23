@@ -1,0 +1,9 @@
+{
+  "restore": {
+    "notFoundOrDeleted": "Utilisateur sur liste noire avec l'ID {id} non trouvé ou déjà supprimé.",
+    "success": "Utilisateur retiré de la liste noire avec succès."
+  },
+  "bulkDelete": {
+    "noUsersFound": "Aucun utilisateur sur liste noire trouvé avec les ID fournis."
+  }
+}

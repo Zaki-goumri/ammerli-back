@@ -1,0 +1,19 @@
+{
+  "notFound": "Produit avec l'ID {id} non trouvé.",
+  "update": {
+    "success": "Processus de mise à jour du produit initié."
+  },
+  "delete": {
+    "success": "Produit supprimé (soft delete) avec succès."
+  },
+  "pictures": {
+    "delete": {
+      "notFound": "Aucune photo de produit trouvée avec les ID donnés pour ce produit.",
+      "success": "Photos de produit supprimées (soft delete) et mises en file d'attente pour la suppression de fichiers."
+    }
+  },
+  "stock": {
+    "notFound": "Produits non trouvés : {ids}.",
+    "insufficient": "Stock insuffisant pour \"{name}\". Disponible : {available}, Demandé : {requested}."
+  }
+}

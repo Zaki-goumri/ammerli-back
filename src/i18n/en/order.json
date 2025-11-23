@@ -1,0 +1,31 @@
+{
+  "invalidCheckoutUrl": "Invalid checkout URL.",
+  "payment": {
+    "failedOrCanceled": "Payment failed or was canceled."
+  },
+  "redirect": {
+    "invalidId": "Invalid ID.",
+    "syncError": "Payment token not found or expired."
+  },
+  "notFound": "Order with ID {id} not found.",
+  "notFoundForUser": "Order with ID {id} not found for the current user.",
+  "create": {
+    "addressRequired": "Either addressId or address must be provided."
+  },
+  "product": {
+    "notFound": "Product with ID {id} not found."
+  },
+  "checkout": {
+    "creationFailed": "Unable to create payment checkout at this time. Please try again later."
+  },
+  "buyerNotFound": "Buyer for order with ID {id} not found.",
+  "cancel": {
+    "notFound": "Order #{id} not found.",
+    "alreadyCancelled": "Order is already cancelled.",
+    "deliveredForbidden": "Cannot cancel delivered order. Please contact support for returns.",
+    "onDeliveringForbidden": "Cannot cancel order while it is being delivered. Please contact seller.",
+    "success": "Order cancelled successfully.",
+    "ownOrdersForbidden": "You can only cancel your own orders.",
+    "sellerProductsForbidden": "You can only cancel orders containing your products."
+  }
+}
