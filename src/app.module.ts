@@ -19,7 +19,7 @@ import smsConfig from './config/sms.config';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import throttlerConfig from './config/throttler.config';
 import { AppController } from './app.controller';
-import { Module, NestModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { GlobalThrottlerGuard } from './security/rate-limiting/global-throttler.guard';
 import { I18nModule, AcceptLanguageResolver, QueryResolver } from 'nestjs-i18n';
 import path from 'path';
