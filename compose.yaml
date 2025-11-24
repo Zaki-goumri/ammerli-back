@@ -34,8 +34,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-      # pgbouncer:
-      #   condition: service_healthy
+      pgbouncer:
+         condition: service_healthy
     ports:
       - "3000:3000"
     networks:

@@ -2,8 +2,6 @@ import {
   Controller,
   Get,
   Post,
-  Body,
-  Patch,
   Param,
   Delete,
   Res,
@@ -12,9 +10,17 @@ import {
   Header,
   Logger,
   UseInterceptors,
+  Query,
 } from '@nestjs/common';
 import { InvoiceService } from './services/invoice.service';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiQuery,
+  ApiResponseProperty,
+  ApiOkResponse,
+} from '@nestjs/swagger';
 import { Response } from 'express';
 import { USER_ROLES } from 'src/common/enums/user-role.enum';
 import { Roles } from 'src/core/authentication/decorators/role.decorator';
@@ -25,6 +31,12 @@ import { USER } from '../authentication/decorators/user.decorartor';
 import { PresignedUrlInterceptor } from 'src/common/interceptors/presigned-url.interceptor';
 import { ConvertToPresignedUrls } from 'src/common/decorators/convert-to-presigned-urls.decorator';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
+import {
+  PaginationQueryDto,
+  PaginationResponseDto,
+} from 'src/common/dtos/pagination.dto';
+import { Invoice } from './entities/invoice.entity';
+import { SendInvoiceDto } from './dto/send-invoice.dto';
 
 @ApiTags('invoices')
 @Controller('invoices')
@@ -51,18 +63,33 @@ export class InvoiceController {
   }
 
   @Get()
+  @UseInterceptors(PresignedUrlInterceptor)
   @Roles(USER_ROLES.ADMIN)
   @ApiOperation({ summary: 'Get all invoices (admin)' })
-  findAll() {
-    return this.invoiceService.findAll();
+  @ApiQuery({ type: PaginationQueryDto })
+  @ApiOkResponse({
+    type: PaginationResponseDto<SendInvoiceDto>,
+    description: 'List of user invoices',
+  })
+  @ConvertToPresignedUrls(['pdfUrl'], BUCKET_TARGETS.INVOICES)
+  findAll(@Query() dto: PaginationQueryDto) {
+    return this.invoiceService.findAll(dto);
   }
 
   @UseInterceptors(PresignedUrlInterceptor)
+  @ApiQuery({ type: PaginationQueryDto })
+  @ApiOkResponse({
+    type: PaginationResponseDto<SendInvoiceDto>,
+    description: 'List of user invoices',
+  })
   @Get('user')
   @ConvertToPresignedUrls(['pdfUrl'], BUCKET_TARGETS.INVOICES)
   @ApiOperation({ summary: 'Get all invoices for a specific user' })
-  findUserInvoices(@USER('id') userId: number) {
-    return this.invoiceService.getManyInvoicesForUser(userId);
+  findUserInvoices(
+    @USER('id') userId: number,
+    @Query() dto: PaginationQueryDto,
+  ) {
+    return this.invoiceService.getManyInvoicesForUser(userId, dto);
   }
 
   @Get(':id')

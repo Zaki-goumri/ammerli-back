@@ -23,7 +23,6 @@ export class PaginationQueryDto {
   @IsOptional()
   limit: number = 10;
 }
-
 /*
  * Base DTO for pagination metadata in responses.
  * Contains information about the current page, limit, and whether it's the last page.

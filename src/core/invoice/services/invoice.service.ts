@@ -16,6 +16,11 @@ import { RedisService } from 'nestjs-redis-client';
 import { ConfigService } from '@nestjs/config';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 import { I18nService } from 'nestjs-i18n';
+import {
+  PaginationQueryDto,
+  PaginationResponseDto,
+} from 'src/common/dtos/pagination.dto';
+import { SendInvoiceDto } from 'src/core/invoice/dto/send-invoice.dto';
 
 @Injectable()
 export class InvoiceService {
@@ -87,13 +92,28 @@ export class InvoiceService {
    * @param userId - The ID of the user.
    * @returns A promise that resolves to a list of partial invoice data.
    */
-  async getManyInvoicesForUser(userId: number): Promise<Partial<Invoice>[]> {
-    const invoices = await this.invoiceRepository.find({
-      where: { order: { buyerId: userId } },
-      select: ['id', 'orderId', 'invoiceNumber', 'createdAt', 'pdfUrl'],
+  async getManyInvoicesForUser(
+    userId: number,
+    paginationQuery: PaginationQueryDto,
+  ): Promise<PaginationResponseDto<SendInvoiceDto>> {
+    const { page, limit } = paginationQuery;
+    const [data, total] = await this.invoiceRepository.findAndCount({
       order: { createdAt: 'DESC' },
+      take: limit,
+      skip: (page - 1) * limit,
+      select: ['id', 'createdAt', 'pdfUrl'],
+      where: { order: { buyerId: userId } },
     });
-    return invoices;
+    return {
+      meta: {
+        total: total,
+        page,
+        limit,
+        hasNextPage: page * limit < total,
+        totalPages: Math.ceil(total / limit),
+      },
+      data,
+    };
   }
 
   /**
@@ -144,7 +164,9 @@ export class InvoiceService {
     });
     if (!invoice) {
       throw new NotFoundException(
-        this.i18nService.t('invoice.notFoundForOrder', { args: { id: orderId } }),
+        this.i18nService.t('invoice.notFoundForOrder', {
+          args: { id: orderId },
+        }),
       );
     }
     if (invoice.pdfUrl) {
@@ -162,22 +184,26 @@ export class InvoiceService {
    * Retrieves all invoices, with presigned URLs for the PDFs.
    * @returns A promise that resolves to a list of all invoices.
    */
-  async findAll(): Promise<Invoice[]> {
-    const invoices = await this.invoiceRepository.find({
+  async findAll(
+    paginationQuery: PaginationQueryDto,
+  ): Promise<PaginationResponseDto<SendInvoiceDto>> {
+    const { page, limit } = paginationQuery;
+    const [data, total] = await this.invoiceRepository.findAndCount({
       order: { createdAt: 'DESC' },
+      take: limit,
+      skip: (page - 1) * limit,
+      select: ['id', 'createdAt', 'pdfUrl'],
     });
-    const invoicesWithPresignedUrls = await Promise.all(
-      invoices.map(async (invoice) => {
-        if (invoice.pdfUrl) {
-          invoice.pdfUrl = await this.objectStorageService.getPresignedUrl(
-            invoice.pdfUrl,
-            BUCKET_TARGETS.INVOICES,
-          );
-        }
-        return invoice;
-      }),
-    );
-    return invoicesWithPresignedUrls;
+    return {
+      meta: {
+        total: total,
+        page,
+        limit,
+        hasNextPage: page * limit < total,
+        totalPages: Math.ceil(total / limit),
+      },
+      data,
+    };
   }
 
   /**
@@ -195,7 +221,9 @@ export class InvoiceService {
 
     const invoice = await this.findOne(id);
     if (!invoice.pdfUrl) {
-      throw new NotFoundException(this.i18nService.t('invoice.pdfNotAvailable'));
+      throw new NotFoundException(
+        this.i18nService.t('invoice.pdfNotAvailable'),
+      );
     }
     const objectName = this.objectStorageService.getFileNameFromUrl(
       invoice.pdfUrl,

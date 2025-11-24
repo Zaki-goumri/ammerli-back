@@ -26,7 +26,10 @@ export class AccessTokenGuard extends AuthGuard('access-token') {
     const authenticated = await super.canActivate(context);
 
     if (!authenticated) {
-      return false;
+      const message = this.i18n.translate(
+        'auth.guard.FORBIDDEN_RESOURCE_ACCESS',
+      );
+      throw new ForbiddenException(message);
     }
 
     const request = context.switchToHttp().getRequest<extendedReq>();
@@ -42,7 +45,9 @@ export class AccessTokenGuard extends AuthGuard('access-token') {
     }
 
     if (!isAccessTokenPayload(user)) {
-      const message = this.i18n.translate('errors.FORBIDDEN_RESOURCE_ACCESS');
+      const message = this.i18n.translate(
+        'auth.guard.FORBIDDEN_RESOURCE_ACCESS',
+      );
       throw new ForbiddenException(message);
     }
     return true;
