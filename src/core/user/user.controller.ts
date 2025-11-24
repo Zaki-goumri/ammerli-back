@@ -15,6 +15,9 @@ import {
   Query,
   ParseIntPipe,
   Logger,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -160,13 +163,22 @@ export class UserController {
   @UseInterceptors(
     FileInterceptor('picture', {
       storage: memoryStorage(),
-      limits: { fileSize: 2 * 1024 * 1024 * 5 }, // 2MB
+      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
     }),
   )
   @ConvertToPresignedUrls(['profilePic'], BUCKET_TARGETS.USER_PROFILE)
   async updateProfilePicture(
     @USER('id') userId: number,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg)' }),
+        ],
+        fileIsRequired: true,
+      }),
+    )
+    file: Express.Multer.File,
   ): Promise<ProfilePictureDto> {
     this.logger.log(`Updating profile picture for user ID: ${userId}`);
     return this.userService.updateUserProfilePic(userId, file);

@@ -14,6 +14,9 @@ import {
   UseInterceptors,
   UploadedFiles,
   Logger,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -55,7 +58,6 @@ import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 import { ProductDto } from './dtos/product/product.dto';
 import { DeleteProductPicturesDto } from './dtos/product/delete-product-pictures.dto';
 import { AdminProductDto } from './dtos/product/admin-product.dto';
-import { categories } from 'src/seed/seeds-data';
 /**
  * @class ProductController
  * @classdesc The main controller for handling product-related operations.
@@ -233,7 +235,16 @@ export class ProductController {
   create(
     @Body() createProductDto: CreateProductDto,
     @USER('id') userId: number,
-    @UploadedFiles() files: Array<Express.Multer.File>,
+    @UploadedFiles(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg)' }),
+        ],
+        fileIsRequired: true,
+      }),
+    )
+    files: Array<Express.Multer.File>,
   ) {
     const uploadOptions = {
       pathPrefix: `products/${userId}/`,
