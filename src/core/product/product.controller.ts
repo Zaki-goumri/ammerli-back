@@ -124,8 +124,11 @@ export class ProductController {
     description: 'Returns a single product',
   })
   @ApiNotFoundResponse({ description: 'Product not found' })
-  findOneProduct(@Param('id', ParseIntPipe) id: number) {
-    return this.productService.findOne(id);
+  findOneProduct(
+    @Param('id', ParseIntPipe) id: number,
+    @USER('id') userId: number,
+  ) {
+    return this.productService.findOne(id, userId);
   }
 
   /**

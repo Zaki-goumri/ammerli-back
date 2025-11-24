@@ -51,7 +51,6 @@ export class ProductService {
     private readonly i18nService: I18nService,
   ) {}
 
-  // Notify sellers about products expiring in the next 15 days - runs on 1st and 15th of each month
   @Cron('0 0 1 1,15 * *')
   async sendProductExpirationNotifications() {
     const today = new Date();
@@ -293,10 +292,19 @@ export class ProductService {
     };
   }
 
-  async findOne(id: number): Promise<ProductDto> {
+  async findOne(id: number, userId?: number): Promise<ProductDto> {
     const product = await this.productRepo.findOne({
       where: { id },
       relations: ['pictures', 'brand', 'category'],
+      select: [
+        'id',
+        'name',
+        'description',
+        'price',
+        'quantity',
+        'quantityPerBatch',
+        'specification',
+      ],
     });
 
     if (!product) {
@@ -309,9 +317,17 @@ export class ProductService {
       where: { productId: id },
     });
 
+    let isLoved: FavProduct | null = null;
+    if (userId) {
+      isLoved = await this.favProductRepo.findOneBy({
+        userId,
+        productId: id,
+      });
+    }
     return {
       id: product?.id,
       name: product?.name,
+      isLoved: isLoved ? true : false,
       description: product?.description ?? null,
       price: parseInt(product?.price.toString(), 10),
       quantity: product?.quantity,

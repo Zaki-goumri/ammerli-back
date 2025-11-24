@@ -45,4 +45,7 @@ export class ProductDto {
 
   @ApiProperty()
   specifications: string[];
+
+  @ApiProperty()
+  isLoved?: boolean;
 }

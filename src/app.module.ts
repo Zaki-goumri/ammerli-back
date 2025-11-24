@@ -70,7 +70,7 @@ import path from 'path';
     CommonModule,
     CoreModule,
     I18nModule.forRoot({
-      fallbackLanguage: 'en',
+      fallbackLanguage: 'fr',
       loaderOptions: {
         path: path.join(__dirname, '/i18n/'),
         watch: true,
