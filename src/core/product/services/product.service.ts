@@ -24,7 +24,7 @@ import { Queue } from 'bullmq';
 import { ToggleFavoriteDto } from '../dtos/product/toggle-favorite.dto';
 import { FavoriteProductDto } from '../dtos/product/favorite-product.dto';
 import { WholesellerProductDto } from '../dtos/product/wholeseller-product.dto';
-import { ProductDto } from '../dtos/product/product.dto';
+import { PictureWithId, ProductDto } from '../dtos/product/product.dto';
 import { ProductPicture } from '../entities/product-picture.entity';
 import { Cron } from '@nestjs/schedule';
 import { NotificationsService } from '../../notifications/notifications.service';
@@ -339,7 +339,10 @@ export class ProductService {
         label: product?.category?.label,
         picture: product?.category?.pictureUrl,
       },
-      pictures: product?.pictures.map((pic) => pic?.url) ?? [],
+      pictures:
+        product?.pictures.map<PictureWithId>((pic) => {
+          return { url: pic.url, id: pic.id };
+        }) ?? [],
     };
   }
 
@@ -400,6 +403,32 @@ export class ProductService {
       context: 'Product',
     });
 
+    if (dto.picturesToDelete && dto.picturesToDelete.length > 0) {
+      const productPictures = await this.productPictureRepo.find({
+        where: { productId: id, id: In(dto.picturesToDelete || []) },
+      });
+      const deletedPictureUrls = productPictures
+        .map((pic) => pic.url)
+        .filter(Boolean) as string[];
+
+      if (deletedPictureUrls.length > 0) {
+        await this.productPictureRepo.delete({
+          id: In(dto.picturesToDelete || []),
+        });
+
+        await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
+          files: deletedPictureUrls.map((url) => ({
+            objectName: url,
+            bucketName: BUCKET_TARGETS.PRODUCT_PICTURES,
+          })),
+          metadata: {
+            targetId: id,
+            targetType: BUCKET_TARGETS.PRODUCT_PICTURES,
+          },
+        });
+      }
+    }
+
     if (files && files.length > 0) {
       const queueFiles = files.map((file) => ({
         buffer: file.buffer,
@@ -407,32 +436,6 @@ export class ProductService {
         mimetype: file.mimetype,
         size: file.size,
       }));
-
-      if (dto.picturesToDelete && dto.picturesToDelete.length > 0) {
-        const productPictures = await this.productPictureRepo.find({
-          where: { productId: id, id: In(dto.picturesToDelete || []) },
-        });
-        const deletedPictureUrls = productPictures
-          .map((pic) => pic.url)
-          .filter(Boolean) as string[];
-
-        if (deletedPictureUrls.length > 0) {
-          await this.productPictureRepo.delete({
-            id: In(dto.picturesToDelete || []),
-          });
-
-          await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
-            files: deletedPictureUrls.map((url) => ({
-              objectName: url,
-              bucketName: BUCKET_TARGETS.PRODUCT_PICTURES,
-            })),
-            metadata: {
-              targetId: id,
-              targetType: BUCKET_TARGETS.PRODUCT_PICTURES,
-            },
-          });
-        }
-      }
 
       await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILES_BULK, {
         files: queueFiles,

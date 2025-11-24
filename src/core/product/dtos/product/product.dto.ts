@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiOperation, ApiProperty } from '@nestjs/swagger';
 import { ProductPictureDto } from './product-picture.dto';
 
 class CategoryDto {
@@ -32,7 +32,7 @@ export class ProductDto {
   category: CategoryDto;
 
   @ApiProperty({ type: [String] })
-  pictures: (string | undefined)[];
+  pictures: (string | undefined | PictureWithId)[];
 
   @ApiProperty()
   loveCount?: number;
@@ -48,4 +48,12 @@ export class ProductDto {
 
   @ApiProperty()
   isLoved?: boolean;
+}
+
+export class PictureWithId {
+  @ApiProperty()
+  id: number;
+
+  @ApiProperty()
+  url: string;
 }
