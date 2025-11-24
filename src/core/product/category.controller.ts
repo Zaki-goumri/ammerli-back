@@ -12,6 +12,9 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -112,7 +115,16 @@ export class CategoryController {
   )
   createCategory(
     @Body() dto: CreateCategoryDto,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg)' }),
+        ],
+        fileIsRequired: true,
+      }),
+    )
+    file: Express.Multer.File,
   ) {
     return this.categoryService.create(dto, file);
   }
@@ -153,7 +165,16 @@ export class CategoryController {
   updateCategory(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: Partial<CreateCategoryDto>,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg)' }),
+        ],
+        fileIsRequired: true,
+      }),
+    )
+    file?: Express.Multer.File,
   ) {
     return this.categoryService.update(id, dto, file);
   }
@@ -168,5 +189,17 @@ export class CategoryController {
   @ConvertToPresignedUrls(['pictureUrl'], BUCKET_TARGETS.CATEGORY_PICTURES)
   removeCategory(@Param('id', ParseIntPipe) id: number) {
     return this.categoryService.remove(id);
+  }
+
+  @Get('/subcategories/all')
+  @HttpCode(HttpStatus.OK)
+  @ConvertToPresignedUrls(['pictureUrl'], BUCKET_TARGETS.CATEGORY_PICTURES)
+  @ApiOperation({ summary: 'Get all subcategories' })
+  @ApiOkResponse({
+    description: 'Returns all subcategories',
+    type: [CategoryResDto],
+  })
+  getAllSubcategories() {
+    return this.categoryService.getSubCategories();
   }
 }

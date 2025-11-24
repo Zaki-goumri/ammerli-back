@@ -335,6 +335,16 @@ export class ProductController {
           description: 'The product expiration date (YYYY-MM-DD).',
           example: '2027-12-31',
         },
+        picturesToDelete: {
+          type: 'array',
+          items: {
+            type: 'integer',
+            format: 'int32',
+          },
+          description:
+            'Optional: List of picture IDs to be deleted from the product.',
+          example: [1, 2],
+        },
       },
     },
   })

@@ -7,6 +7,7 @@ import {
   Put,
   UseGuards,
   Logger,
+  Ip,
 } from '@nestjs/common';
 import { AuthenticationService } from './authentication.service';
 import { USER } from './decorators/user.decorartor';
@@ -61,12 +62,12 @@ export class AuthenticationController {
    * @returns {Promise<SendOtpDto>} A message indicating that the OTP has been sent.
    */
 
-  @Throttle({
-    default: {
-      limit: 1,
-      ttl: 30000,
-    },
-  })
+  // @Throttle({
+  //   ip: {
+  //     limit: 1,
+  //     ttl: 30000,
+  //   },
+  // })
   @Post('otp/send')
   @ApiOperation({
     summary: 'send OTP',

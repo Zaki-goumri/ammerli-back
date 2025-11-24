@@ -169,12 +169,6 @@ export class InvoiceService {
         }),
       );
     }
-    if (invoice.pdfUrl) {
-      invoice.pdfUrl = await this.objectStorageService.getPresignedUrl(
-        invoice.pdfUrl,
-        BUCKET_TARGETS.INVOICES,
-      );
-    }
 
     await this.redisService.set(cacheKey, invoice, this.CACHE_TTL);
     return invoice;

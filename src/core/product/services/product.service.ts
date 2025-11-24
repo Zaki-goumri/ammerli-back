@@ -364,6 +364,7 @@ export class ProductService {
     files: Array<Express.Multer.File>,
     uploadOptions: UploadingOptions,
   ): Promise<{ message: string }> {
+    const { picturesToDelete, ...updateData } = dto;
     const product = await this.productRepo.findOne({
       where: { id, sellerId },
     });
@@ -374,7 +375,7 @@ export class ProductService {
       );
     }
 
-    await this.productRepo.update(id, dto);
+    await this.productRepo.update(id, updateData);
 
     this.logger.log({
       message: 'Product updated',
@@ -390,6 +391,32 @@ export class ProductService {
         mimetype: file.mimetype,
         size: file.size,
       }));
+
+      if (dto.picturesToDelete && dto.picturesToDelete.length > 0) {
+        const productPictures = await this.productPictureRepo.find({
+          where: { productId: id, id: In(dto.picturesToDelete || []) },
+        });
+        const deletedPictureUrls = productPictures
+          .map((pic) => pic.url)
+          .filter(Boolean) as string[];
+
+        if (deletedPictureUrls.length > 0) {
+          await this.productPictureRepo.delete({
+            id: In(dto.picturesToDelete || []),
+          });
+
+          await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
+            files: deletedPictureUrls.map((url) => ({
+              objectName: url,
+              bucketName: BUCKET_TARGETS.PRODUCT_PICTURES,
+            })),
+            metadata: {
+              targetId: id,
+              targetType: BUCKET_TARGETS.PRODUCT_PICTURES,
+            },
+          });
+        }
+      }
 
       await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILES_BULK, {
         files: queueFiles,

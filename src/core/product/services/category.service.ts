@@ -5,7 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 import { Category } from '../entities/category.entity';
 import { InjectQueue } from '@nestjs/bullmq';
 import { QUEUE_NAME } from 'src/common/constants/queues';
@@ -19,7 +19,6 @@ import { CategoryResDto } from '../dtos/category/category.res.dto';
 import { Product } from '../entities/product.entity';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 import { I18nService } from 'nestjs-i18n';
-
 @Injectable()
 export class CategoryService {
   constructor(
@@ -190,5 +189,11 @@ export class CategoryService {
       `Handling failed upload for category picture, target ID: ${payload.targetId}`,
     );
     await this.clearPictureUrl(payload.targetId);
+  }
+
+  async getSubCategories(): Promise<Category[]> {
+    return this.categoryRepo.find({
+      where: { parentCategoryId: Not(IsNull()) },
+    });
   }
 }

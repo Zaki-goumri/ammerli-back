@@ -99,11 +99,16 @@ export class InvoiceController {
   }
 
   @Get('order/:orderId')
+  @UseInterceptors(PresignedUrlInterceptor)
+  @ConvertToPresignedUrls(['pdfUrl'], BUCKET_TARGETS.INVOICES)
   @ApiOperation({ summary: 'Get an invoice by order ID' })
   findByOrderId(@Param('orderId', ParseIntPipe) orderId: number) {
     return this.invoiceService.findByOrderId(orderId);
   }
 
+  //TODO: Add rate limiting to download and preview endpoints
+  // to Preview
+  // Use passThrough option in guard to allow unauthenticated access with limited rate
   @Get(':id/download')
   @ApiOperation({ summary: 'Download the invoice as a PDF file' })
   async download(@Param('id', ParseIntPipe) id: number, @Res() res: Response) {
