@@ -25,9 +25,10 @@ export class AccessTokenStrategy extends PassportStrategy(
   }
 
   validate(req: Request, payload: JwtPayload): JwtPayload {
-    const message = this.i18n.translate('auth.strategy.tokenValidated');
     if (!payload) {
-      throw new UnauthorizedException(message);
+      throw new UnauthorizedException({
+        key: 'auth.strategy.invalidTokenPayload',
+      });
     }
     return payload;
   }

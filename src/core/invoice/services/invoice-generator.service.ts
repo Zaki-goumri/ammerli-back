@@ -64,11 +64,10 @@ export class InvoiceGeneratorService implements OnModuleInit {
       this.compiledTemplate = Handlebars.compile(templateContent);
     } catch (error) {
       this.logger.error(`Failed to load template: ${this.templatePath}`, error);
-      throw new InternalServerErrorException(
-        this.i18nService.t('invoice-generator.templateNotFound', {
-          args: { path: this.templatePath },
-        }),
-      );
+      throw new InternalServerErrorException({
+        key: 'invoice-generator.templateNotFound',
+        args: { path: this.templatePath },
+      });
     }
   }
 
@@ -174,9 +173,9 @@ export class InvoiceGeneratorService implements OnModuleInit {
       return await this.generatePDFFromHTML(renderedHtml);
     } catch (error) {
       this.logger.error('Failed to generate invoice PDF', error.stack);
-      throw new InternalServerErrorException(
-        this.i18nService.t('invoice-generator.pdfGenerationFailed'),
-      );
+      throw new InternalServerErrorException({
+        key: 'invoice-generator.pdfGenerationFailed',
+      });
     }
   }
 
@@ -211,9 +210,9 @@ export class InvoiceGeneratorService implements OnModuleInit {
       return Buffer.from(pdfBuffer);
     } catch (error) {
       this.logger.error('Puppeteer PDF generation failed:', error);
-      throw new InternalServerErrorException(
-        this.i18nService.t('invoice-generator.htmlToPdfFailed'),
-      );
+      throw new InternalServerErrorException({
+        key: 'invoice-generator.htmlToPdfFailed',
+      });
     } finally {
       if (browser) {
         await browser.close();

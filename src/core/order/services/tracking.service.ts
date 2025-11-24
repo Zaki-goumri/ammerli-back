@@ -75,18 +75,16 @@ export class TrackingService {
             },
           );
           if (!latestTracking) {
-            throw new NotFoundException(
-              this.i18nService.t('tracking.historyNotFound', {
-                args: { id: orderId },
-              }),
-            );
+            throw new NotFoundException({
+              key: 'tracking.historyNotFound',
+              args: { id: orderId },
+            });
           }
           if (!latestTracking.order) {
-            throw new NotFoundException(
-              this.i18nService.t('tracking.orderNotFound', {
-                args: { id: orderId },
-              }),
-            );
+            throw new NotFoundException({
+              key: 'tracking.orderNotFound',
+              args: { id: orderId },
+            });
           }
 
           const currentStatusIndex = this.statusSequence.indexOf(
@@ -94,9 +92,7 @@ export class TrackingService {
           );
 
           if (currentStatusIndex === this.statusSequence.length - 1) {
-            throw new BadRequestException(
-              this.i18nService.t('tracking.alreadyDelivered'),
-            );
+            throw new BadRequestException({ key: 'tracking.alreadyDelivered' });
           }
 
           const nextStatus = this.statusSequence[currentStatusIndex + 1];
@@ -120,11 +116,10 @@ export class TrackingService {
           ) {
             throw error;
           }
-          throw new InternalServerErrorException(
-            this.i18nService.t('tracking.updateFailed', {
-              args: { id: orderId },
-            }),
-          );
+          throw new InternalServerErrorException({
+            key: 'tracking.updateFailed',
+            args: { id: orderId },
+          });
         }
       },
     );

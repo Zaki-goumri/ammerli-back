@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OtpStrategy } from './otp.strategy';
 import { RedisService } from 'nestjs-redis-client';
-import { NotificationsService } from 'src/core/notifications/notifications.service';
 
 @Injectable()
 export class DefaultOtpStrategy extends OtpStrategy {

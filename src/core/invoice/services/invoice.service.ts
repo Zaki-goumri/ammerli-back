@@ -131,9 +131,10 @@ export class InvoiceService {
 
     const invoice = await this.invoiceRepository.findOne({ where: { id } });
     if (!invoice) {
-      throw new NotFoundException(
-        this.i18nService.t('invoice.notFound', { args: { id } }),
-      );
+      throw new NotFoundException({
+        key: 'invoice.notFound',
+        args: { id },
+      });
     }
     if (invoice.pdfUrl) {
       invoice.pdfUrl = await this.objectStorageService.getPresignedUrl(
@@ -163,11 +164,10 @@ export class InvoiceService {
       where: { orderId },
     });
     if (!invoice) {
-      throw new NotFoundException(
-        this.i18nService.t('invoice.notFoundForOrder', {
-          args: { id: orderId },
-        }),
-      );
+      throw new NotFoundException({
+        key: 'invoice.notFoundForOrder',
+        args: { id: orderId },
+      });
     }
 
     await this.redisService.set(cacheKey, invoice, this.CACHE_TTL);
@@ -215,9 +215,7 @@ export class InvoiceService {
 
     const invoice = await this.findOne(id);
     if (!invoice.pdfUrl) {
-      throw new NotFoundException(
-        this.i18nService.t('invoice.pdfNotAvailable'),
-      );
+      throw new NotFoundException({ key: 'invoice.pdfNotAvailable' });
     }
     const objectName = this.objectStorageService.getFileNameFromUrl(
       invoice.pdfUrl,
@@ -331,9 +329,10 @@ export class InvoiceService {
   async delete(id: number): Promise<void> {
     const invoice = await this.findOne(id);
     if (!invoice) {
-      throw new NotFoundException(
-        this.i18nService.t('invoice.notFound', { args: { id } }),
-      );
+      throw new NotFoundException({
+        key: 'invoice.notFound',
+        args: { id },
+      });
     }
     await this.invalidateInvoiceCache(invoice);
 
@@ -345,9 +344,10 @@ export class InvoiceService {
 
     const result = await this.invoiceRepository.delete(id);
     if (result.affected === 0) {
-      throw new NotFoundException(
-        this.i18nService.t('invoice.notFound', { args: { id } }),
-      );
+      throw new NotFoundException({
+        key: 'invoice.notFound',
+        args: { id },
+      });
     }
   }
 

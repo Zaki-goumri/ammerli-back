@@ -34,9 +34,10 @@ export class BlackListService {
   async create(userId: number): Promise<BlackListDto> {
     const user = await this.userRepo.findOneBy({ id: userId });
     if (!user) {
-      throw new NotFoundException(
-        this.i18nService.t('user.notFoundById', { args: { id: userId } }),
-      );
+      throw new NotFoundException({
+        key: 'user.notFoundById',
+        args: { id: userId },
+      });
     }
     user.blackListedAt = new Date();
     const savedUser = await this.userRepo.save(user);
@@ -96,11 +97,10 @@ export class BlackListService {
         );
 
         if (result.affected === 0) {
-          throw new NotFoundException(
-            this.i18nService.t('blacklist.restore.notFoundOrDeleted', {
-              args: { id: userId },
-            }),
-          );
+          throw new NotFoundException({
+            key: 'blacklist.restore.notFoundOrDeleted',
+            args: { id: userId },
+          });
         }
 
         const user = await entityManager.findOneOrFail(User, {
@@ -149,9 +149,9 @@ export class BlackListService {
     });
 
     if (users.length === 0) {
-      throw new NotFoundException(
-        this.i18nService.t('blacklist.bulkDelete.noUsersFound'),
-      );
+      throw new NotFoundException({
+        key: 'blacklist.bulkDelete.noUsersFound',
+      });
     }
 
     const currentDate = new Date();

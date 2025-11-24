@@ -1,3 +1,7 @@
 {
-  "internalServerError": "Erreur interne du serveur"
+  "internalServerError": "Erreur interne du serveur",
+  "throttle": {
+    "default": "Trop de requêtes. Veuillez réessayer plus tard.",
+    "otp": "Trop de requêtes OTP. Veuillez attendre 30 secondes avant de demander un nouvel OTP."
+  }
 }

@@ -15,18 +15,12 @@ export class GlobalThrottlerGuard extends ThrottlerGuard {
   protected async throwThrottlingException(
     context: ExecutionContext,
   ): Promise<void> {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<Request>();
     const path = request.url;
-
-    let customMessage = 'Too many requests. Please try again later.';
-
+    let messageKey = 'http.throttle.default';
     if (path.includes('/otp/send')) {
-      customMessage =
-        'Too many OTP requests. Please wait 30 seconds before requesting a new OTP.';
-    } else if (path.includes('/login') || path.includes('/verify')) {
-      customMessage = 'Too many login attempts. Please try again later.';
+      messageKey = 'http.throttle.otp';
     }
-
-    throw new ThrottlerException(customMessage);
+    throw new ThrottlerException(messageKey);
   }
 }

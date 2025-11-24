@@ -42,6 +42,7 @@ import { NOTIFICATION_TYPE } from '../notifications/enums/notification-type.enum
 import { MessageDto } from './dtos/response/message.dto';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 import { I18nService } from 'nestjs-i18n';
+import { AccessTokenPayload } from '../authentication/interfaces/access-token-payload.interface';
 
 /**
  * @class UserService
@@ -101,11 +102,10 @@ export class UserService {
         phoneNumber: dto.phoneNumber,
       });
       if (existingUser) {
-        throw new ConflictException(
-          this.i18nService.t('user.alreadyExists', {
-            args: { phoneNumber: dto.phoneNumber },
-          }),
-        );
+        throw new ConflictException({
+          key: 'user.alreadyExists',
+          args: { phoneNumber: dto.phoneNumber },
+        });
       }
       const user = userRepo.create({
         ...dto,
@@ -188,12 +188,12 @@ export class UserService {
         },
       },
     });
-    if (!user)
-      throw new NotFoundException(
-        this.i18nService.t('user.notFoundByPhone', {
-          args: { phoneNumber },
-        }),
-      );
+    if (!user) {
+      throw new NotFoundException({
+        key: 'user.notFoundByPhone',
+        args: { phoneNumber },
+      });
+    }
 
     if (user.profilePic) {
       user.profilePic = await this.objectService.getPresignedUrl(
@@ -243,12 +243,12 @@ export class UserService {
       ]);
 
     const user = await queryBuilder.getOne();
-    if (!user)
-      throw new NotFoundException(
-        this.i18nService.t('user.notFoundById', {
-          args: { id },
-        }),
-      );
+    if (!user) {
+      throw new NotFoundException({
+        key: 'user.notFoundById',
+        args: { id },
+      });
+    }
 
     if (user.profilePic) {
       user.profilePic = await this.objectService.getPresignedUrl(
@@ -275,11 +275,10 @@ export class UserService {
   async findUserEntityById(id: number): Promise<User> {
     const user = await this.userRepo.findOne({ where: { id } });
     if (!user) {
-      throw new NotFoundException(
-        this.i18nService.t('user.notFoundById', {
-          args: { id },
-        }),
-      );
+      throw new NotFoundException({
+        key: 'user.notFoundById',
+        args: { id },
+      });
     }
     return user;
   }
@@ -329,9 +328,10 @@ export class UserService {
     });
 
     if (!user) {
-      throw new NotFoundException(
-        this.i18nService.t('user.notFoundById', { args: { id: userId } }),
-      );
+      throw new NotFoundException({
+        key: 'user.notFoundById',
+        args: { id: userId },
+      });
     }
 
     const lastAddress =
@@ -441,10 +441,10 @@ export class UserService {
     const user = await this.entityManager.transaction(async (manager) => {
       const u = await manager.findOne(User, { where: { id } });
       if (!u) {
-        const message = this.i18nService.t('user.notFoundById', {
+        throw new NotFoundException({
+          key: 'user.notFoundById',
           args: { id },
         });
-        throw new NotFoundException(message);
       }
       await manager.softDelete(User, { id });
       await manager.softDelete(Address, { userId: id });
@@ -490,9 +490,7 @@ export class UserService {
     const filteredUserIds = userIds.filter((id) => id !== currentAdminId);
     if (filteredUserIds.length === 0 && userIds.length > 0) {
       return {
-        message: this.i18nService.t(
-          'user.bulkDelete.adminSelfDeleteForbidden',
-        ),
+        message: this.i18nService.t('user.bulkDelete.adminSelfDeleteForbidden'),
       };
     }
 
@@ -504,9 +502,9 @@ export class UserService {
         });
 
         if (usersToDelete.length === 0) {
-          throw new NotFoundException(
-            this.i18nService.t('user.bulkDelete.noValidUsersFound'),
-          );
+          throw new NotFoundException({
+            key: 'user.bulkDelete.noValidUsersFound',
+          });
         }
 
         const totalAdminsCount = await userRepo.count({
@@ -517,9 +515,9 @@ export class UserService {
         ).length;
 
         if (totalAdminsCount - adminsToDeleteCount < 1) {
-          throw new ForbiddenException(
-            this.i18nService.t('user.bulkDelete.allAdminsDeletionForbidden'),
-          );
+          throw new ForbiddenException({
+            key: 'user.bulkDelete.allAdminsDeletionForbidden',
+          });
         }
         return { usersToDelete };
       },
@@ -617,11 +615,10 @@ export class UserService {
   async restoreUser(id: number): Promise<{ message: string }> {
     const restoreResult = await this.userRepo.restore(id);
     if (restoreResult.affected === 0) {
-      throw new NotFoundException(
-        this.i18nService.t('user.restore.notFoundOrNotDeleted', {
-          args: { id },
-        }),
-      );
+      throw new NotFoundException({
+        key: 'user.restore.notFoundOrNotDeleted',
+        args: { id },
+      });
     }
     await this.redisService.del(UserService.getCacheKey(id, 'id'));
     await this.redisService.del(UserService.getCacheKey(id, 'admin-details')); // Invalidate admin details cache
@@ -722,9 +719,10 @@ export class UserService {
         .getRepository(User)
         .findOneBy({ id: userId });
       if (!existingUser) {
-        throw new NotFoundException(
-          this.i18nService.t('user.notFoundById', { args: { id: userId } }),
-        );
+        throw new NotFoundException({
+          key: 'user.notFoundById',
+          args: { id: userId },
+        });
       }
       const address = addressRepo.create({ ...createAddressDto, userId });
       const created = await addressRepo.save(address);
@@ -800,9 +798,9 @@ export class UserService {
       where: { userId },
     });
     if (userAddressesCount <= 1) {
-      throw new BadRequestException(
-        this.i18nService.t('user.address.deleteOnlyAddressForbidden'),
-      );
+      throw new BadRequestException({
+        key: 'user.address.deleteOnlyAddressForbidden',
+      });
     }
     await this.addressRepo.softDelete(addressId);
     await this.redisService.del(
@@ -890,5 +888,23 @@ export class UserService {
       },
       data: users,
     };
+  }
+  async getJwtUserPayload(userId: number): Promise<AccessTokenPayload> {
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      select: ['id', 'phoneNumber', 'role'],
+    });
+    if (!user) {
+      throw new NotFoundException({
+        key: 'user.notFoundById',
+        args: { id: userId },
+      });
+    }
+    return {
+      id: user.id,
+      phoneNumber: user.phoneNumber,
+      role: user.role as UserRole,
+      isRegistered: true,
+    } as AccessTokenPayload;
   }
 }

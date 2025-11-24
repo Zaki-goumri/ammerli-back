@@ -56,9 +56,7 @@ export class AuthenticationService {
 
     const isValid = await this.otpStrategy.verify(phoneNumber, otp);
     if (!isValid) {
-      throw new UnauthorizedException(
-        this.i18nService.t('auth.otp.invalidOrExpired'),
-      );
+      throw new UnauthorizedException({ key: 'auth.otp.invalidOrExpired' });
     }
 
     const user =
@@ -96,9 +94,7 @@ export class AuthenticationService {
     const decodedToken =
       await this.firebaseService.verifyIdToken(firebaseToken);
     if (!decodedToken.phone_number)
-      throw new UnauthorizedException(
-        this.i18nService.t('auth.firebase.noPhoneNumber'),
-      );
+      throw new UnauthorizedException({ key: 'auth.firebase.noPhoneNumber' });
 
     const phoneNumber = transformPhoneNumber(decodedToken.phone_number);
     await this.checkBlacklistAndThrow(phoneNumber);
@@ -144,22 +140,26 @@ export class AuthenticationService {
     const isBlacklisted =
       await this.blackListService.isPhoneNumberBlacklisted(phoneNumber);
     if (isBlacklisted) {
-      throw new ForbiddenException(
-        this.i18nService.t('auth.blacklist.phoneBlacklisted'),
-      );
+      throw new ForbiddenException({ key: 'auth.blacklist.phoneBlacklisted' });
     }
   }
 
   /**
    * @method issueTokens
    * @description Issues new access and refresh tokens for a user.
-   * @param {User} user - The user to issue tokens for.
+   * @param {User|number} user - The user to issue tokens for.
    * @returns {Promise<AuthResDto>} An object containing the new tokens and user information.
    * @throws {Error} If token issuance fails.
    */
-  async issueTokens(user: User): Promise<AuthResDto> {
+
+  async issueTokens(userOrId: User | number): Promise<AuthResDto> {
     try {
-      const { id, phoneNumber, role } = user;
+      const payload =
+        typeof userOrId === 'number'
+          ? await this.userService.getJwtUserPayload(userOrId)
+          : userOrId;
+
+      const { id, phoneNumber, role } = payload;
       const accessTokenPayload = {
         id,
         phoneNumber,
@@ -173,8 +173,7 @@ export class AuthenticationService {
       };
 
       const jwtConfig = authConfig().jwt;
-
-      const [accessToken, refreshToken] = await Promise.all([
+      const [accessToken, refreshToken, user] = await Promise.all([
         this.jwtService.signAsync(accessTokenPayload, {
           expiresIn: jwtConfig.accessTokenExpiresIn,
           secret: jwtConfig.accessTokenSecret,
@@ -183,6 +182,9 @@ export class AuthenticationService {
           expiresIn: jwtConfig.refreshTokenExpiresIn,
           secret: jwtConfig.refreshTokenSecret,
         }),
+        payload instanceof User
+          ? payload
+          : this.userService.findById(payload.id),
       ]);
 
       return {
@@ -192,12 +194,9 @@ export class AuthenticationService {
       };
     } catch (error) {
       this.logger.error('Error issuing tokens', error);
-      throw new InternalServerErrorException(
-        this.i18nService.t('auth.token.issueFailed'),
-      );
+      throw new InternalServerErrorException({ key: 'auth.token.issueFailed' });
     }
   }
-
   /**
    * @method sendVerificationCode
    * @description Sends a verification code (OTP) to the user's phone number using the injected OTP strategy.

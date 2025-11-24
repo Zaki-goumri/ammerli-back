@@ -33,7 +33,7 @@ export class BrandService {
 
   async update(id: number, label: string): Promise<BrandResDto> {
     const brand = await this.brandRepo.findOne({ where: { id } });
-    if (!brand) throw new NotFoundException(this.i18nService.t('brand.notFound'));
+    if (!brand) throw new NotFoundException({ key: 'brand.notFound' });
 
     brand.label = label;
     const updatedBrand = await this.brandRepo.save(brand);
@@ -42,18 +42,17 @@ export class BrandService {
 
   async remove(id: number): Promise<void> {
     const brand = await this.brandRepo.findOne({ where: { id } });
-    if (!brand) throw new NotFoundException(this.i18nService.t('brand.notFound'));
+    if (!brand) throw new NotFoundException({ key: 'brand.notFound' });
 
     const productsCount = await this.productRepo.count({
       where: { brandId: id },
     });
 
     if (productsCount > 0) {
-      throw new BadRequestException(
-        this.i18nService.t('brand.delete.hasProducts', {
-          args: { count: productsCount },
-        }),
-      );
+      throw new BadRequestException({
+        key: 'brand.delete.hasProducts',
+        args: { count: productsCount },
+      });
     }
 
     await this.brandRepo.delete(id);

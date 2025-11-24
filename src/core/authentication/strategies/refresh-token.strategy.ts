@@ -31,17 +31,16 @@ export class RefreshTokenStrategy extends PassportStrategy(
     payload: RefreshTokenPayload,
   ): Promise<RefreshTokenPayload> {
     if (!payload?.id || !payload?.phoneNumber) {
-      const message = this.i18nService.translate(
-        'auth.strategy.invalidTokenPayload',
-      );
-      throw new UnauthorizedException(message);
+      throw new UnauthorizedException({
+        key: 'auth.strategy.invalidTokenPayload',
+      });
     }
     const user = this.userService.findById(payload.id);
     if (!user) {
-      const message = this.i18nService.translate('auth.strategy.userNotFound', {
+      throw new UnauthorizedException({
+        key: 'auth.strategy.userNotFound',
         args: { id: payload.id },
       });
-      throw new UnauthorizedException(message);
     }
     return {
       id: payload.id,

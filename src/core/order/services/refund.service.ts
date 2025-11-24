@@ -48,23 +48,20 @@ export class RefundService {
     });
 
     if (!order) {
-      throw new NotFoundException(
-        this.i18nService.t('refund.orderNotFound', { args: { id: dto.orderId } }),
-      );
+      throw new NotFoundException({
+        key: 'refund.orderNotFound',
+        args: { id: dto.orderId },
+      });
     }
 
     // Validate user owns the order
     if (order.buyerId !== userId) {
-      throw new ForbiddenException(
-        this.i18nService.t('refund.ownOrderForbidden'),
-      );
+      throw new ForbiddenException({ key: 'refund.ownOrderForbidden' });
     }
 
     // Check if order was paid
     if (order.paymentWay !== ORDER_PAYMENT_METHOD.EPAYMENT) {
-      throw new BadRequestException(
-        this.i18nService.t('refund.cashOrderForbidden'),
-      );
+      throw new BadRequestException({ key: 'refund.cashOrderForbidden' });
     }
 
     // Get checkout info
@@ -74,7 +71,7 @@ export class RefundService {
     });
 
     if (!checkout || !checkout.isPaid) {
-      throw new BadRequestException(this.i18nService.t('refund.notPaid'));
+      throw new BadRequestException({ key: 'refund.notPaid' });
     }
 
     // Calculate refund amount
@@ -82,9 +79,7 @@ export class RefundService {
 
     // Validate refund amount
     if (refundAmount > order.totalAmount) {
-      throw new BadRequestException(
-        this.i18nService.t('refund.amountExceedsTotal'),
-      );
+      throw new BadRequestException({ key: 'refund.amountExceedsTotal' });
     }
 
     // Check existing refunds
@@ -98,11 +93,10 @@ export class RefundService {
     );
 
     if (totalRefunded + refundAmount > order.totalAmount) {
-      throw new BadRequestException(
-        this.i18nService.t('refund.amountExceedsRemaining', {
-          args: { amount: refundAmount, refunded: totalRefunded },
-        }),
-      );
+      throw new BadRequestException({
+        key: 'refund.amountExceedsRemaining',
+        args: { amount: refundAmount, refunded: totalRefunded },
+      });
     }
 
     // Get attempt number
@@ -153,9 +147,10 @@ export class RefundService {
     });
 
     if (!refund) {
-      throw new NotFoundException(
-        this.i18nService.t('refund.notFound', { args: { id: refundId } }),
-      );
+      throw new NotFoundException({
+        key: 'refund.notFound',
+        args: { id: refundId },
+      });
     }
 
     // Validate status transition
@@ -210,14 +205,15 @@ export class RefundService {
     });
 
     if (!refund) {
-      throw new NotFoundException(
-        this.i18nService.t('refund.notFound', { args: { id: refundId } }),
-      );
+      throw new NotFoundException({
+        key: 'refund.notFound',
+        args: { id: refundId },
+      });
     }
 
     // If userId provided, check ownership
     if (userId && refund.order.buyerId !== userId) {
-      throw new ForbiddenException(this.i18nService.t('refund.viewOwnForbidden'));
+      throw new ForbiddenException({ key: 'refund.viewOwnForbidden' });
     }
 
     return refund;
@@ -268,11 +264,10 @@ export class RefundService {
     };
 
     if (!allowedTransitions[currentStatus].includes(newStatus)) {
-      throw new BadRequestException(
-        this.i18nService.t('refund.invalidStatusTransition', {
-          args: { current: currentStatus, new: newStatus },
-        }),
-      );
+      throw new BadRequestException({
+        key: 'refund.invalidStatusTransition',
+        args: { current: currentStatus, new: newStatus },
+      });
     }
   }
 

@@ -135,9 +135,7 @@ export class OrderService {
         checkoutUrl: data.checkout_url,
         context: 'Order',
       });
-      throw new BadRequestException(
-        this.i18nService.t('order.invalidCheckoutUrl'),
-      );
+      throw new BadRequestException({ key: 'order.invalidCheckoutUrl' });
     }
 
     const isPaymentSuccessful = data.status === 'paid';
@@ -330,19 +328,23 @@ export class OrderService {
 
     const order = await this.orderRepo.findOneBy({ id: orderId });
     if (!order) {
-      throw new NotFoundException(
-        this.i18nService.t('order.notFound', { args: { id: orderId } }),
-      );
+      throw new NotFoundException({
+        key: 'order.notFound',
+        args: { id: orderId },
+      });
     }
-    throw new NotFoundException(
-      this.i18nService.t('order.notFoundForUser', { args: { id: orderId } }),
-    );
+    throw new NotFoundException({
+      key: 'order.notFoundForUser',
+      args: { id: orderId },
+    });
   }
 
   async countProductsInOrder(orderId: number) {
     return this.orderProductRepo.count({ where: { order: { id: orderId } } });
   }
 
+  //TODO: handle stock release on payment failure or order cancellation
+  //handle blacklist users
   async createOrderProductWithPayement(
     dto: CreateOrderDto,
     buyerId: number,
@@ -369,9 +371,7 @@ export class OrderService {
         );
         addressId = newAddress.id;
       } else {
-        throw new BadRequestException(
-          this.i18nService.t('order.create.addressRequired'),
-        );
+        throw new BadRequestException({ key: 'order.create.addressRequired' });
       }
       const orderRepo = em.getRepository(Order);
       const order = orderRepo.create({
@@ -436,11 +436,10 @@ export class OrderService {
     for (const item of items) {
       const product = productMap.get(item.productId);
       if (!product) {
-        throw new BadRequestException(
-          this.i18nService.t('order.product.notFound', {
-            args: { id: item.productId },
-          }),
-        );
+        throw new BadRequestException({
+          key: 'order.product.notFound',
+          args: { id: item.productId },
+        });
       }
       totalAmount += product.price * item.quantity;
     }
@@ -469,9 +468,7 @@ export class OrderService {
         error,
         context: 'Order',
       });
-      throw new ForbiddenException(
-        this.i18nService.t('order.checkout.creationFailed'),
-      );
+      throw new ForbiddenException({ key: 'order.checkout.creationFailed' });
     }
   }
 
@@ -737,15 +734,17 @@ export class OrderService {
       .getOne();
 
     if (!order) {
-      throw new NotFoundException(
-        this.i18nService.t('order.notFound', { args: { id: orderId } }),
-      );
+      throw new NotFoundException({
+        key: 'order.notFound',
+        args: { id: orderId },
+      });
     }
 
     if (!order.buyer) {
-      throw new NotFoundException(
-        this.i18nService.t('order.buyerNotFound', { args: { id: orderId } }),
-      );
+      throw new NotFoundException({
+        key: 'order.buyerNotFound',
+        args: { id: orderId },
+      });
     }
 
     const address = order.address
@@ -803,9 +802,10 @@ export class OrderService {
       .getRawOne();
 
     if (!order) {
-      throw new NotFoundException(
-        this.i18nService.t('order.notFound', { args: { id: orderId } }),
-      );
+      throw new NotFoundException({
+        key: 'order.notFound',
+        args: { id: orderId },
+      });
     }
 
     const paymentInfo: PaymentInfoDto = {
@@ -890,17 +890,14 @@ export class OrderService {
       });
 
       if (!order) {
-        throw new NotFoundException(
-          this.i18nService.t('order.cancel.notFound', {
-            args: { id: orderId },
-          }),
-        );
+        throw new NotFoundException({
+          key: 'order.cancel.notFound',
+          args: { id: orderId },
+        });
       }
 
       if (order.isCancelled) {
-        throw new BadRequestException(
-          this.i18nService.t('order.cancel.alreadyCancelled'),
-        );
+        throw new BadRequestException({ key: 'order.cancel.alreadyCancelled' });
       }
 
       this.validateCancellation(order, userId, cancelledBy);
@@ -910,18 +907,18 @@ export class OrderService {
         order: { createdAt: 'DESC' },
       });
       if (currentTracking?.status === ORDER_STATUS.DELIVERED) {
-        throw new BadRequestException(
-          this.i18nService.t('order.cancel.deliveredForbidden'),
-        );
+        throw new BadRequestException({
+          key: 'order.cancel.deliveredForbidden',
+        });
       }
 
       if (
         currentTracking?.status === ORDER_STATUS.ON_DELIVERING &&
         cancelledBy === 'BUYER'
       ) {
-        throw new BadRequestException(
-          this.i18nService.t('order.cancel.onDeliveringForbidden'),
-        );
+        throw new BadRequestException({
+          key: 'order.cancel.onDeliveringForbidden',
+        });
       }
 
       await this.restoreInventory(order.orderProducts, productRepo);
@@ -973,9 +970,7 @@ export class OrderService {
     cancelledBy: 'BUYER' | 'SELLER' | 'ADMIN',
   ): void {
     if (cancelledBy === 'BUYER' && order.buyerId !== userId) {
-      throw new ForbiddenException(
-        this.i18nService.t('order.cancel.ownOrdersForbidden'),
-      );
+      throw new ForbiddenException({ key: 'order.cancel.ownOrdersForbidden' });
     }
 
     if (cancelledBy === 'SELLER') {
@@ -984,9 +979,9 @@ export class OrderService {
         (op) => op?.product?.sellerId === userId,
       );
       if (!isOrderFromThisSeller) {
-        throw new ForbiddenException(
-          this.i18nService.t('order.cancel.sellerProductsForbidden'),
-        );
+        throw new ForbiddenException({
+          key: 'order.cancel.sellerProductsForbidden',
+        });
       }
     }
     // Admins can cancel any order (no validation needed)

@@ -16,7 +16,7 @@ import chargiliConfig from './config/chargili.config';
 import minioConfig from './config/minio.config';
 import firebaseConfig from './config/firebase.config';
 import smsConfig from './config/sms.config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import throttlerConfig from './config/throttler.config';
 import { AppController } from './app.controller';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
@@ -24,6 +24,9 @@ import { GlobalThrottlerGuard } from './security/rate-limiting/global-throttler.
 import { RealIpMiddleware } from './common/middlewares/real-ip.middleware';
 import { I18nModule, AcceptLanguageResolver, QueryResolver } from 'nestjs-i18n';
 import path from 'path';
+import { HttpExceptionFilter } from './common/filters/httpException.filter';
+import { DatabaseExceptionFilter } from './common/filters/db.filter';
+import { ObjectStorageExceptionFilter } from './common/filters/object-storage.filter';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -87,6 +90,18 @@ import path from 'path';
     {
       provide: APP_GUARD,
       useClass: GlobalThrottlerGuard,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: DatabaseExceptionFilter,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: ObjectStorageExceptionFilter,
     },
   ],
 })

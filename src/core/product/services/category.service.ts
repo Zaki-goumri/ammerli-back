@@ -98,9 +98,7 @@ export class CategoryService {
   ): Promise<{ message: string }> {
     const category = await this.categoryRepo.findOne({ where: { id } });
     if (!category) {
-      throw new NotFoundException(
-        this.i18nService.t('category.notFound', { args: { id } }),
-      );
+      throw new NotFoundException({ key: 'category.notFound', args: { id } });
     }
 
     let pictureUrl: string | undefined;
@@ -144,9 +142,7 @@ export class CategoryService {
   async remove(id: number): Promise<{ message: string }> {
     const category = await this.categoryRepo.findOne({ where: { id } });
     if (!category) {
-      throw new NotFoundException(
-        this.i18nService.t('category.notFound', { args: { id } }),
-      );
+      throw new NotFoundException({ key: 'category.notFound', args: { id } });
     }
 
     const productsCount = await this.productRepo.count({
@@ -154,11 +150,10 @@ export class CategoryService {
     });
 
     if (productsCount > 0) {
-      throw new BadRequestException(
-        this.i18nService.t('category.delete.hasProducts', {
-          args: { count: productsCount },
-        }),
-      );
+      throw new BadRequestException({
+        key: 'category.delete.hasProducts',
+        args: { count: productsCount },
+      });
     }
 
     await this.categoryRepo.softDelete(id);

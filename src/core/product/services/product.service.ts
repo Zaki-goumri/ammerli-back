@@ -308,9 +308,7 @@ export class ProductService {
     });
 
     if (!product) {
-      throw new NotFoundException(
-        this.i18nService.t('product.notFound', { args: { id } }),
-      );
+      throw new NotFoundException({ key: 'product.notFound', args: { id } });
     }
 
     const loveCount = await this.favProductRepo.count({
@@ -389,9 +387,7 @@ export class ProductService {
     });
 
     if (!product) {
-      throw new NotFoundException(
-        this.i18nService.t('product.notFound', { args: { id } }),
-      );
+      throw new NotFoundException({ key: 'product.notFound', args: { id } });
     }
 
     await this.productRepo.update(id, updateData);
@@ -455,9 +451,7 @@ export class ProductService {
       where: { id, sellerId: userId },
     });
     if (!product) {
-      throw new NotFoundException(
-        this.i18nService.t('product.notFound', { args: { id } }),
-      );
+      throw new NotFoundException({ key: 'product.notFound', args: { id } });
     }
 
     await this.productRepo.softDelete(id);
@@ -481,9 +475,9 @@ export class ProductService {
     });
 
     if (picturesToDelete.length === 0) {
-      throw new NotFoundException(
-        this.i18nService.t('product.pictures.delete.notFound'),
-      );
+      throw new NotFoundException({
+        key: 'product.pictures.delete.notFound',
+      });
     }
 
     const pictureUrls = picturesToDelete
@@ -737,11 +731,10 @@ export class ProductService {
     if (products.length !== productIds.length) {
       const foundIds = products.map((p) => p.id);
       const missingIds = productIds.filter((id) => !foundIds.includes(id));
-      throw new NotFoundException(
-        this.i18nService.t('product.stock.notFound', {
-          args: { ids: missingIds.join(', ') },
-        }),
-      );
+      throw new NotFoundException({
+        key: 'product.stock.notFound',
+        args: { ids: missingIds.join(', ') },
+      });
     }
 
     const updates: Product[] = [];
@@ -749,15 +742,14 @@ export class ProductService {
       const product = products.find((p) => p.id === item.productId);
       if (!product) continue;
       if (product.quantity < item.quantity) {
-        throw new BadRequestException(
-          this.i18nService.t('product.stock.insufficient', {
-            args: {
-              name: product.name,
-              available: product.quantity,
-              requested: item.quantity,
-            },
-          }),
-        );
+        throw new BadRequestException({
+          key: 'product.stock.insufficient',
+          args: {
+            name: product.name,
+            available: product.quantity,
+            requested: item.quantity,
+          },
+        });
       }
       product.quantity -= item.quantity;
       updates.push(product);

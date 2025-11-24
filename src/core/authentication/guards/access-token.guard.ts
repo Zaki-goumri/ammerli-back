@@ -11,7 +11,7 @@ import {
   isAccessTokenPayload,
   isRegistrationTokenPayload,
 } from '../interfaces/access-token-payload.interface';
-import { I18nContext, I18nService } from 'nestjs-i18n';
+import { I18nService } from 'nestjs-i18n';
 
 @Injectable()
 export class AccessTokenGuard extends AuthGuard('access-token') {
@@ -26,10 +26,9 @@ export class AccessTokenGuard extends AuthGuard('access-token') {
     const authenticated = await super.canActivate(context);
 
     if (!authenticated) {
-      const message = this.i18n.translate(
-        'auth.guard.FORBIDDEN_RESOURCE_ACCESS',
-      );
-      throw new ForbiddenException(message);
+      throw new ForbiddenException({
+        key: 'auth.guard.FORBIDDEN_RESOURCE_ACCESS',
+      });
     }
 
     const request = context.switchToHttp().getRequest<extendedReq>();
@@ -45,10 +44,9 @@ export class AccessTokenGuard extends AuthGuard('access-token') {
     }
 
     if (!isAccessTokenPayload(user)) {
-      const message = this.i18n.translate(
-        'auth.guard.FORBIDDEN_RESOURCE_ACCESS',
-      );
-      throw new ForbiddenException(message);
+      throw new ForbiddenException({
+        key: 'auth.guard.FORBIDDEN_RESOURCE_ACCESS',
+      });
     }
     return true;
   }

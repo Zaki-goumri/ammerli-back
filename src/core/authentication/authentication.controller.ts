@@ -192,9 +192,9 @@ export class AuthenticationController {
     status: 401,
     description: 'Unauthorized. Invalid refresh token provided.',
   })
-  async refreshTokens(@USER() user: User): Promise<AuthResDto> {
-    this.logger.log(`Refreshing tokens for user ID: ${user.id}`);
-    return this.authenticationService.issueTokens(user);
+  async refreshTokens(@USER('id') userId: number): Promise<AuthResDto> {
+    this.logger.log(`Refreshing tokens for user ID: ${userId}`);
+    return this.authenticationService.issueTokens(userId);
   }
 
   /**
