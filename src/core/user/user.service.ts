@@ -198,7 +198,7 @@ export class UserService {
     if (user.profilePic) {
       user.profilePic = await this.objectService.getPresignedUrl(
         user.profilePic,
-        BUCKET_TARGETS.USER_PROFILE,
+        BUCKET_TARGETS.USER_PROFILE + 'test',
       );
     }
 

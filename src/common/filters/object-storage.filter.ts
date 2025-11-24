@@ -7,12 +7,9 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { I18nService } from 'nestjs-i18n';
+import { MinioError } from 'src/infrastructure/object-storage/errors/minio.error';
 
-interface MinioError extends Error {
-  code?: string;
-}
-
-@Catch()
+@Catch(MinioError)
 export class ObjectStorageExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(ObjectStorageExceptionFilter.name);
 

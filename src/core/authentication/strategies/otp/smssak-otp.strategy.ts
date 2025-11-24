@@ -1,4 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -49,7 +53,10 @@ export class SmsSakOtpStrategy extends OtpStrategy {
           `Failed to send OTP via smssak to ${phoneNumber}: ${error.message}`,
           error.stack,
         );
-        throw new Error('Failed to send OTP via SMS provider');
+        new InternalServerErrorException({
+          key: 'auth.otp.providerFailed',
+          args: { message: error.message },
+        });
       }
     } else {
       const otp = this.generateOtp();

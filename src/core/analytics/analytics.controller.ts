@@ -13,33 +13,21 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
+  @Roles(USER_ROLES.ADMIN)
   @Get('daily-stats')
   async getAnalytics() {
     return this.analyticsService.getAnalytics();
   }
 
+  @Roles(USER_ROLES.ADMIN)
   @Get('turnover')
   async getTurnover() {
     return this.analyticsService.getMontlyTurnover();
   }
 
+  @Roles(USER_ROLES.ADMIN)
   @Get('top-products')
   async getTopProducts() {
     return this.analyticsService.getTopSellingProducts();
-  }
-
-  @Get('test/daily-stats')
-  async getTestAnalytics() {
-    return this.analyticsService.getTestAnalytics();
-  }
-
-  @Get('test/turnover')
-  async getTestTurnover() {
-    return this.analyticsService.getTestMontlyTurnover();
-  }
-
-  @Get('test/top-products')
-  async getTestTopProducts() {
-    return this.analyticsService.getTestTopSellingProducts();
   }
 }

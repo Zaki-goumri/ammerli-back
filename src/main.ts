@@ -1,21 +1,24 @@
-import { ValidationPipe, VersioningType } from '@nestjs/common';
-import { NestFactory, Reflector } from '@nestjs/core';
+import {
+  INestApplication,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
+import { NestApplication, NestFactory, Reflector } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { apiReference } from '@scalar/nestjs-api-reference';
 import { AppModule } from './app.module';
 import { LoggerInterceptor } from './monitoring/logger/logger.interceptor';
 import { DatabaseExceptionFilter } from './common/filters/db.filter';
-import { AppClusterService } from './infrastructure/clustring/app.cluster';
 import { LoggerBuilder } from './monitoring/logger/logger.builder';
 import helmet from 'helmet';
 import BasicAuth = require('express-basic-auth');
 import * as http from 'http';
 import { HttpExceptionFilter } from './common/filters/httpException.filter';
-import { ObjectStorageExceptionFilter } from './common/filters/object-storage.filter';
 import { I18nService } from 'nestjs-i18n';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
     logger:
       process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'prod'
@@ -25,6 +28,9 @@ async function bootstrap() {
             .build()
         : ['log', 'error', 'warn', 'debug', 'verbose'],
   });
+
+  //Get real ip  behind proxies
+  app.set('trust proxy', 1);
 
   //eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const server: http.Server = app.getHttpServer();

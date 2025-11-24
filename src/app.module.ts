@@ -19,9 +19,8 @@ import smsConfig from './config/sms.config';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import throttlerConfig from './config/throttler.config';
 import { AppController } from './app.controller';
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { Module, NestModule } from '@nestjs/common';
 import { GlobalThrottlerGuard } from './security/rate-limiting/global-throttler.guard';
-import { RealIpMiddleware } from './common/middlewares/real-ip.middleware';
 import { I18nModule, AcceptLanguageResolver, QueryResolver } from 'nestjs-i18n';
 import path from 'path';
 import { HttpExceptionFilter } from './common/filters/httpException.filter';
@@ -105,8 +104,4 @@ import { ObjectStorageExceptionFilter } from './common/filters/object-storage.fi
     },
   ],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(RealIpMiddleware).forRoutes('*');
-  }
-}
+export class AppModule {}

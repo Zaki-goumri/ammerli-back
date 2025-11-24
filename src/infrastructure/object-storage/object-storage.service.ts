@@ -25,6 +25,7 @@ import { MINIO_CLIENT, MINIO_PUBLIC_CLIENT } from '../minio/minio.module';
 import * as Minio from 'minio';
 import * as crypto from 'crypto';
 import minioConfig from 'src/config/minio.config';
+import { MinioError } from './errors/minio.error';
 
 interface UploadResult {
   message: string;
@@ -84,9 +85,7 @@ export class ObjectService implements ObjectStorageService {
         this.logger.error(
           `Upload failed after ${this.MAX_RETRIES} retries for ${objectName}: ${error.message}`,
         );
-        return throwError(
-          () => new BadRequestException('Failed to upload file to MinIO.'),
-        );
+        return throwError(() => new MinioError(error.message, error.code));
       }),
       tap({
         next: () =>
@@ -211,12 +210,7 @@ export class ObjectService implements ObjectStorageService {
         this.logger.error(
           `Upload failed for ${objectName} after ${this.MAX_RETRIES} retries`,
         );
-        return throwError(
-          () =>
-            new BadRequestException(
-              `Failed to upload file ${file.originalname} to MinIO.`,
-            ),
-        );
+        return throwError(() => new MinioError(error.message, error.code));
       }),
       tap({
         next: () =>
@@ -268,12 +262,7 @@ export class ObjectService implements ObjectStorageService {
         this.logger.error(
           `Delete failed after ${this.MAX_RETRIES} retries for ${objectName}: ${error.message}`,
         );
-        return throwError(
-          () =>
-            new InternalServerErrorException(
-              `Failed to delete file ${objectName}.`,
-            ),
-        );
+        return throwError(() => new MinioError(error.message, error.code));
       }),
       tap(() =>
         this.logger.log({
@@ -367,9 +356,7 @@ export class ObjectService implements ObjectStorageService {
         error: error.message,
         context: 'ObjectStorage',
       });
-      throw new InternalServerErrorException(
-        'Failed to generate presigned URL.',
-      );
+      throw new MinioError(error.message, error.code);
     }
   }
 
@@ -391,7 +378,7 @@ export class ObjectService implements ObjectStorageService {
         error: error.message,
         context: 'ObjectStorage',
       });
-      throw new InternalServerErrorException('Failed to retrieve file.');
+      throw new MinioError(error.message, error.code);
     }
   }
 
