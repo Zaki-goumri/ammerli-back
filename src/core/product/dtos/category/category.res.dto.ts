@@ -23,5 +23,5 @@ export class CategoryResDto {
     example: true,
     description: 'does the category has subcategories',
   })
-  hasChildren: boolean;
+  hasChildren?: boolean;
 }
