@@ -18,4 +18,10 @@ export class CategoryResDto {
     description: 'URL of the picture of the category',
   })
   pictureUrl: string;
+
+  @ApiProperty({
+    example: true,
+    description: 'does the category has subcategories',
+  })
+  hasChildren: boolean;
 }

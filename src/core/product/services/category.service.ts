@@ -36,15 +36,28 @@ export class CategoryService {
   logger = new Logger(CategoryService.name);
 
   async getAll(): Promise<CategoryResDto[]> {
-    const categories = await this.categoryRepo.find({
-      where: { parentCategoryId: IsNull() },
-    });
+    const categories = await this.categoryRepo
+      .createQueryBuilder('parent')
+      .leftJoin('categories', 'child', 'child.parentCategoryId = parent.id')
+      .select([
+        'parent.id AS id',
+        'parent.label AS label',
+        'parent.pictureUrl AS "pictureUrl"',
+      ])
+      .addSelect('COUNT(child.id) > 0', 'hasChildren')
+      .where('parent.parentCategoryId IS NULL')
+      .groupBy('parent.id')
+      .groupBy('parent.id')
+      .addGroupBy('parent.label')
+      .addGroupBy('parent.pictureUrl')
+      .getRawMany();
 
     return categories.map((c) => {
       return {
         id: c.id,
         label: c.label,
         pictureUrl: c.pictureUrl,
+        hasChildren: Boolean(c.hasChildren),
       };
     });
   }
