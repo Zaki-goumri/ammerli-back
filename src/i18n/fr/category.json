@@ -1,10 +1,13 @@
 {
-  "notFound": "Catégorie avec l'ID {id} non trouvée.",
-  "update": {
-    "success": "Catégorie mise à jour avec succès."
-  },
-  "delete": {
-    "hasProducts": "Impossible de supprimer la catégorie. {count} produit(s) sont liés à cette catégorie.",
-    "success": "Catégorie supprimée (soft delete) avec succès."
-  }
+    "notFound": "Catégorie avec l'ID {id} non trouvée.",
+    "update": {
+      "success": "Catégorie mise à jour avec succès."
+    },
+    "delete": {
+      "hasProducts": "Impossible de supprimer la catégorie. {count} produit(s) sont liés à cette catégorie.",
+      "success": "Catégorie supprimée (soft delete) avec succès."
+    },
+    "create": {
+      "duplicateLabel": "Une catégorie avec ce nom existe déjà."
+    }
 }

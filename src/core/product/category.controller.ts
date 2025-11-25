@@ -95,7 +95,7 @@ export class CategoryController {
           format: 'binary',
           description: 'Category picture file',
         },
-        parentId: {
+        parentCategoryId: {
           type: 'number',
           description: 'Parent category ID (optional)',
           example: 1,
