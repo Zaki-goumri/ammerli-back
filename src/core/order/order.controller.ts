@@ -34,6 +34,7 @@ import {
   ApiBadRequestResponse,
   ApiForbiddenResponse,
   ApiTags,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { CheckoutDataDto } from '../chargili/dtos/chargili-webhook.dto';
 import { AccessTokenGuard } from '../authentication/guards/access-token.guard';
@@ -159,12 +160,19 @@ export class OrderController {
     type: PaginatedResponse(OrderForAdminListItemDto),
     description: 'A paginated list of orders for admin view',
   })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search term to filter orders',
+  })
   @Get('/admin/all')
   @ConvertToPresignedUrls(['picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
   getOrdersForAdmin(
     @Query() { page, limit }: PaginationQueryDto,
+    @Query('search') search?: string,
   ): Promise<PaginationResponseDto<OrderForAdminListItemDto>> {
-    return this.orderService.getOrdersForAdmin({ page, limit });
+    return this.orderService.getOrdersForAdmin({ page, limit }, search);
   }
 
   @ApiExcludeEndpoint()

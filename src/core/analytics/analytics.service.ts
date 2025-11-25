@@ -233,7 +233,8 @@ export class AnalyticsService {
     const topProducts = await this.orderProductRepo
       .createQueryBuilder('op')
       .select('op.productId', 'productId')
-      .leftJoin('op.order', 'order')
+      .innerJoin('op.order', 'order')
+      .innerJoin('op.product', 'product')
       .leftJoin(
         'product_pictures',
         'pp',
@@ -242,6 +243,8 @@ export class AnalyticsService {
       .addSelect('pp.url', 'product_image')
       .addSelect('SUM(op.quantity)', 'total_quantity')
       .where('order.isCancelled = :isCancelled', { isCancelled: false })
+      .andWhere('order.deletedAt IS NULL')
+      .andWhere('product.deletedAt IS NULL')
       .groupBy('op.productId')
       .addGroupBy('pp.url')
       .orderBy('total_quantity', 'DESC')

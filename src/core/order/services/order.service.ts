@@ -620,19 +620,41 @@ export class OrderService {
    */
   async getOrdersForAdmin(
     paginationQuery: PaginationQueryDto,
+    search?: string,
   ): Promise<PaginationResponseDto<OrderForAdminListItemDto>> {
     const { limit, page } = paginationQuery;
 
-    // First, get paginated order IDs
     const orderIdsQuery = this.orderRepo
       .createQueryBuilder('order')
+      .leftJoin('order.buyer', 'user')
       .select('order.id', 'id')
-      .withDeleted()
+      .withDeleted();
+
+    if (search) {
+      orderIdsQuery.andWhere(
+        '(user.name ILIKE :search OR user.phoneNumber ILIKE :search OR CAST(order.id AS TEXT) ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    orderIdsQuery
       .orderBy('order.createdAt', 'DESC')
       .take(limit)
       .skip((page - 1) * limit);
 
-    const total = await this.orderRepo.count();
+    const totalQuery = this.orderRepo
+      .createQueryBuilder('order')
+      .leftJoin('order.buyer', 'user')
+      .withDeleted();
+
+    if (search) {
+      totalQuery.andWhere(
+        '(user.name ILIKE :search OR user.phoneNumber ILIKE :search OR CAST(order.id AS TEXT) ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    const total = await totalQuery.getCount();
     const paginatedIds = await orderIdsQuery.getRawMany();
 
     if (paginatedIds.length === 0) {
@@ -650,7 +672,6 @@ export class OrderService {
 
     const orderIds = paginatedIds.map((o) => o.id);
 
-    // Now fetch full data for these order IDs
     const queryBuilder = this.orderRepo
       .createQueryBuilder('order')
       .leftJoin('order.buyer', 'user')

@@ -33,13 +33,16 @@ export class TrackingService {
     private readonly orderRepo: Repository<Order>,
     private readonly notificationsService: NotificationsService,
     private readonly entityManager: EntityManager,
-    private readonly i18nService: I18nService,
   ) {}
 
   @OnEvent('order.paid', { async: true })
-  async createInitialTracking(orderId: number): Promise<Tracking> {
+  async createInitialTracking(
+    orderId: number,
+    em?: EntityManager,
+  ): Promise<Tracking> {
     this.logger.log(`Creating initial tracking for order ID: ${orderId}`);
-    const tracking = this.trackingRepo.create({
+    const repo = em ? em.getRepository(Tracking) : this.trackingRepo;
+    const tracking = repo.create({
       orderId,
       status: ORDER_STATUS.CONFIRMATION,
     });
@@ -75,10 +78,15 @@ export class TrackingService {
             },
           );
           if (!latestTracking) {
-            throw new NotFoundException({
-              key: 'tracking.historyNotFound',
-              args: { id: orderId },
-            });
+            const initialTracking = await this.createInitialTracking(
+              orderId,
+              transactionalEntityManager,
+            );
+            return {
+              savedTracking: initialTracking,
+              order: initialTracking.order,
+              nextStatus: initialTracking.status,
+            };
           }
           if (!latestTracking.order) {
             throw new NotFoundException({
