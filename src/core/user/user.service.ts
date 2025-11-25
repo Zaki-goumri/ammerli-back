@@ -846,9 +846,9 @@ export class UserService {
   async getUsersForAdmin(
     paginationQuery: PaginationQueryDto,
     currentUserId: number,
+    search?: string,
   ): Promise<PaginationResponseDto<UserForAdminDto>> {
     const { limit, page } = paginationQuery;
-
     const queryBuilder = this.userRepo
       .createQueryBuilder('user')
       .where('user.id != :currentUserId', { currentUserId })
@@ -861,9 +861,16 @@ export class UserService {
         'user.createdAt',
         'user.blackListedAt',
       ])
-      .orderBy('user.createdAt', 'DESC')
-      .take(limit)
-      .skip((page - 1) * limit);
+      .orderBy('user.createdAt', 'DESC');
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(user.name ILIKE :search OR user.supermarketName ILIKE :search OR user.phoneNumber ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    queryBuilder.take(limit).skip((page - 1) * limit);
 
     const [data, total] = await Promise.all([
       queryBuilder.getMany(),
@@ -889,6 +896,7 @@ export class UserService {
       data: users,
     };
   }
+
   async getJwtUserPayload(userId: number): Promise<AccessTokenPayload> {
     const user = await this.userRepo.findOne({
       where: { id: userId },

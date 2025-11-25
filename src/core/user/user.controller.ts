@@ -30,6 +30,7 @@ import {
   ApiOkResponse,
   ApiBody,
   ApiConsumes,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { USER } from '../authentication/decorators/user.decorartor';
@@ -279,14 +280,20 @@ export class UserController {
     description: 'Successfully fetched users for admin view',
     type: PaginatedResponse(UserForAdminDto),
   })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search term for filtering users',
+  })
   @UseGuards(RoleGuard)
   @Roles(USER_ROLES.ADMIN)
   getUsersForAdmin(
     @Query() paginationQuery: PaginationQueryDto,
     @USER('id') userId: number,
+    @Query('search') search?: string,
   ): Promise<PaginationResponseDto<UserForAdminDto>> {
     this.logger.log(`Admin ${userId} fetching all users`);
-    return this.userService.getUsersForAdmin(paginationQuery, userId);
+    return this.userService.getUsersForAdmin(paginationQuery, userId, search);
   }
 
   /**
