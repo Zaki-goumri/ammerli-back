@@ -41,6 +41,7 @@ import { PresignedUrlInterceptor } from 'src/common/interceptors/presigned-url.i
 import { ConvertToPresignedUrls } from 'src/common/decorators/convert-to-presigned-urls.decorator';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 import { UpdateCategoryDto } from './dtos/category/update-category.dto';
+import { SubCategoryResDto } from './dtos/category/sub-category-responose.dto';
 
 @ApiTags('categories')
 @ApiBearerAuth()
@@ -200,13 +201,16 @@ export class CategoryController {
 
   @Get('/subcategories/all')
   @HttpCode(HttpStatus.OK)
-  @ConvertToPresignedUrls(['pictureUrl'], BUCKET_TARGETS.CATEGORY_PICTURES)
+  @ConvertToPresignedUrls(
+    ['pictureUrl', 'parentCategory.pictureUrl'],
+    BUCKET_TARGETS.CATEGORY_PICTURES,
+  )
   @ApiOperation({ summary: 'Get all subcategories' })
   @ApiOkResponse({
     description: 'Returns all subcategories',
-    type: [CategoryResDto],
+    type: [SubCategoryResDto],
   })
-  getAllSubcategories() {
+  getAllSubcategories(): Promise<SubCategoryResDto[]> {
     return this.categoryService.getSubCategories();
   }
 }

@@ -20,6 +20,7 @@ import { Product } from '../entities/product.entity';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 import { I18nService } from 'nestjs-i18n';
 import { UpdateCategoryDto } from '../dtos/category/update-category.dto';
+import { SubCategoryResDto } from '../dtos/category/sub-category-responose.dto';
 @Injectable()
 export class CategoryService {
   constructor(
@@ -82,6 +83,26 @@ export class CategoryService {
     let objectName: string;
     let newCategory: Category;
 
+    if (dto.parentCategoryId) {
+      const parentCategory = await this.categoryRepo.findOne({
+        where: { id: dto.parentCategoryId },
+      });
+
+      if (!parentCategory) {
+        throw new BadRequestException({
+          key: 'category.create.invalidParent',
+          message: 'Parent category not found.',
+        });
+      }
+
+      if (parentCategory.parentCategoryId) {
+        throw new BadRequestException({
+          key: 'category.create.subSubNotAllowed',
+          message: 'Cannot create a sub-category under another sub-category.',
+        });
+      }
+    }
+
     try {
       objectName = this.objectStorageService.generateUniqueObjectName(
         picture.originalname,
@@ -98,6 +119,7 @@ export class CategoryService {
         args: { label: dto.label },
       });
     }
+
     await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
       file: picture,
       options: { objectName },
@@ -216,9 +238,21 @@ export class CategoryService {
     await this.clearPictureUrl(payload.targetId);
   }
 
-  async getSubCategories(): Promise<Category[]> {
-    return this.categoryRepo.find({
+  async getSubCategories(): Promise<SubCategoryResDto[]> {
+    const subCategories = await this.categoryRepo.find({
       where: { parentCategoryId: Not(IsNull()) },
+      relations: ['parentCategory'],
+      select: {
+        id: true,
+        label: true,
+        pictureUrl: true,
+        parentCategory: {
+          id: true,
+          label: true,
+          pictureUrl: true,
+        },
+      },
     });
+    return subCategories as SubCategoryResDto[];
   }
 }

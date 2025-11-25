@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CategoryResDto {
   @ApiProperty({
@@ -19,7 +19,7 @@ export class CategoryResDto {
   })
   pictureUrl: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: true,
     description: 'does the category has subcategories',
   })
