@@ -97,7 +97,6 @@ export class ProductController {
     type: PaginatedResponse(ProductResDto),
     description: 'Returns paginated products',
   })
-  @ConvertToPresignedUrls(['pictures'], BUCKET_TARGETS.PRODUCT_PICTURES)
   findAll(@Query() query: FilterProductDto, @USER('id') userId: number) {
     const pagination = { page: query.page || 1, limit: query.limit || 10 };
     return this.productService.findManyWithPagination(
