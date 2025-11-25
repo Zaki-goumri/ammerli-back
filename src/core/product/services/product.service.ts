@@ -143,7 +143,7 @@ export class ProductService {
       .select([
         'product.id AS id',
         'product.name AS name',
-        'mainPicture.url AS mainPicture',
+        'mainPicture.url AS "mainPicture"',
         'product.price AS price',
         'CASE WHEN product.quantity > 0 THEN TRUE ELSE FALSE END AS disponibility',
       ])
@@ -153,22 +153,12 @@ export class ProductService {
 
     const productsRaw = await queryBuilder.getRawMany();
 
-    const preperdData = await Promise.all(
-      productsRaw.map(async (product) => {
-        product.price = parseInt(product.price, 10);
-
-        if (product.mainpicture) {
-          product.mainPicture = await this.objectService.getPresignedUrl(
-            product.mainpicture,
-            BUCKET_TARGETS.PRODUCT_PICTURES,
-          );
-        }
-        delete product.mainpicture;
-        return product;
-      }),
-    );
+    const formatted = productsRaw.map((product) => {
+      product.price = parseInt(product.price, 10);
+      return product;
+    });
     return {
-      data: preperdData,
+      data: formatted,
       meta: {
         total,
         page,

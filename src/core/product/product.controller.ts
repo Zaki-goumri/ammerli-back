@@ -530,7 +530,6 @@ export class ProductController {
 
   @Get('admin/all')
   @HttpCode(HttpStatus.OK)
-  @ConvertToPresignedUrls(['url', 'picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
   @Roles(USER_ROLES.ADMIN)
   @ApiOperation({
     summary: 'Get all products for admin with pagination and search',

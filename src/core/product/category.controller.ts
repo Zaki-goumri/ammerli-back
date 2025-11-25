@@ -40,6 +40,7 @@ import { memoryStorage } from 'multer';
 import { PresignedUrlInterceptor } from 'src/common/interceptors/presigned-url.interceptor';
 import { ConvertToPresignedUrls } from 'src/common/decorators/convert-to-presigned-urls.decorator';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
+import { UpdateCategoryDto } from './dtos/category/update-category.dto';
 
 @ApiTags('categories')
 @ApiBearerAuth()
@@ -144,10 +145,16 @@ export class CategoryController {
         picture: {
           type: 'string',
           format: 'binary',
-          description: 'Category picture file',
+          description: 'category picture file',
+        },
+        newParentCategoryId: {
+          type: 'string',
+          description:
+            'new parent category ID (optional) as number sting or null string to remove parent and empty string to keep current parent',
+          example: 1,
         },
       },
-      required: ['label'],
+      required: ['label', 'newParentCategoryId'],
     },
   })
   @UseInterceptors(
@@ -164,14 +171,14 @@ export class CategoryController {
   @ConvertToPresignedUrls(['pictureUrl'], BUCKET_TARGETS.CATEGORY_PICTURES)
   updateCategory(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: Partial<CreateCategoryDto>,
+    @Body() dto: UpdateCategoryDto,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
           new FileTypeValidator({ fileType: '.(png|jpeg|jpg)' }),
         ],
-        fileIsRequired: true,
+        fileIsRequired: false,
       }),
     )
     file?: Express.Multer.File,

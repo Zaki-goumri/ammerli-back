@@ -12,5 +12,5 @@ export class CreateCategoryDto {
   @IsOptional()
   @IsNumber()
   @IsPositive()
-  parentId?: number;
+  parentCategoryId?: number;
 }

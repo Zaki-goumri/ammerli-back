@@ -19,6 +19,7 @@ import { CategoryResDto } from '../dtos/category/category.res.dto';
 import { Product } from '../entities/product.entity';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 import { I18nService } from 'nestjs-i18n';
+import { UpdateCategoryDto } from '../dtos/category/update-category.dto';
 @Injectable()
 export class CategoryService {
   constructor(
@@ -63,20 +64,29 @@ export class CategoryService {
 
   async create(
     dto: CreateCategoryDto,
-    picutre: Express.Multer.File,
+    picture: Express.Multer.File,
   ): Promise<CategoryResDto> {
-    const objectName = this.objectStorageService.generateUniqueObjectName(
-      picutre.originalname,
-    );
-    const category = this.categoryRepo.create({
-      ...dto,
-      pictureUrl: objectName,
-      parentCategoryId: dto.parentId || undefined,
-    });
-    const newCategory = await this.categoryRepo.save(category);
+    let objectName: string;
+    let newCategory: Category;
 
+    try {
+      objectName = this.objectStorageService.generateUniqueObjectName(
+        picture.originalname,
+      );
+      const category = this.categoryRepo.create({
+        ...dto,
+        pictureUrl: objectName,
+      });
+
+      newCategory = await this.categoryRepo.save(category);
+    } catch (error) {
+      throw new BadRequestException({
+        key: 'category.create.duplicateLabel',
+        args: { label: dto.label },
+      });
+    }
     await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILE, {
-      file: picutre,
+      file: picture,
       options: { objectName },
       metadata: {
         targetId: newCategory.id,
@@ -93,12 +103,18 @@ export class CategoryService {
 
   async update(
     id: number,
-    dto: Partial<CreateCategoryDto>,
+    dto: UpdateCategoryDto,
     newPicture?: Express.Multer.File,
   ): Promise<{ message: string }> {
+    const { newParentCategoryId, ...restDto } = dto;
     const category = await this.categoryRepo.findOne({ where: { id } });
     if (!category) {
       throw new NotFoundException({ key: 'category.notFound', args: { id } });
+    }
+    if (newParentCategoryId === category.id) {
+      throw new BadRequestException({
+        key: 'category.update.invalidParent',
+      });
     }
 
     let pictureUrl: string | undefined;
@@ -133,8 +149,9 @@ export class CategoryService {
       }
     }
     await this.categoryRepo.update(id, {
-      ...dto,
+      ...restDto,
       pictureUrl,
+      parentCategoryId: newParentCategoryId,
     });
     return { message: this.i18nService.t('category.update.success') };
   }

@@ -30,7 +30,7 @@ export class Category extends BaseEntity {
   pictureUrl: string;
 
   @Column({ nullable: true })
-  parentCategoryId?: number;
+  parentCategoryId?: number | null;
 
   @ManyToOne(() => Category, (category) => category.id, { nullable: true })
   parentCategory?: Relation<Category>;
