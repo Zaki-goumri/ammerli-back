@@ -116,7 +116,11 @@ export class ProductController {
    * @returns {Promise<Product>} The product with the specified ID.
    */
   @Get(':id')
-  @ConvertToPresignedUrls(['picture', 'url'], BUCKET_TARGETS.PRODUCT_PICTURES)
+  @ConvertToPresignedUrls(['pictures.url'], BUCKET_TARGETS.PRODUCT_PICTURES)
+  @ConvertToPresignedUrls(
+    ['category.picture'],
+    BUCKET_TARGETS.CATEGORY_PICTURES,
+  )
   @ApiOperation({ summary: 'Get product by ID' })
   @ApiOkResponse({
     type: ProductDto,
