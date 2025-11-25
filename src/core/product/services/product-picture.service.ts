@@ -53,66 +53,37 @@ export class ProductPictureService {
     this.Logger.log(
       `Handling failed upload for product picture of product ID: ${payload.targetId}`,
     );
-    //TODO: implement notification or cleanup logic
   }
 
   @OnEvent(`file.uploaded.bulk.${BUCKET_TARGETS.PRODUCT_PICTURES}`, {
     async: true,
   })
-  async handleBulkUploadComplete(payload: {
+  async handleBulkAddComplete(payload: {
     targetId: number;
     files: { objectName: string }[];
-  }): Promise<void> {
+  }) {
     this.Logger.log(
-      `Replacing pictures for product ID: ${payload.targetId} after bulk upload.`,
+      `Adding pictures for product ID: ${payload.targetId} without deleting existing.`,
     );
 
     await this.productPictureRepo.manager.transaction(async (manager) => {
       const pictureRepo = manager.getRepository(ProductPicture);
 
-      // 1. Find and queue old pictures for deletion
-      const oldPictures = await pictureRepo.find({
-        where: { productId: payload.targetId },
+      // Check if a main picture already exists
+      const mainExists = await pictureRepo.count({
+        where: { productId: payload.targetId, isMain: true },
       });
 
-      if (oldPictures.length > 0) {
-        this.Logger.log(`Found ${oldPictures.length} old pictures to delete.`);
-        const oldPictureUrls = oldPictures
-          .map((p) => p.url)
-          .filter((url): url is string => !!url);
-
-        if (oldPictureUrls.length > 0) {
-          await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
-            files: oldPictureUrls.map((url) => ({
-              objectName: url,
-              bucketName: BUCKET_TARGETS.PRODUCT_PICTURES,
-            })),
-          });
-          this.Logger.log(
-            `Queued bulk deletion job for ${oldPictureUrls.length} files in object storage.`,
-          );
-        }
-
-        // 2. Delete old picture records from the database
-        await pictureRepo.remove(oldPictures);
-        this.Logger.log(
-          `Successfully deleted ${oldPictures.length} old picture records from the database.`,
-        );
-      }
-
-      // 3. Save the new pictures
       const newPictures = payload.files.map((file, index) =>
         pictureRepo.create({
           productId: payload.targetId,
           url: file.objectName,
-          isMain: index === 0, // First new picture is the main one
+          isMain: mainExists === 0 && index === 0, // Only first file if no main exists
         }),
       );
 
       await pictureRepo.save(newPictures);
-      this.Logger.log(
-        `Successfully created ${newPictures.length} new pictures.`,
-      );
+      this.Logger.log(`Successfully added ${newPictures.length} new pictures.`);
     });
   }
 }

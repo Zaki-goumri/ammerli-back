@@ -43,10 +43,11 @@ import { USER_ROLES } from 'src/common/enums/user-role.enum';
 import { Roles } from '../authentication/decorators/role.decorator';
 import { RoleGuard } from '../authentication/guards/role.guard';
 import { OrderForAdminListItemDto } from './dtos/order-for-admin-list-item.dto';
-import { CancelOrderDto } from './dtos/cancel-order.dto';
 import { PresignedUrlInterceptor } from 'src/common/interceptors/presigned-url.interceptor';
 import { ConvertToPresignedUrls } from 'src/common/decorators/convert-to-presigned-urls.decorator';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
+import { BlacklistGuard } from '../authentication/guards/blacklist.guard';
+import { CancelOrderDto } from './dtos/cancel-order.dto';
 /**
  *
  * @class OrderController
@@ -69,7 +70,7 @@ export class OrderController {
    * @returns {Promise<any>} The result of the order creation process.
    */
   @ApiBearerAuth()
-  @UseGuards(AccessTokenGuard)
+  @UseGuards(AccessTokenGuard, BlacklistGuard)
   @ApiOperation({ summary: 'Create a new order with payment processing' })
   @ApiOkResponse({
     type: CreateOrderResDto,

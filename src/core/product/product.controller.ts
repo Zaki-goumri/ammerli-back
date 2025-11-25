@@ -357,7 +357,7 @@ export class ProductController {
           },
           description:
             'Optional: List of picture IDs to be deleted from the product.',
-          example: [1, 2],
+          example: '1',
         },
       },
     },
@@ -402,39 +402,6 @@ export class ProductController {
   remove(@Param('id', ParseIntPipe) id: number, @USER('id') userId: number) {
     this.logger.log(`User ${userId} deleting product ${id}`);
     return this.productService.remove(id, userId);
-  }
-
-  /**
-   * @method deleteProductImages
-   * @description Delete specific images from a product.
-   * @param {number} productId - The ID of the product.
-   * @param {DeleteProductPicturesDto} dto - DTO containing picture IDs to delete.
-   * @returns {Promise<{ message: string }>} A message indicating the result of the operation.
-   */
-  @Delete(':productId/pictures')
-  @HttpCode(HttpStatus.OK)
-  @Roles(USER_ROLES.ADMIN, USER_ROLES.WHOLESELLER)
-  @ApiOperation({ summary: 'Delete specific images from a product' })
-  @ApiOkResponse({
-    description: 'Product pictures soft deleted and queued for file deletion',
-  })
-  @ApiNotFoundResponse({
-    description:
-      'No product pictures found with the given IDs for this product',
-  })
-  @ApiParam({ name: 'productId', type: Number, description: 'Product ID' })
-  @ApiBody({
-    type: DeleteProductPicturesDto,
-    description: 'Picture IDs to delete',
-  })
-  async deleteProductImages(
-    @Param('productId', ParseIntPipe) productId: number,
-    @Body() dto: DeleteProductPicturesDto,
-  ) {
-    this.logger.log(
-      `Deleting pictures for product ${productId}: ${dto.pictureIds.join(', ')}`,
-    );
-    return this.productService.deleteProductImages(productId, dto.pictureIds);
   }
 
   /**

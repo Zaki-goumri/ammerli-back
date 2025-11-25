@@ -389,19 +389,20 @@ export class ProductService {
       context: 'Product',
     });
 
-    if (dto.picturesToDelete && dto.picturesToDelete.length > 0) {
+    if (picturesToDelete && picturesToDelete.length > 0) {
+      this.logger.debug(picturesToDelete, 'test');
       const productPictures = await this.productPictureRepo.find({
-        where: { productId: id, id: In(dto.picturesToDelete || []) },
+        where: { productId: id, id: In(picturesToDelete) },
       });
+
       const deletedPictureUrls = productPictures
-        .map((pic) => pic.url)
-        .filter(Boolean) as string[];
+        .map((p) => p.url)
+        .filter(Boolean);
 
+      this.logger.debug(deletedPictureUrls.length, 'deletedPictureUrls');
       if (deletedPictureUrls.length > 0) {
-        await this.productPictureRepo.delete({
-          id: In(dto.picturesToDelete || []),
-        });
-
+        this.logger.debug(deletedPictureUrls, 'to delete urls');
+        await this.productPictureRepo.delete({ id: In(picturesToDelete) });
         await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
           files: deletedPictureUrls.map((url) => ({
             objectName: url,
@@ -416,20 +417,17 @@ export class ProductService {
     }
 
     if (files && files.length > 0) {
-      const queueFiles = files.map((file) => ({
-        buffer: file.buffer,
-        originalname: file.originalname,
-        mimetype: file.mimetype,
-        size: file.size,
+      const queueFiles = files.map((f) => ({
+        buffer: f.buffer,
+        originalname: f.originalname,
+        mimetype: f.mimetype,
+        size: f.size,
       }));
 
       await this.uploadQueue.add(UPLOAD_JOBS.UPLOAD_FILES_BULK, {
         files: queueFiles,
         options: uploadOptions,
-        metadata: {
-          targetId: id,
-          targetType: BUCKET_TARGETS.PRODUCT_PICTURES,
-        },
+        metadata: { targetId: id, targetType: BUCKET_TARGETS.PRODUCT_PICTURES },
       });
     }
 
@@ -454,43 +452,6 @@ export class ProductService {
     });
 
     return { message: this.i18nService.t('product.delete.success') };
-  }
-
-  async deleteProductImages(
-    productId: number,
-    pictureIds: number[],
-  ): Promise<{ message: string }> {
-    const picturesToDelete = await this.productPictureRepo.find({
-      where: { productId, id: In(pictureIds) },
-    });
-
-    if (picturesToDelete.length === 0) {
-      throw new NotFoundException({
-        key: 'product.pictures.delete.notFound',
-      });
-    }
-
-    const pictureUrls = picturesToDelete
-      .map((pic) => pic.url)
-      .filter(Boolean) as string[];
-
-    await this.productPictureRepo.softDelete({ id: In(pictureIds) });
-
-    if (pictureUrls.length > 0) {
-      await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
-        files: pictureUrls.map((url) => ({
-          objectName: url,
-          bucketName: BUCKET_TARGETS.PRODUCT_PICTURES,
-        })),
-        metadata: {
-          targetId: productId.toString(),
-          targetType: BUCKET_TARGETS.PRODUCT_PICTURES,
-        },
-      });
-    }
-    return {
-      message: this.i18nService.t('product.pictures.delete.success'),
-    };
   }
 
   //TODO: add type to return
