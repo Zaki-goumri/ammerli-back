@@ -4,9 +4,7 @@ import {
   PRESIGNED_URL_EXPIRY,
   PRESIGNED_URL_BUCKET,
   PRESIGNED_URL_CONFIGS_ARRAY,
-} from '../interceptors/presigned-url.interceptor'; // <-- Ensure this path is correct
-
-// --- Helper Function for Stacking Configurations ---
+} from '../interceptors/presigned-url.interceptor';
 
 /**
  * Custom function to stack multiple presigned URL configurations.
@@ -19,17 +17,10 @@ function ConfigStacker(fields: string[], bucket: string, expiry: number) {
     propertyKey?: string,
     descriptor?: PropertyDescriptor,
   ): void => {
-    // 💡 Explicitly set return type to void (or omit the return statement)
-    if (!descriptor || !descriptor.value) return; // Add check for descriptor.value
-
-    // Get existing configs or initialize empty array
+    if (!descriptor || !descriptor.value) return;
     const existingConfigs =
       Reflect.getMetadata(PRESIGNED_URL_CONFIGS_ARRAY, descriptor.value) || [];
-
-    // Add new config to the array
     const updatedConfigs = [...existingConfigs, { fields, bucket, expiry }];
-
-    // Set the updated array
     Reflect.defineMetadata(
       PRESIGNED_URL_CONFIGS_ARRAY,
       updatedConfigs,
@@ -53,9 +44,6 @@ export function ConvertToPresignedUrls(
     SetMetadata(PRESIGNED_URL_FIELDS, fields),
     SetMetadata(PRESIGNED_URL_BUCKET, bucket),
     SetMetadata(PRESIGNED_URL_EXPIRY, expiry),
-
-    // 2. Use the custom ConfigStacker: This function handles collecting
-    //    all configurations into the array that your Interceptor processes.
     ConfigStacker(fields, bucket, expiry),
   );
 }
