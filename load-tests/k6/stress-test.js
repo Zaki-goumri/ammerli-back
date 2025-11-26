@@ -1,4 +1,5 @@
 // load-tests/k6/stress-test.js
+import { htmlReport } from 'https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js';
 import { buyerFlow } from './scenarios/buyer-flow.js';
 import { textSummary } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
 
@@ -9,7 +10,7 @@ export const options = {
       startVUs: 0,
       stages: [
         { duration: '1m', target: 50 },
-        { duration: '3m', target: 500 },
+        { duration: '3m', target: 6000 },
         { duration: '1m', target: 50 },
       ],
       gracefulRampDown: '30s',
@@ -29,6 +30,7 @@ export function handleSummary(data) {
   console.log('Finished executing stress test');
 
   return {
+    'summary.html': htmlReport(data),
     stdout: textSummary(data, { indent: ' ', enableColors: true }),
     'summary.json': JSON.stringify(data),
   };

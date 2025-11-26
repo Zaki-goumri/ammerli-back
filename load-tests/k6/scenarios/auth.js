@@ -36,7 +36,6 @@ export function authenticate() {
       const validationData = validateOtpRes.json();
       accessToken = validationData.accessToken;
 
-      // 3. Register if not registered
       if (validationData.isRegistered === false) {
         const registerPayload = {
           name: `Test User ${__VU}`,
@@ -60,7 +59,6 @@ export function authenticate() {
         checkResponse(registerRes, 200, 'Register User');
 
         if (registerRes.status === 200) {
-          // Update the access token with the final one from registration
           accessToken = registerRes.json('accessToken');
         }
       }

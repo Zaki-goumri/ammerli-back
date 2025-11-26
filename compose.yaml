@@ -22,6 +22,11 @@ services:
       - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
       - "traefik.http.routers.traefik.service=api@internal"
       - "traefik.http.routers.traefik.entrypoints=web"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   server:
     container_name: server
@@ -79,8 +84,8 @@ services:
       - "traefik.http.services.server.loadbalancer.server.port=3000"
     env_file:
       - .env
-    environment:
-      MINIO_PUBLIC_HOST: storage.ammerli.com
+    logging:
+      driver: "none"
 
   minio:
     image: minio/minio:latest
@@ -102,6 +107,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
     labels:
     - "traefik.enable=true"
     - "traefik.docker.network=proxy"
@@ -150,9 +160,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   db:
-    image: postgres
+    image: postgres:18-alpine
     container_name: db
     restart: unless-stopped
     ports:
@@ -169,6 +184,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   pgbouncer:
     image: edoburu/pgbouncer:latest
@@ -199,6 +219,11 @@ services:
         condition: service_healthy
     networks:
       - internal
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   db-backup:
     image: prodrigestivill/postgres-backup-local
@@ -219,6 +244,11 @@ services:
       - backups:/backups
     networks:
       - internal
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   loki:
     image: grafana/loki:2.9.3
@@ -233,6 +263,11 @@ services:
       - proxy 
       - internal 
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   grafana:
     image: grafana/grafana:10.2.3
@@ -275,6 +310,11 @@ services:
       # Service definition
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
 
 networks:
   proxy:
