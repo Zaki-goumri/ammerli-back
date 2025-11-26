@@ -21,7 +21,7 @@ export function authenticate() {
   group('Authentication Flow', () => {
     // 1. Send OTP
     let sendOtpRes = post('/authentication/otp/send', { phoneNumber });
-    checkResponse(sendOtpRes, 200, 'Send OTP');
+    checkResponse(sendOtpRes, 201, 'Send OTP'); // Changed from 200 to 201
     sleep(1); // Simulate user waiting for OTP
 
     // 2. Validate OTP

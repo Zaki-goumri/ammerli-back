@@ -626,9 +626,12 @@ export class OrderService {
 
     const orderIdsQuery = this.orderRepo
       .createQueryBuilder('order')
-      .leftJoin('order.buyer', 'user')
       .select('order.id', 'id')
-      .withDeleted();
+      .leftJoin('order.buyer', 'user')
+      .withDeleted()
+      .orderBy('order.createdAt', 'DESC')
+      .limit(limit)
+      .offset((page - 1) * limit);
 
     if (search) {
       orderIdsQuery.andWhere(
@@ -636,25 +639,7 @@ export class OrderService {
         { search: `%${search}%` },
       );
     }
-
-    orderIdsQuery
-      .orderBy('order.createdAt', 'DESC')
-      .take(limit)
-      .skip((page - 1) * limit);
-
-    const totalQuery = this.orderRepo
-      .createQueryBuilder('order')
-      .leftJoin('order.buyer', 'user')
-      .withDeleted();
-
-    if (search) {
-      totalQuery.andWhere(
-        '(user.name ILIKE :search OR user.phoneNumber ILIKE :search OR CAST(order.id AS TEXT) ILIKE :search)',
-        { search: `%${search}%` },
-      );
-    }
-
-    const total = await totalQuery.getCount();
+    const total = await this.orderRepo.count();
     const paginatedIds = await orderIdsQuery.getRawMany();
 
     if (paginatedIds.length === 0) {

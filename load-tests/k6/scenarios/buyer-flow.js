@@ -16,7 +16,6 @@ export function buyerFlow() {
   };
 
   group('Buyer Flow', () => {
-    // 1. Browse Products (Get all products)
     let productsRes = get('/products/all?page=1&limit=10', authHeaders);
     checkResponse(productsRes, 200, 'Get All Products');
     let products = productsRes.json('data');
@@ -34,7 +33,11 @@ export function buyerFlow() {
       sleep(1);
 
       // 3. Toggle favorite for a product
-      let toggleFavoriteRes = post(`/products/${productId}/toggle-favorite`, {}, authHeaders);
+      let toggleFavoriteRes = post(
+        `/products/${productId}/toggle-favorite`,
+        {},
+        authHeaders,
+      );
       checkResponse(toggleFavoriteRes, 200, 'Toggle Favorite Product');
       sleep(1);
     } else {
@@ -47,15 +50,14 @@ export function buyerFlow() {
         { productId: productId || 1, quantity: 1 }, // Use a dummy product ID if none found
       ],
       // As requested, provide a new address object instead of using an existing addressId
+      paymentWay: 'CASH',
       address: {
         street: `Test Street ${__VU}-${__ITER}`, // Make address unique per user and iteration
-        city: "Algiers",
-        wilaya: "Algiers",
-        daira: "Algiers",
-        commune: "Algiers Center"
-      }
+        city: 'Algiers',
+        district: 'Algiers Center',
+      },
     };
-    let createOrderRes = post('/orders', orderPayload, authHeaders);
+    let createOrderRes = post('/order', orderPayload, authHeaders);
     // Assuming 201 Created for successful order creation
     checkResponse(createOrderRes, 201, 'Create Order with New Address');
     sleep(1);

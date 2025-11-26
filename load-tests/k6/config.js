@@ -4,7 +4,7 @@
 export const BASE_URL = 'https://api.ammerli.com/api/v1';
 
 // Static OTP for testing purposes
-export const TEST_OTP = '123456';
+export const TEST_OTP = '0000';
 
 // Export other configuration as needed
 export default {

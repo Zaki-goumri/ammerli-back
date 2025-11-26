@@ -24,6 +24,7 @@
     "seed:prod": "node dist/seed/seed-runner.js",
     "seed:docker": "docker exec -it server pnpm run seed",
     "k6-load-test": "./load-tests/run-k6-tests.sh",
+    "k6-stress-test": "./load-tests/run-k6-tests.sh stress-test",
     "push:config": "./push-configs.sh",
     "typeorm": "typeorm-ts-node-commonjs",
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/data-source.ts",

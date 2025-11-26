@@ -44,8 +44,17 @@ export function del(path, payload, headers = {}) {
 }
 
 export function checkResponse(res, expectedStatus, name) {
-  check(res, {
-    [`${name} - status is ${expectedStatus}`]: (r) => r.status === expectedStatus,
-    [`${name} - response time < 2000ms`]: (r) => r.timings.duration < 2000, // Example threshold
-  });
+  const checks = {};
+  checks[`${name} - status is ${expectedStatus}`] = (r) => r.status === expectedStatus;
+  checks[`${name} - response time < 2000ms`] = (r) => r.timings.duration < 2000;
+
+  const checkResult = check(res, checks);
+
+  if (!checkResult) {
+    // Log details on failure
+    if (res.status !== expectedStatus) {
+        console.error(`[FAIL] ${name}: Unexpected status code ${res.status} (expected ${expectedStatus})`);
+        console.error(`Response body: ${res.body}`);
+    }
+  }
 }
