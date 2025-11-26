@@ -317,8 +317,6 @@ export class UserController {
     return this.userService.getUserDetailsForAdmin(userId);
   }
 
-  // ... (inside UserController class)
-
   /**
    * @method deleteBulkUsersByAdmin
    * @description Soft-deletes multiple user accounts by an administrator.
@@ -335,7 +333,7 @@ export class UserController {
   @UseGuards(RoleGuard)
   @Roles(USER_ROLES.ADMIN)
   deleteBulkUsersByAdmin(
-    @Query() dto: BulkDeleteUserDto,
+    @Body() dto: BulkDeleteUserDto,
     @USER('id') currentAdminId: number,
   ): Promise<MessageDto> {
     this.logger.log(
