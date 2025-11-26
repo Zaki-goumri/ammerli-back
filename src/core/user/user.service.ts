@@ -527,7 +527,6 @@ export class UserService {
           });
         }
 
-        // Check if any of the users to delete are admins
         const hasAdmins = usersToDelete.some(
           (user) => user.role === USER_ROLES.ADMIN,
         );

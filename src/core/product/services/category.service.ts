@@ -21,6 +21,8 @@ import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 import { I18nService } from 'nestjs-i18n';
 import { UpdateCategoryDto } from '../dtos/category/update-category.dto';
 import { SubCategoryResDto } from '../dtos/category/sub-category-responose.dto';
+import { an } from '@faker-js/faker/dist/airline-DF6RqYmq';
+import { GetAllCategoriesDto } from '../dtos/category/get-all-categories.dto';
 @Injectable()
 export class CategoryService {
   constructor(
@@ -276,5 +278,20 @@ export class CategoryService {
       },
     });
     return subCategories as SubCategoryResDto[];
+  }
+
+  async getAllCategories(): Promise<GetAllCategoriesDto> {
+    const [mainCategories, subCategories] = await Promise.all([
+      this.categoryRepo.find({
+        where: { parentCategoryId: IsNull() },
+        select: ['id', 'label', 'pictureUrl'],
+      }),
+      this.categoryRepo.find({
+        where: { parentCategoryId: Not(IsNull()) },
+        select: ['id', 'label', 'pictureUrl'],
+      }),
+    ]);
+
+    return { mainCategories, subCategories };
   }
 }
