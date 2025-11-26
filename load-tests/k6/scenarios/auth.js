@@ -2,18 +2,19 @@
 import { SharedArray } from 'k6/data';
 import { group, sleep } from 'k6';
 import papaparse from 'https://jslib.k6.io/papaparse/5.1.1/index.js';
-import { post, checkResponse } from '../common/api.js';
+import { post, put, checkResponse } from '../common/api.js';
 import { TEST_OTP } from '../config.js';
 
-// Load phone numbers from CSV
 const phoneNumbers = new SharedArray('phoneNumbers', function () {
-  // Use papaparse to parse the CSV data
-  return papaparse.parse(open('../../data/phone-numbers.csv'), { header: true }).data;
+  const parsedData = papaparse.parse(open('../../data/phone-numbers.csv'), {
+    header: true,
+  }).data;
+  return parsedData.filter(
+    (user) => user.phoneNumber && user.phoneNumber.trim() !== '',
+  );
 });
 
 export function authenticate() {
-  // Use __VU (Virtual User ID) to pick a unique phone number for each VU
-  // This helps avoid conflicts and simulates different users
   const user = phoneNumbers[__VU % phoneNumbers.length];
   const phoneNumber = user.phoneNumber;
   let accessToken = '';
@@ -21,12 +22,10 @@ export function authenticate() {
   group('Authentication Flow', () => {
     // 1. Send OTP
     let sendOtpRes = post('/authentication/otp/send', { phoneNumber });
-    checkResponse(sendOtpRes, 201, 'Send OTP'); // Changed from 200 to 201
-    sleep(1); // Simulate user waiting for OTP
+    checkResponse(sendOtpRes, 201, 'Send OTP');
+    sleep(1);
 
     // 2. Validate OTP
-    // The API description says "Returns user if it is registered else register him"
-    // So, this single call handles both login and initial registration for a new phone number.
     let validateOtpRes = post('/authentication/otp/validate', {
       phoneNumber,
       otp: TEST_OTP,
@@ -34,11 +33,39 @@ export function authenticate() {
     checkResponse(validateOtpRes, 200, 'Validate OTP');
 
     if (validateOtpRes.status === 200) {
-      accessToken = validateOtpRes.json('accessToken');
-      // Optionally, capture refreshToken if needed for refresh token flow testing
-      // let refreshToken = validateOtpRes.json('refreshToken');
+      const validationData = validateOtpRes.json();
+      accessToken = validationData.accessToken;
+
+      // 3. Register if not registered
+      if (validationData.isRegistered === false) {
+        const registerPayload = {
+          name: `Test User ${__VU}`,
+          supermarketName: `Supermarket ${__VU}`,
+          address: {
+            street: `Test Street ${__VU}`,
+            city: 'Algiers',
+            district: 'Algiers Center',
+          },
+        };
+
+        const regHeaders = {
+          Authorization: `Bearer ${accessToken}`,
+        };
+
+        let registerRes = put(
+          '/authentication/register',
+          registerPayload,
+          regHeaders,
+        );
+        checkResponse(registerRes, 200, 'Register User');
+
+        if (registerRes.status === 200) {
+          // Update the access token with the final one from registration
+          accessToken = registerRes.json('accessToken');
+        }
+      }
     }
-    sleep(1); // Simulate user interaction after login
+    sleep(1);
   });
 
   return accessToken;

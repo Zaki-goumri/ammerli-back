@@ -73,7 +73,7 @@ services:
       - "traefik.http.routers.server-secure.entrypoints=websecure"
       - "traefik.http.routers.server-secure.tls=true"
       - "traefik.http.routers.server-secure.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.server-secure.middlewares=api-ratelimit-ip,api-ratelimit-subnet"
+      # - "traefik.http.routers.server-secure.middlewares=api-ratelimit-ip,api-ratelimit-subnet"
       
       # Service definition
       - "traefik.http.services.server.loadbalancer.server.port=3000"
