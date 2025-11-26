@@ -438,15 +438,32 @@ export class ProductService {
     return { message: this.i18nService.t('product.update.success') };
   }
 
-  async remove(id: number, userId: number): Promise<{ message: string }> {
-    const product = await this.productRepo.findOne({
-      where: { id, sellerId: userId },
+  async remove(
+    id: number,
+    userId: number,
+    isAdmin: boolean = true,
+  ): Promise<{ message: string }> {
+    const result = await this.productRepo.softDelete({
+      id,
+      ...(isAdmin ? {} : { sellerId: userId }),
     });
-    if (!product) {
-      throw new NotFoundException({ key: 'product.notFound', args: { id } });
-    }
 
-    await this.productRepo.softDelete(id);
+    if (result.affected === 0) {
+      const product = await this.productRepo.findOne({
+        where: { id },
+      });
+
+      if (!product) {
+        throw new NotFoundException({ key: 'product.notFound', args: { id } });
+      }
+
+      if (!isAdmin && product.sellerId !== userId) {
+        throw new ForbiddenException({
+          key: 'product.delete.notOwned',
+          args: { id },
+        });
+      }
+    }
 
     this.logger.log({
       message: 'Product soft deleted',
@@ -461,19 +478,18 @@ export class ProductService {
   async bulkRemove(
     { productIds }: BulkDeleteProductsDto,
     userId: number,
+    isAdmin: boolean = true,
   ): Promise<{ message: string }> {
     return this.productRepo.manager.transaction(
       async (transactionalEntityManager) => {
         const whereClause: FindOptionsWhere<Product> = {
           id: In(productIds),
-          sellerId: userId,
+          ...(isAdmin ? {} : { sellerId: userId }),
         };
-
         const result = await transactionalEntityManager.softDelete(
           Product,
           whereClause,
         );
-
         if (result.affected === productIds.length) {
           this.logger.log({
             message: `Bulk deleted ${result.affected} products`,
@@ -510,7 +526,7 @@ export class ProductService {
           .filter((p) => p.sellerId !== userId)
           .map((p) => p.id);
 
-        if (unauthorizedIds.length > 0) {
+        if (!isAdmin && unauthorizedIds.length > 0) {
           throw new ForbiddenException({
             key: 'product.bulkDelete.notOwned',
             args: { ids: unauthorizedIds.join(', ') },

@@ -4,7 +4,9 @@
     "success": "Processus de mise à jour du produit initié."
   },
   "delete": {
-    "success": "Produit supprimé (soft delete) avec succès."
+    "success": "Produit supprimé (soft delete) avec succès.",
+    "notFound": "Produit avec l'ID {id} non trouvé.",
+    "notOwned": "Vous n'avez pas la permission de supprimer ce produit."
   },
   "bulkDelete": {
     "success": "{count} produits supprimés avec succès.",

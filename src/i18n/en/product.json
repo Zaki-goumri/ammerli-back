@@ -4,7 +4,9 @@
     "success": "Product update process initiated."
   },
   "delete": {
-    "success": "Product soft deleted successfully."
+    "success": "Product soft deleted successfully.",
+    "notFound": "Product with ID {id} not found.",
+    "notOwned": "You do not have permission to delete this product."
   },
   "bulkDelete": {
     "success": "Successfully deleted {count} products.",
