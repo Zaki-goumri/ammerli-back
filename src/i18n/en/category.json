@@ -10,5 +10,11 @@
   },
   "create": {
     "duplicateLabel": "A category with this label already exists."
+  },
+  "bulkDelete": {
+    "notFound": "The following categories were not found: {ids}.",
+    "hasProducts": "Cannot delete categories with products: {labels}.",
+    "hasChildren": "Cannot delete categories with sub-categories: {labels}.",
+    "success": "Successfully deleted {count} categories."
   }
 }

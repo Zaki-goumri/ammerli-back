@@ -27,6 +27,7 @@ import {
   ApiParam,
   ApiBearerAuth,
   ApiConsumes,
+  ApiBadRequestResponse,
 } from '@nestjs/swagger';
 import { CategoryService } from './services/category.service';
 import { CategoryResDto } from './dtos/category/category.res.dto';
@@ -43,6 +44,7 @@ import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 import { UpdateCategoryDto } from './dtos/category/update-category.dto';
 import { SubCategoryResDto } from './dtos/category/sub-category-responose.dto';
 import { GetAllCategoriesDto } from './dtos/category/get-all-categories.dto';
+import { DeleteBulkCategoryDto } from './dtos/category/delete-bulk';
 
 @ApiTags('categories')
 @ApiBearerAuth()
@@ -186,6 +188,20 @@ export class CategoryController {
     file?: Express.Multer.File,
   ) {
     return this.categoryService.update(id, dto, file);
+  }
+
+  @Delete('bulk')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(USER_ROLES.ADMIN)
+  @ApiOperation({ summary: 'Delete multiple categories by ID' })
+  @ApiBody({ type: DeleteBulkCategoryDto })
+  @ApiNoContentResponse({ description: 'Categories successfully deleted' })
+  @ApiNotFoundResponse({ description: 'One or more categories not found' })
+  @ApiBadRequestResponse({
+    description: 'Cannot delete categories with products or sub-categories',
+  })
+  bulkRemoveCategories(@Body() dto: DeleteBulkCategoryDto) {
+    return this.categoryService.bulkRemove(dto);
   }
 
   @Delete(':id')

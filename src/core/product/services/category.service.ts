@@ -5,7 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Not, Repository } from 'typeorm';
+import { In, IsNull, Not, Repository } from 'typeorm';
 import { Category } from '../entities/category.entity';
 import { InjectQueue } from '@nestjs/bullmq';
 import { QUEUE_NAME } from 'src/common/constants/queues';
@@ -23,6 +23,7 @@ import { UpdateCategoryDto } from '../dtos/category/update-category.dto';
 import { SubCategoryResDto } from '../dtos/category/sub-category-responose.dto';
 import { an } from '@faker-js/faker/dist/airline-DF6RqYmq';
 import { GetAllCategoriesDto } from '../dtos/category/get-all-categories.dto';
+import { DeleteBulkCategoryDto } from '../dtos/category/delete-bulk';
 @Injectable()
 export class CategoryService {
   constructor(
@@ -246,6 +247,96 @@ export class CategoryService {
         }
 
         return { message: this.i18nService.t('category.delete.success') };
+      },
+    );
+  }
+
+  async bulkRemove(
+    { categoryIds }: DeleteBulkCategoryDto,
+  ): Promise<{ message: string }> {
+    return this.categoryRepo.manager.transaction(
+      async (transactionalEntityManager) => {
+        const categories = await transactionalEntityManager.find(Category, {
+          where: { id: In(categoryIds) },
+        });
+
+        if (categories.length !== categoryIds.length) {
+          const foundCategoryIds = categories.map((c) => c.id);
+          const notFoundCategoryIds = categoryIds.filter(
+            (id) => !foundCategoryIds.includes(id),
+          );
+          throw new NotFoundException({
+            key: 'category.bulkDelete.notFound',
+            args: { ids: notFoundCategoryIds.join(', ') },
+          });
+        }
+
+        const products = await transactionalEntityManager.find(Product, {
+          where: { categoryId: In(categoryIds) },
+          relations: ['category'],
+        });
+
+        if (products.length > 0) {
+          const categoryLabelsWithProducts = [
+            ...new Set(products.map((p) => p.category.label)),
+          ].join(', ');
+          throw new BadRequestException({
+            key: 'category.bulkDelete.hasProducts',
+            args: { labels: categoryLabelsWithProducts },
+          });
+        }
+
+        const children = await transactionalEntityManager.find(Category, {
+          where: { parentCategoryId: In(categoryIds) },
+          select: ['parentCategoryId'],
+        });
+
+        if (children.length > 0) {
+          const parentIdsWithChildren = [
+            ...new Set(children.map((c) => c.parentCategoryId)),
+          ].filter((id) => id !== null) as number[];
+
+          const parentCategories = await transactionalEntityManager.find(
+            Category,
+            {
+              where: { id: In(parentIdsWithChildren) },
+              select: ['label'],
+            },
+          );
+
+          const labels = parentCategories.map((c) => c.label).join(', ');
+          throw new BadRequestException({
+            key: 'category.bulkDelete.hasChildren',
+            args: { labels },
+          });
+        }
+
+        const result = await transactionalEntityManager.softDelete(
+          Category,
+          categoryIds,
+        );
+
+        const picturesToDelete = categories
+          .map((c) => c.pictureUrl)
+          .filter((url) => !!url);
+
+        if (picturesToDelete.length > 0) {
+          await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
+            files: picturesToDelete.map((pic) => ({
+              objectName: pic,
+              bucketName: BUCKET_TARGETS.CATEGORY_PICTURES,
+            })),
+            metadata: {
+              targetType: BUCKET_TARGETS.CATEGORY_PICTURES,
+            },
+          });
+        }
+
+        return {
+          message: this.i18nService.t('category.bulkDelete.success', {
+            args: { count: result.affected || 0 },
+          }),
+        };
       },
     );
   }

@@ -10,5 +10,11 @@
     },
     "create": {
       "duplicateLabel": "هذه الفئة موجودة مسبقًا."
+    },
+    "bulkDelete": {
+        "notFound": "الفئات التالية غير موجودة: {ids}.",
+        "hasProducts": "لا يمكن حذف الفئات التي تحتوي على منتجات: {labels}.",
+        "hasChildren": "لا يمكن حذف الفئات التي لديها فئات فرعية: {labels}.",
+        "success": "تم حذف {count} فئات بنجاح."
     }
   }
