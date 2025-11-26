@@ -4,8 +4,12 @@
   "notFoundByPhone": "Utilisateur avec le numéro de téléphone {phoneNumber} non trouvé.",
   "notFoundById": "Utilisateur avec l'ID {id} non trouvé.",
   "deletedSuccessfully": "Utilisateur supprimé avec succès.",
+  "delete": {
+    "adminDeletionForbidden": "Les administrateurs ne peuvent pas être supprimés."
+  },
   "bulkDelete": {
     "adminSelfDeleteForbidden": "L'administrateur ne peut pas supprimer son propre compte.",
+    "adminDeletionForbidden": "Les administrateurs ne peuvent pas être supprimés.",
     "noValidUsersFound": "Aucun utilisateur valide trouvé pour la suppression.",
     "allAdminsDeletionForbidden": "Impossible de supprimer tous les administrateurs du système.",
     "summary": "Processus de suppression en masse terminé. Supprimés avec succès : {successful}. Échoués : {failed}."

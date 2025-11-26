@@ -438,14 +438,24 @@ export class UserService {
   async deleteUser(id: number): Promise<{ message: string }> {
     await this.redisService.del(UserService.getCacheKey(id, 'id'));
     await this.redisService.del(UserService.getCacheKey(id, 'admin-details'));
+
     const user = await this.entityManager.transaction(async (manager) => {
       const u = await manager.findOne(User, { where: { id } });
+
       if (!u) {
         throw new NotFoundException({
           key: 'user.notFoundById',
           args: { id },
         });
       }
+
+      // Prevent deletion of admin accounts
+      if (u.role === USER_ROLES.ADMIN) {
+        throw new ForbiddenException({
+          key: 'user.delete.adminDeletionForbidden',
+        });
+      }
+
       await manager.softDelete(User, { id });
       await manager.softDelete(Address, { userId: id });
       return u;
@@ -483,11 +493,21 @@ export class UserService {
    * @throws {NotFoundException} If no valid users are found for deletion.
    * @throws {ForbiddenException} If the operation would result in zero administrators.
    */
+  /**
+   * @method deleteBulk
+   * @description Soft-deletes multiple users by their IDs, handles associated profile pictures, and notifies on partial failures.
+   * @param {number[]} userIds - An array of user IDs to soft-delete.
+   * @param {number} currentAdminId - The ID of the admin initiating the bulk delete.
+   * @returns {Promise<MessageDto>} A message summarizing the bulk delete operation.
+   * @throws {NotFoundException} If no valid users are found for deletion.
+   * @throws {ForbiddenException} If attempting to delete admin accounts.
+   */
   async deleteBulk(
     userIds: number[],
     currentAdminId: number,
   ): Promise<MessageDto> {
     const filteredUserIds = userIds.filter((id) => id !== currentAdminId);
+
     if (filteredUserIds.length === 0 && userIds.length > 0) {
       return {
         message: this.i18nService.t('user.bulkDelete.adminSelfDeleteForbidden'),
@@ -507,18 +527,17 @@ export class UserService {
           });
         }
 
-        const totalAdminsCount = await userRepo.count({
-          where: { role: USER_ROLES.ADMIN },
-        });
-        const adminsToDeleteCount = usersToDelete.filter(
+        // Check if any of the users to delete are admins
+        const hasAdmins = usersToDelete.some(
           (user) => user.role === USER_ROLES.ADMIN,
-        ).length;
+        );
 
-        if (totalAdminsCount - adminsToDeleteCount < 1) {
+        if (hasAdmins) {
           throw new ForbiddenException({
-            key: 'user.bulkDelete.allAdminsDeletionForbidden',
+            key: 'user.bulkDelete.adminDeletionForbidden',
           });
         }
+
         return { usersToDelete };
       },
     );

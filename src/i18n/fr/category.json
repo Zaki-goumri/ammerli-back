@@ -5,6 +5,7 @@
     },
     "delete": {
       "hasProducts": "Impossible de supprimer la catégorie. {count} produit(s) sont liés à cette catégorie.",
+      "hasChildren": "Impossible de supprimer la catégorie. {count} sous-catégories sont liées à cette catégorie.",
       "success": "Catégorie supprimée (soft delete) avec succès."
     },
     "create": {

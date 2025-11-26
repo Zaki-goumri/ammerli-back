@@ -34,6 +34,7 @@ import {
   ApiInternalServerErrorResponse,
   ApiConsumes,
   ApiExtraModels,
+  ApiForbiddenResponse,
 } from '@nestjs/swagger';
 import { ProductService } from './services/product.service';
 import { ToggleFavoriteDto } from './dtos/product/toggle-favorite.dto';
@@ -56,8 +57,9 @@ import { PresignedUrlInterceptor } from 'src/common/interceptors/presigned-url.i
 import { ConvertToPresignedUrls } from 'src/common/decorators/convert-to-presigned-urls.decorator';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 import { ProductDto } from './dtos/product/product.dto';
-import { DeleteProductPicturesDto } from './dtos/product/delete-product-pictures.dto';
 import { AdminProductDto } from './dtos/product/admin-product.dto';
+import { BulkDeleteProductsDto } from './dtos/product/bulk-delete.dto';
+
 /**
  * @class ProductController
  * @classdesc The main controller for handling product-related operations.
@@ -402,6 +404,30 @@ export class ProductController {
   remove(@Param('id', ParseIntPipe) id: number, @USER('id') userId: number) {
     this.logger.log(`User ${userId} deleting product ${id}`);
     return this.productService.remove(id, userId);
+  }
+
+  /**
+   * @method bulkRemove
+   * @description Delete multiple products in bulk.
+   * @param {BulkDeleteProductsDto} dto - The DTO containing the IDs of the products to delete.
+   * @param {number} userId - The user id performing the action.
+   * @returns {Promise<{ message: string }>} A message indicating the result of the operation.
+   */
+  @Delete('admin/bulk')
+  @HttpCode(HttpStatus.OK)
+  @Roles(USER_ROLES.ADMIN, USER_ROLES.WHOLESELLER)
+  @ApiOperation({ summary: 'Delete products in bulk' })
+  @ApiOkResponse({ description: 'Products successfully deleted' })
+  @ApiNotFoundResponse({ description: 'One or more products not found' })
+  @ApiForbiddenResponse({
+    description: 'User does not own one or more products',
+  })
+  @ApiBadRequestResponse({ description: 'Invalid input data or other error' })
+  bulkRemove(@Body() dto: BulkDeleteProductsDto, @USER('id') userId: number) {
+    this.logger.log(
+      `User ${userId} deleting products in bulk: ${dto.productIds.join(', ')}`,
+    );
+    return this.productService.bulkRemove(dto, userId);
   }
 
   /**

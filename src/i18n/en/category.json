@@ -5,6 +5,7 @@
   },
   "delete": {
     "hasProducts": "Cannot delete category. {count} product(s) are linked to this category.",
+    "hasChildren": "Cannot delete category. {count} child categories are linked to this category.",
     "success": "Category soft deleted successfully."
   },
   "create": {

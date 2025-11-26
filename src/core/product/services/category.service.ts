@@ -192,38 +192,60 @@ export class CategoryService {
   }
 
   async remove(id: number): Promise<{ message: string }> {
-    const category = await this.categoryRepo.findOne({ where: { id } });
-    if (!category) {
-      throw new NotFoundException({ key: 'category.notFound', args: { id } });
-    }
+    return this.categoryRepo.manager.transaction(
+      async (transactionalEntityManager) => {
+        const category = await transactionalEntityManager.findOne(Category, {
+          where: { id },
+        });
+        if (!category) {
+          throw new NotFoundException({
+            key: 'category.notFound',
+            args: { id },
+          });
+        }
 
-    const productsCount = await this.productRepo.count({
-      where: { categoryId: id },
-    });
+        const productsCount = await transactionalEntityManager.count(Product, {
+          where: { categoryId: id },
+        });
 
-    if (productsCount > 0) {
-      throw new BadRequestException({
-        key: 'category.delete.hasProducts',
-        args: { count: productsCount },
-      });
-    }
+        if (productsCount > 0) {
+          throw new BadRequestException({
+            key: 'category.delete.hasProducts',
+            args: { count: productsCount },
+          });
+        }
 
-    await this.categoryRepo.softDelete(id);
-    if (category.pictureUrl) {
-      await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
-        files: [
-          {
-            objectName: category.pictureUrl,
-            bucketName: BUCKET_TARGETS.CATEGORY_PICTURES,
-          },
-        ],
-        metadata: {
-          targetId: id,
-          targetType: BUCKET_TARGETS.CATEGORY_PICTURES,
-        },
-      });
-    }
-    return { message: this.i18nService.t('category.delete.success') };
+        const childrenCount = await transactionalEntityManager.count(Category, {
+          where: { parentCategoryId: id },
+        });
+
+        if (childrenCount > 0) {
+          throw new BadRequestException({
+            key: 'category.delete.hasChildren',
+            args: { count: childrenCount },
+          });
+        }
+
+        await transactionalEntityManager.softDelete(Category, id);
+
+        if (category.pictureUrl) {
+          await this.uploadQueue.add(UPLOAD_JOBS.DELETE_FILES_BULK, {
+            files: [
+              {
+                objectName: category.pictureUrl,
+                bucketName: BUCKET_TARGETS.CATEGORY_PICTURES,
+              },
+            ],
+            metadata: {
+              targetId: id,
+              targetType: BUCKET_TARGETS.CATEGORY_PICTURES,
+            },
+          });
+        }
+
+        return { message: this.i18nService.t('category.delete.success') };
+      },
+    );
   }
 
   private async clearPictureUrl(id: number): Promise<void> {

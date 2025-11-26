@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
@@ -33,6 +34,9 @@ import { AdminProductDto } from '../dtos/product/admin-product.dto';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 import { parseInt } from 'lodash';
 import { I18nService } from 'nestjs-i18n';
+import { BulkDeleteProductsDto } from '../dtos/product/bulk-delete.dto';
+import { USER_ROLES } from 'src/common/enums/user-role.enum';
+import { FindOptionsWhere } from 'typeorm';
 
 @Injectable()
 export class ProductService {
@@ -452,6 +456,69 @@ export class ProductService {
     });
 
     return { message: this.i18nService.t('product.delete.success') };
+  }
+
+  async bulkRemove(
+    { productIds }: BulkDeleteProductsDto,
+    userId: number,
+  ): Promise<{ message: string }> {
+    return this.productRepo.manager.transaction(
+      async (transactionalEntityManager) => {
+        const whereClause: FindOptionsWhere<Product> = {
+          id: In(productIds),
+          sellerId: userId,
+        };
+
+        const result = await transactionalEntityManager.softDelete(
+          Product,
+          whereClause,
+        );
+
+        if (result.affected === productIds.length) {
+          this.logger.log({
+            message: `Bulk deleted ${result.affected} products`,
+            productIds: productIds,
+            userId,
+            context: 'Product',
+          });
+
+          return {
+            message: this.i18nService.t('product.bulkDelete.success', {
+              args: { count: result.affected },
+            }),
+          };
+        }
+
+        const allProducts = await transactionalEntityManager.find(Product, {
+          where: { id: In(productIds) },
+          select: ['id', 'sellerId'],
+        });
+
+        const allFoundIds = allProducts.map((p) => p.id);
+        const completelyNotFoundIds = productIds.filter(
+          (id) => !allFoundIds.includes(id),
+        );
+
+        if (completelyNotFoundIds.length > 0) {
+          throw new NotFoundException({
+            key: 'product.bulkDelete.notFound',
+            args: { ids: completelyNotFoundIds.join(', ') },
+          });
+        }
+
+        const unauthorizedIds = allProducts
+          .filter((p) => p.sellerId !== userId)
+          .map((p) => p.id);
+
+        if (unauthorizedIds.length > 0) {
+          throw new ForbiddenException({
+            key: 'product.bulkDelete.notOwned',
+            args: { ids: unauthorizedIds.join(', ') },
+          });
+        }
+        throw new BadRequestException({ key: 'product.bulkDelete.error' });
+      },
+    );
   }
 
   //TODO: add type to return

@@ -4,8 +4,12 @@
   "notFoundByPhone": "User with phone number {phoneNumber} not found.",
   "notFoundById": "User with ID {id} not found.",
   "deletedSuccessfully": "User soft deleted successfully.",
+  "delete": {
+    "adminDeletionForbidden": "Admins cannot be deleted."
+  },
   "bulkDelete": {
     "adminSelfDeleteForbidden": "Admin cannot delete their own account.",
+    "adminDeletionForbidden": "Admins cannot be deleted.",
     "noValidUsersFound": "No valid users found for deletion.",
     "allAdminsDeletionForbidden": "Cannot delete all admins in the system.",
     "summary": "Bulk delete process completed. Successfully deleted: {successful}. Failed: {failed}."

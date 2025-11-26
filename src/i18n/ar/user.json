@@ -4,8 +4,12 @@
   "notFoundByPhone": "المستخدم بالرقم {phoneNumber} غير موجود.",
   "notFoundById": "المستخدم بالمعرف {id} غير موجود.",
   "deletedSuccessfully": "تم حذف المستخدم بنجاح.",
+  "delete": {
+    "adminDeletionForbidden": "لا يمكن حذف المسؤولين."
+  },
   "bulkDelete": {
     "adminSelfDeleteForbidden": "لا يمكن للمسؤول حذف حسابه الخاص.",
+    "adminDeletionForbidden": "لا يمكن حذف المسؤولين.",
     "noValidUsersFound": "لم يتم العثور على مستخدمين صالحين للحذف.",
     "allAdminsDeletionForbidden": "لا يمكن حذف جميع المسؤولين في النظام.",
     "summary": "اكتملت عملية الحذف الجماعي. تم الحذف بنجاح: {successful}. فشل: {failed}."

@@ -6,6 +6,12 @@
   "delete": {
     "success": "Produit supprimé (soft delete) avec succès."
   },
+  "bulkDelete": {
+    "success": "{count} produits supprimés avec succès.",
+    "notFound": "Impossible de trouver les produits avec les ID suivants : {ids}.",
+    "error": "Une erreur s'est produite lors de la suppression des produits.",
+    "notOwned": "Vous n'avez pas la permission de supprimer les produits suivants : {ids}."
+  },
   "pictures": {
     "delete": {
       "notFound": "Aucune photo de produit trouvée avec les ID donnés pour ce produit.",
