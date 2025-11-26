@@ -1,0 +1,5536 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/v1/user/me": {
+      "get": {
+        "operationId": "UserController_getMe_api/v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successfully fetched user profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetMeDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get current user profile",
+        "tags": [
+          "User"
+        ]
+      },
+      "put": {
+        "operationId": "UserController_updateUserInfos_api/v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User profile updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update current user profile",
+        "tags": [
+          "User"
+        ]
+      },
+      "delete": {
+        "operationId": "UserController_deleteUser_api/v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "User deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete current user account",
+        "tags": [
+          "User"
+        ]
+      }
+    },
+    "/api/v1/user/me/picture": {
+      "patch": {
+        "operationId": "UserController_updateProfilePicture_api/v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "picture": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "New profile picture file (max 2MB)."
+                  }
+                },
+                "required": [
+                  "picture"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile picture updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfilePictureDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload and set new profile picture",
+        "tags": [
+          "User"
+        ]
+      }
+    },
+    "/api/v1/user/address": {
+      "post": {
+        "operationId": "UserController_createAddress_api/v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAddressDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Address created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new address for the current user",
+        "tags": [
+          "User"
+        ]
+      },
+      "get": {
+        "operationId": "UserController_getAddresses_api/v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successfully fetched user addresses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AddressDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all addresses for the current user",
+        "tags": [
+          "User"
+        ]
+      }
+    },
+    "/api/v1/user/address/{id}": {
+      "put": {
+        "operationId": "UserController_updateAddress_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAddressDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Address updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update an address for the current user",
+        "tags": [
+          "User"
+        ]
+      },
+      "delete": {
+        "operationId": "UserController_deleteAddress_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Address deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete an address for the current user",
+        "tags": [
+          "User"
+        ]
+      }
+    },
+    "/api/v1/user/admin/all": {
+      "get": {
+        "operationId": "UserController_getUsersForAdmin_api/v1",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search term for filtering users",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully fetched users for admin view",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedUserForAdminDtoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all users for admin view",
+        "tags": [
+          "User"
+        ]
+      }
+    },
+    "/api/v1/user/admin/{id}": {
+      "get": {
+        "operationId": "UserController_getUserDetailsForAdmin_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully fetched user details for admin view",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDetailForAdminDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get user details for admin view",
+        "tags": [
+          "User"
+        ]
+      },
+      "delete": {
+        "operationId": "UserController_deleteUserByAdmin_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully delete user for admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete user by admin",
+        "tags": [
+          "User"
+        ]
+      }
+    },
+    "/api/v1/user/admin/bulk": {
+      "delete": {
+        "operationId": "UserController_deleteBulkUsersByAdmin_api/v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successfully initiated bulk deletion of users.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Bulk delete users by admin",
+        "tags": [
+          "User"
+        ]
+      }
+    },
+    "/api/v1/user/black-list/{userId}": {
+      "post": {
+        "operationId": "BlackListController_create_api/v1",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "User added to blacklist successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlackListDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a user to the blacklist by ID",
+        "tags": [
+          "User-Black-List"
+        ]
+      }
+    },
+    "/api/v1/user/black-list": {
+      "get": {
+        "operationId": "BlackListController_getManyWithPagination_api/v1",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully fetched blacklisted users",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedGetBlackListedUserDtoResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all blacklisted users",
+        "tags": [
+          "User-Black-List"
+        ]
+      }
+    },
+    "/api/v1/user/black-list/restore/{userId}": {
+      "post": {
+        "operationId": "BlackListController_restore_api/v1",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User removed from blacklist successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Restore a user and remove them from the blacklist",
+        "tags": [
+          "User-Black-List"
+        ]
+      }
+    },
+    "/api/v1/user/black-list/bulk": {
+      "delete": {
+        "description": "Soft-deletes (sets deletedAt) for multiple blacklisted users. Only works on users who are blacklisted and not already deleted.",
+        "operationId": "BlackListController_bulkDelete_api/v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkDeleteBlacklistedUsersDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Blacklisted users soft-deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkDeleteResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Soft-delete multiple blacklisted users",
+        "tags": [
+          "User-Black-List"
+        ]
+      }
+    },
+    "/api/v1/authentication/otp/send": {
+      "post": {
+        "description": "Send SMS OTP to user. Rate limited to 1 request per 30 seconds.",
+        "operationId": "AuthenticationController_auth_api/v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "return a message it is send",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendOtpDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request.error in sending"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too Many Requests. Please wait 30 seconds before requesting a new OTP."
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "summary": "send OTP",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/v1/authentication/otp/validate": {
+      "post": {
+        "description": "validate otp for user",
+        "operationId": "AuthenticationController_validateOtp_api/v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OtpValidationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Returns user if it is registered esle register him",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateOtpDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request. The request body is invalid or missing required fields."
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "summary": "validate otp",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/v1/authentication/firebase/validate": {
+      "post": {
+        "description": "Authenticates user using a Firebase ID token.",
+        "operationId": "AuthenticationController_validateFirebaseToken_api/v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FirebaseTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User authenticated successfully with Firebase token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateOtpDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "summary": "Validate Firebase ID token",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/v1/authentication/register": {
+      "put": {
+        "description": "register user after otp validation if not registered",
+        "operationId": "AuthenticationController_registerUser_api/v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User successfully registered and updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateOtpDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Register user",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/v1/authentication/refresh": {
+      "post": {
+        "description": "Refreshes access and refresh tokens using a valid refresh token.",
+        "operationId": "AuthenticationController_refreshTokens_api/v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Returns the new access token and refresh token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized. Invalid refresh token provided."
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Refresh tokens",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/v1/authentication/logout": {
+      "post": {
+        "description": "Logs out the user by removing their FCM token(s). If fcmToken is provided in body, removes only that device. If no fcmToken is provided, logs out from all devices.",
+        "operationId": "AuthenticationController_logout_api/v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogoutDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully logged out.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "message": "Logged out from device successfully"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Logout user",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/v1/products/all": {
+      "get": {
+        "operationId": "ProductController_findAll_api/v1",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search term for product name, description, brand, or category",
+            "schema": {
+              "example": "laptop",
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryIds",
+            "required": false,
+            "in": "query",
+            "description": "Filter by category IDs",
+            "schema": {
+              "example": [
+                1,
+                2
+              ],
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "name": "brandIds",
+            "required": false,
+            "in": "query",
+            "description": "Filter by brand IDs",
+            "schema": {
+              "example": [
+                1,
+                2
+              ],
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns paginated products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedProductResDtoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all products with pagination, search, and filters",
+        "tags": [
+          "products"
+        ]
+      }
+    },
+    "/api/v1/products/{id}": {
+      "get": {
+        "operationId": "ProductController_findOneProduct_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns a single product",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Product not found"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get product by ID",
+        "tags": [
+          "products"
+        ]
+      },
+      "put": {
+        "operationId": "ProductController_update_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pictures": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    },
+                    "description": "Optional: New product image files (max 3). If provided, all existing images will be replaced."
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Product name.",
+                    "example": "Sample Product"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Product description (Optional).",
+                    "example": "This is an updated sample product description."
+                  },
+                  "price": {
+                    "type": "number",
+                    "format": "float",
+                    "description": "Product price must be higher than 50.",
+                    "example": 120.5
+                  },
+                  "quantity": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Available quantity.",
+                    "example": 75
+                  },
+                  "brandId": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Brand ID.",
+                    "example": 1
+                  },
+                  "categoryId": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Category ID.",
+                    "example": 1
+                  },
+                  "quantityPerBatch": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "The quantity of the product per batch.",
+                    "example": 25
+                  },
+                  "specification": {
+                    "type": "string",
+                    "description": "Optional: Product specifications, submitted as a single comma-separated string.",
+                    "example": "Material: Metal, Screen: 7 inch"
+                  },
+                  "expirationDate": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "The product expiration date (YYYY-MM-DD).",
+                    "example": "2027-12-31"
+                  },
+                  "picturesToDelete": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "format": "int32"
+                    },
+                    "description": "Optional: List of picture IDs to be deleted from the product.",
+                    "example": "1"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Product successfully updated"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Product not found"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a product",
+        "tags": [
+          "products"
+        ]
+      },
+      "delete": {
+        "operationId": "ProductController_remove_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Product ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Product successfully deleted"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Product not found"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a product",
+        "tags": [
+          "products"
+        ]
+      }
+    },
+    "/api/v1/products/create": {
+      "post": {
+        "operationId": "ProductController_create_api/v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pictures": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    },
+                    "description": "Product image files (max 3)."
+                  },
+                  "name": {
+                    "description": "Product name.",
+                    "example": "Sample Product"
+                  },
+                  "description": {
+                    "description": "Product description (Optional).",
+                    "example": "This is a sample product description."
+                  },
+                  "price": {
+                    "format": "int32",
+                    "description": "Product price must be higher than 50.",
+                    "example": 100
+                  },
+                  "quantity": {
+                    "format": "int32",
+                    "description": "Available quantity.",
+                    "example": 50
+                  },
+                  "brandId": {
+                    "format": "int32",
+                    "description": "Brand ID.",
+                    "example": 1
+                  },
+                  "categoryId": {
+                    "format": "int32",
+                    "description": "Category ID.",
+                    "example": 1
+                  },
+                  "quantityPerBatch": {
+                    "format": "int32",
+                    "description": "The quantity of the product per batch.",
+                    "example": 20
+                  },
+                  "specification": {
+                    "type": "string",
+                    "description": "Optional: Product specifications, submitted as a single comma-separated string (e.g., \"Color: Blue, Weight: 2kg\").",
+                    "example": "Material: Plastic, Screen: 6.1 inch"
+                  },
+                  "expirationDate": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "The product expiration date (YYYY-MM-DD).",
+                    "example": "2026-12-31"
+                  }
+                },
+                "required": [
+                  "pictures",
+                  "name",
+                  "price",
+                  "quantity",
+                  "brandId",
+                  "categoryId",
+                  "quantityPerBatch"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Product successfully created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new product with picture upload",
+        "tags": [
+          "products"
+        ]
+      }
+    },
+    "/api/v1/products/admin/bulk": {
+      "delete": {
+        "operationId": "ProductController_bulkRemove_api/v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkDeleteProductsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Products successfully deleted"
+          },
+          "400": {
+            "description": "Invalid input data or other error"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "User does not own one or more products"
+          },
+          "404": {
+            "description": "One or more products not found"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete products in bulk",
+        "tags": [
+          "products"
+        ]
+      }
+    },
+    "/api/v1/products/wholeseller/all": {
+      "get": {
+        "operationId": "ProductController_getWholesellerProducts_api/v1",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search term for product name, description, brand, or category",
+            "schema": {
+              "example": "laptop",
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryIds",
+            "required": false,
+            "in": "query",
+            "description": "Filter by category IDs",
+            "schema": {
+              "example": [
+                1,
+                2
+              ],
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "name": "brandIds",
+            "required": false,
+            "in": "query",
+            "description": "Filter by brand IDs",
+            "schema": {
+              "example": [
+                1,
+                2
+              ],
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns paginated wholeseller products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedWholesellerProductDtoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all wholeseller products with pagination, search, and filters",
+        "tags": [
+          "products"
+        ]
+      }
+    },
+    "/api/v1/products/favorite/all": {
+      "get": {
+        "operationId": "ProductController_getFavoriteProducts_api/v1",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search term for product name, description, brand, or category",
+            "schema": {
+              "example": "laptop",
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryIds",
+            "required": false,
+            "in": "query",
+            "description": "Filter by category IDs",
+            "schema": {
+              "example": [
+                1,
+                2
+              ],
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "name": "brandIds",
+            "required": false,
+            "in": "query",
+            "description": "Filter by brand IDs",
+            "schema": {
+              "example": [
+                1,
+                2
+              ],
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns paginated favorite products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedFavoriteProductDtoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all favorite products with pagination, search, and filters",
+        "tags": [
+          "products"
+        ]
+      }
+    },
+    "/api/v1/products/{id}/toggle-favorite": {
+      "post": {
+        "operationId": "ProductController_toggleFavorite_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Favorite status toggled successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToggleFavoriteDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Product not found"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Toggle favorite status for a product",
+        "tags": [
+          "products"
+        ]
+      }
+    },
+    "/api/v1/products/admin/all": {
+      "get": {
+        "operationId": "ProductController_findManyForAdmin_api/v1",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search term for product name, description, brand, or category",
+            "schema": {
+              "example": "laptop",
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryIds",
+            "required": false,
+            "in": "query",
+            "description": "Filter by category IDs",
+            "schema": {
+              "example": [
+                1,
+                2
+              ],
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "name": "brandIds",
+            "required": false,
+            "in": "query",
+            "description": "Filter by brand IDs",
+            "schema": {
+              "example": [
+                1,
+                2
+              ],
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns paginated products for admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedAdminProductDtoResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Too many requests (Rate limiting)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all products for admin with pagination and search",
+        "tags": [
+          "products"
+        ]
+      }
+    },
+    "/api/v1/categories/main-categories": {
+      "get": {
+        "operationId": "CategoryController_getAllCategories_api/v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Returns all categories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryResDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all categories",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
+    "/api/v1/categories/{id}/children": {
+      "get": {
+        "operationId": "CategoryController_getChildrenCategories_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns all children categories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryResDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all children categories",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
+    "/api/v1/categories": {
+      "post": {
+        "operationId": "CategoryController_createCategory_api/v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "description": "Category label",
+                    "example": "Electronics"
+                  },
+                  "picture": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Category picture file"
+                  },
+                  "parentCategoryId": {
+                    "type": "number",
+                    "description": "Parent category ID (optional)",
+                    "example": 1
+                  }
+                },
+                "required": [
+                  "label"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Category successfully created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryResDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new category",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
+    "/api/v1/categories/{id}": {
+      "put": {
+        "operationId": "CategoryController_updateCategory_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Category ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "description": "Category label",
+                    "example": "Electronics"
+                  },
+                  "picture": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "category picture file"
+                  },
+                  "newParentCategoryId": {
+                    "type": "string",
+                    "description": "new parent category ID (optional) as number sting or null string to remove parent and empty string to keep current parent",
+                    "example": 1
+                  }
+                },
+                "required": [
+                  "label",
+                  "newParentCategoryId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Category successfully updated"
+          },
+          "404": {
+            "description": "Category not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update an existing category",
+        "tags": [
+          "categories"
+        ]
+      },
+      "delete": {
+        "operationId": "CategoryController_removeCategory_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Category ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Category successfully deleted"
+          },
+          "404": {
+            "description": "Category not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a category",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
+    "/api/v1/categories/subcategories/all": {
+      "get": {
+        "operationId": "CategoryController_getAllSubcategories_api/v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Returns all subcategories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubCategoryResDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all subcategories",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
+    "/api/v1/brands": {
+      "get": {
+        "operationId": "BrandController_getAllBrands_api/v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Returns all brands",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BrandResDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all brands",
+        "tags": [
+          "brands"
+        ]
+      },
+      "post": {
+        "operationId": "BrandController_createBrand_api/v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBrandDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Brand successfully created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrandResDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new brand",
+        "tags": [
+          "brands"
+        ]
+      }
+    },
+    "/api/v1/brands/{id}": {
+      "put": {
+        "operationId": "BrandController_updateBrand_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Brand ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartialTypeClass"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Brand successfully updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrandResDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Brand not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update an existing brand",
+        "tags": [
+          "brands"
+        ]
+      },
+      "delete": {
+        "operationId": "BrandController_removeBrand_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Brand ID",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Brand successfully deleted"
+          },
+          "404": {
+            "description": "Brand not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a brand",
+        "tags": [
+          "brands"
+        ]
+      }
+    },
+    "/api/v1/order": {
+      "post": {
+        "operationId": "OrderController_createOrder_api/v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Order creation payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order creation response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateOrderResDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new order with payment processing",
+        "tags": [
+          "Order"
+        ]
+      }
+    },
+    "/api/v1/order/{orderId}/products": {
+      "get": {
+        "operationId": "OrderController_getOrderProducts_api/v1",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of products for the order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProductOrderItemDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all products for a specific order",
+        "tags": [
+          "Order"
+        ]
+      }
+    },
+    "/api/v1/order/all": {
+      "get": {
+        "operationId": "OrderController_getAllOrders_api/v1",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A paginated list of orders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedOrderListItemDtoResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all orders for the authenticated user",
+        "tags": [
+          "Order"
+        ]
+      }
+    },
+    "/api/v1/order/admin/all": {
+      "get": {
+        "operationId": "OrderController_getOrdersForAdmin_api/v1",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search term to filter orders",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A paginated list of orders for admin view",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedOrderForAdminListItemDtoResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all orders for admin view",
+        "tags": [
+          "Order"
+        ]
+      }
+    },
+    "/api/v1/order/{orderId}/payment-info": {
+      "get": {
+        "operationId": "OrderController_getPaymentInfo_api/v1",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The payment information.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentInfoDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get payment information for a specific order",
+        "tags": [
+          "Order"
+        ]
+      }
+    },
+    "/api/v1/order/{orderId}/infos": {
+      "get": {
+        "operationId": "OrderController_getOrderInfos_api/v1",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The payment information.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentInfoDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get order information for a specific order",
+        "tags": [
+          "Order"
+        ]
+      }
+    },
+    "/api/v1/order/{id}/cancel": {
+      "post": {
+        "description": "Cancels an order if allowed. Buyers can cancel during CONFIRMATION. Sellers can cancel during CONFIRMATION and PREPARATION. Inventory is automatically restored.",
+        "operationId": "OrderController_cancelOrder_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelOrderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order cancelled successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "message": "Order cancelled successfully"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot cancel order (invalid status or already cancelled)"
+          },
+          "403": {
+            "description": "You do not have permission to cancel this order"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel an order",
+        "tags": [
+          "Order"
+        ]
+      }
+    },
+    "/api/v1/tracking/{orderId}": {
+      "get": {
+        "operationId": "TrackingController_getTrackingHistory_api/v1",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get tracking history for an order",
+        "tags": [
+          "tracking"
+        ]
+      },
+      "post": {
+        "operationId": "TrackingController_addNextTrackingStatus_api/v1",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add next tracking status to an order",
+        "tags": [
+          "tracking"
+        ]
+      }
+    },
+    "/api/v1/refunds": {
+      "post": {
+        "description": "Customer can request a refund for a paid order",
+        "operationId": "RefundController_createRefund_api/v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRefundDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Refund request created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refund"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request (order not paid, amount exceeds total, etc.)"
+          },
+          "403": {
+            "description": "You can only request refund for your own orders"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create refund request",
+        "tags": [
+          "Refunds"
+        ]
+      }
+    },
+    "/api/v1/refunds/my-refunds": {
+      "get": {
+        "description": "Get all refund requests made by the authenticated user",
+        "operationId": "RefundController_getMyRefunds_api/v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of user refunds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Refund"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get my refund requests",
+        "tags": [
+          "Refunds"
+        ]
+      }
+    },
+    "/api/v1/refunds/{id}": {
+      "get": {
+        "description": "Get details of a specific refund",
+        "operationId": "RefundController_getRefundById_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Refund details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refund"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "You can only view your own refunds"
+          },
+          "404": {
+            "description": "Refund not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get refund details",
+        "tags": [
+          "Refunds"
+        ]
+      }
+    },
+    "/api/v1/refunds/admin/pending": {
+      "get": {
+        "description": "Get all refunds awaiting admin action",
+        "operationId": "RefundController_getPendingRefunds_api/v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of pending refunds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Refund"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get pending refunds (Admin only)",
+        "tags": [
+          "Refunds"
+        ]
+      }
+    },
+    "/api/v1/refunds/{id}/status": {
+      "patch": {
+        "description": "Updates refund status after processing in Chargily dashboard",
+        "operationId": "RefundController_updateRefundStatus_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRefundStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Refund status updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refund"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid status transition"
+          },
+          "404": {
+            "description": "Refund not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update refund status (Admin only)",
+        "tags": [
+          "Refunds"
+        ]
+      }
+    },
+    "/api/v1/refunds/order/{orderId}": {
+      "get": {
+        "description": "Get all refunds for a specific order",
+        "operationId": "RefundController_getOrderRefunds_api/v1",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of order refunds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Refund"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get order refunds (Admin only)",
+        "tags": [
+          "Refunds"
+        ]
+      }
+    },
+    "/api/v1/notifications/send-fcm-notification": {
+      "post": {
+        "operationId": "NotificationsController_sendFcmNotification_api/v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendNotificationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notification job added to queue",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendNotificationResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send an FCM notification",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/api/v1/notifications/register-fcm-token": {
+      "post": {
+        "operationId": "NotificationsController_registerToken_api/v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Token registered successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterTokenResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Register an FCM token for the current user",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/api/v1/notifications": {
+      "get": {
+        "operationId": "NotificationsController_findAll_api/v1",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "lang",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "ar",
+                "fr",
+                "en"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notifications retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notification"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all notifications for the current user",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/api/v1/notifications/read": {
+      "patch": {
+        "operationId": "NotificationsController_update_api/v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateReadNotificationsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notifications marked as read successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark notifications as read",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/api/v1/notifications/{id}": {
+      "delete": {
+        "operationId": "NotificationsController_remove_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Notification not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a notification",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/api/v1/notifications/language": {
+      "patch": {
+        "operationId": "NotificationsController_updateLanguage_api/v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fcmToken": {
+                    "type": "string",
+                    "example": "example_fcm_token"
+                  },
+                  "language": {
+                    "type": "string",
+                    "example": "en"
+                  }
+                },
+                "required": [
+                  "language",
+                  "fcmToken"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notification language updated successfully"
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update notification language preference",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/api/v1/analytics/daily-stats": {
+      "get": {
+        "description": "Retrieves daily statistics including orders, revenue, and other key metrics for admin dashboard",
+        "operationId": "AnalyticsController_getAnalytics_api/v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Daily analytics statistics retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "totalOrders": 150,
+                    "totalRevenue": 25000,
+                    "newUsers": 12,
+                    "completedOrders": 140,
+                    "cancelledOrders": 10
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token"
+          },
+          "403": {
+            "description": "Forbidden - Admin role required"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get daily analytics statistics",
+        "tags": [
+          "Analytics"
+        ]
+      }
+    },
+    "/api/v1/analytics/turnover": {
+      "get": {
+        "description": "Retrieves monthly turnover data showing revenue trends over time",
+        "operationId": "AnalyticsController_getTurnover_api/v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Monthly turnover data retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": [
+                    {
+                      "month": "January",
+                      "turnover": 50000
+                    },
+                    {
+                      "month": "February",
+                      "turnover": 55000
+                    },
+                    {
+                      "month": "March",
+                      "turnover": 60000
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token"
+          },
+          "403": {
+            "description": "Forbidden - Admin role required"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get monthly turnover",
+        "tags": [
+          "Analytics"
+        ]
+      }
+    },
+    "/api/v1/analytics/top-products": {
+      "get": {
+        "description": "Retrieves a list of the top-selling products based on order quantity",
+        "operationId": "AnalyticsController_getTopProducts_api/v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Top selling products retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": [
+                    {
+                      "productId": 1,
+                      "totalQuantity": 250,
+                      "productImage": "http://example.com/product1.jpg"
+                    },
+                    {
+                      "productId": 2,
+                      "totalQuantity": 180,
+                      "productImage": "http://example.com/product2.jpg"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token"
+          },
+          "403": {
+            "description": "Forbidden - Admin role required"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get top selling products",
+        "tags": [
+          "Analytics"
+        ]
+      }
+    },
+    "/api/v1/invoices/generate/{orderId}": {
+      "post": {
+        "operationId": "InvoiceController_generate_api/v1",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The invoice has been successfully generated."
+          }
+        },
+        "summary": "Generate an invoice for an order",
+        "tags": [
+          "invoices"
+        ]
+      }
+    },
+    "/api/v1/invoices": {
+      "get": {
+        "operationId": "InvoiceController_findAll_api/v1",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "type": "number"
+            }
+          },
+          {
+            "required": false,
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "required": false,
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of user invoices",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get all invoices (admin)",
+        "tags": [
+          "invoices"
+        ]
+      }
+    },
+    "/api/v1/invoices/user": {
+      "get": {
+        "operationId": "InvoiceController_findUserInvoices_api/v1",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "type": "number"
+            }
+          },
+          {
+            "required": false,
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "required": false,
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of user invoices",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get all invoices for a specific user",
+        "tags": [
+          "invoices"
+        ]
+      }
+    },
+    "/api/v1/invoices/{id}": {
+      "get": {
+        "operationId": "InvoiceController_findOne_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get a single invoice by ID",
+        "tags": [
+          "invoices"
+        ]
+      },
+      "delete": {
+        "operationId": "InvoiceController_remove_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Delete an invoice",
+        "tags": [
+          "invoices"
+        ]
+      }
+    },
+    "/api/v1/invoices/order/{orderId}": {
+      "get": {
+        "operationId": "InvoiceController_findByOrderId_api/v1",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Get an invoice by order ID",
+        "tags": [
+          "invoices"
+        ]
+      }
+    },
+    "/api/v1/invoices/{id}/download": {
+      "get": {
+        "operationId": "InvoiceController_download_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Download the invoice as a PDF file",
+        "tags": [
+          "invoices"
+        ]
+      }
+    },
+    "/api/v1/invoices/{id}/preview": {
+      "get": {
+        "operationId": "InvoiceController_preview_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Preview the invoice in the browser",
+        "tags": [
+          "invoices"
+        ]
+      }
+    },
+    "/api/v1/invoices/{id}/regenerate": {
+      "post": {
+        "operationId": "InvoiceController_regenerate_api/v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Regenerate the invoice PDF",
+        "tags": [
+          "invoices"
+        ]
+      }
+    },
+    "/api/v1/invoices/test/sample": {
+      "get": {
+        "operationId": "InvoiceController_getSamplePdf_api/v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Generate a sample PDF for testing",
+        "tags": [
+          "invoices"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Core Api Documentation",
+    "description": "The Api Documentation",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "Core",
+      "description": ""
+    }
+  ],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "AddressDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "example": 1,
+            "description": "The unique identifier of the address."
+          },
+          "street": {
+            "type": "string",
+            "example": "123 Main St",
+            "description": "The street of the address."
+          },
+          "district": {
+            "type": "string",
+            "example": "Anytown",
+            "description": "The district of the address."
+          },
+          "city": {
+            "type": "string",
+            "example": "CA",
+            "description": "The city of the address."
+          }
+        },
+        "required": [
+          "id",
+          "street",
+          "district",
+          "city"
+        ]
+      },
+      "GetMeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "example": 1,
+            "description": "The unique identifier of the user."
+          },
+          "name": {
+            "type": "string",
+            "example": "John Doe",
+            "description": "The name of the user."
+          },
+          "phoneNumber": {
+            "type": "string",
+            "example": "1234567890",
+            "description": "The phone number of the user."
+          },
+          "profilePic": {
+            "type": "object",
+            "example": "https://example.com/profile.jpg",
+            "description": "The URL of the user profile picture.",
+            "nullable": true
+          },
+          "supermarketName": {
+            "type": "object",
+            "example": "My Supermarket",
+            "description": "The name of the user supermarket.",
+            "nullable": true
+          },
+          "addresses": {
+            "description": "The list of addresses associated with the user.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AddressDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "phoneNumber",
+          "profilePic",
+          "supermarketName",
+          "addresses"
+        ]
+      },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Full name of the user",
+            "example": "John Doe"
+          },
+          "supermarketName": {
+            "type": "string",
+            "description": "Name of the supermarket if the user is a seller",
+            "example": "Market El Baraka"
+          }
+        }
+      },
+      "UserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "example": 1,
+            "description": "The unique identifier of the user."
+          },
+          "name": {
+            "type": "string",
+            "example": "John Doe",
+            "description": "The name of the user."
+          },
+          "phoneNumber": {
+            "type": "string",
+            "example": "1234567890",
+            "description": "The phone number of the user."
+          },
+          "profilePic": {
+            "type": "object",
+            "example": "https://example.com/profile.jpg",
+            "description": "The URL of the user profile picture.",
+            "nullable": true
+          },
+          "supermarketName": {
+            "type": "object",
+            "example": "My Supermarket",
+            "description": "The name of the user supermarket.",
+            "nullable": true
+          },
+          "addresses": {
+            "description": "The list of addresses associated with the user.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AddressDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "phoneNumber",
+          "profilePic",
+          "supermarketName",
+          "addresses"
+        ]
+      },
+      "MessageDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "User deleted successfully",
+            "description": "A success message."
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "ProfilePictureDto": {
+        "type": "object",
+        "properties": {
+          "profilePic": {
+            "type": "string",
+            "example": "https://example.com/profile.jpg",
+            "description": "The URL of the user profile picture."
+          }
+        },
+        "required": [
+          "profilePic"
+        ]
+      },
+      "CreateAddressDto": {
+        "type": "object",
+        "properties": {
+          "street": {
+            "type": "string",
+            "description": "Street name of the address",
+            "example": "123 Rue Didouche Mourad"
+          },
+          "city": {
+            "type": "string",
+            "description": "City where the address is located",
+            "example": "Algiers"
+          },
+          "district": {
+            "type": "string",
+            "description": "District/Commune of the address",
+            "example": "Bab El Oued"
+          }
+        },
+        "required": [
+          "street",
+          "city",
+          "district"
+        ]
+      },
+      "UpdateAddressDto": {
+        "type": "object",
+        "properties": {
+          "street": {
+            "type": "string",
+            "description": "Street name of the address",
+            "example": "123 Rue Didouche Mourad"
+          },
+          "city": {
+            "type": "string",
+            "description": "City where the address is located",
+            "example": "Algiers"
+          },
+          "district": {
+            "type": "string",
+            "description": "District/Commune of the address",
+            "example": "Bab El Oued"
+          }
+        }
+      },
+      "UserForAdminDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "The unique identifier of the user"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the user"
+          },
+          "phoneNumber": {
+            "type": "string",
+            "description": "The phone number of the user"
+          },
+          "role": {
+            "type": "string",
+            "description": "The role of the user",
+            "enum": [
+              "ADMIN",
+              "SUPERMARKET",
+              "WHOLESELLER"
+            ]
+          },
+          "isBlacklisted": {
+            "type": "boolean",
+            "description": "Whether the user is blacklisted",
+            "example": false
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "phoneNumber",
+          "role",
+          "isBlacklisted"
+        ]
+      },
+      "PaginationMetaDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number",
+            "description": "Total number of items",
+            "example": 150
+          },
+          "page": {
+            "type": "number",
+            "description": "Current page number",
+            "example": 1
+          },
+          "limit": {
+            "type": "number",
+            "description": "Number of items per page",
+            "example": 20
+          },
+          "totalPages": {
+            "type": "number",
+            "description": "Total number of pages",
+            "example": 8
+          },
+          "hasNextPage": {
+            "type": "boolean",
+            "description": "Whether there is a next page",
+            "example": true
+          }
+        },
+        "required": [
+          "total",
+          "page",
+          "limit",
+          "totalPages",
+          "hasNextPage"
+        ]
+      },
+      "PaginatedUserForAdminDtoResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserForAdminDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "UserDetailForAdminDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "supermarketName": {
+            "type": "string"
+          },
+          "phoneNumber": {
+            "type": "string"
+          },
+          "lastAddress": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AddressDto"
+              }
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "ADMIN",
+              "SUPERMARKET",
+              "WHOLESELLER"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "profilePic": {
+            "type": "string",
+            "description": "Profile picture URL",
+            "example": "https://cdn.example.com/avatars/user123.jpg"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "phoneNumber",
+          "createdAt",
+          "role",
+          "isActive",
+          "profilePic"
+        ]
+      },
+      "BlackListDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "example": 1,
+            "description": "The unique identifier of the blacklisted entry."
+          },
+          "userId": {
+            "type": "number",
+            "example": 1,
+            "description": "The ID of the blacklisted user."
+          }
+        },
+        "required": [
+          "id",
+          "userId"
+        ]
+      },
+      "GetBlackListedUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "The unique identifier of the blacklist entry"
+          },
+          "userId": {
+            "type": "number",
+            "description": "The ID of the blacklisted user"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the blacklisted user"
+          },
+          "phoneNumber": {
+            "type": "string",
+            "description": "The phone number of the blacklisted user"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "name",
+          "phoneNumber"
+        ]
+      },
+      "PaginatedGetBlackListedUserDtoResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GetBlackListedUserDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "BulkDeleteBlacklistedUsersDto": {
+        "type": "object",
+        "properties": {
+          "userIds": {
+            "description": "Array of user IDs to soft-delete",
+            "example": [
+              1,
+              2,
+              3
+            ],
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "required": [
+          "userIds"
+        ]
+      },
+      "BulkDeleteResponseDto": {
+        "type": "object",
+        "properties": {
+          "deletedCount": {
+            "type": "number",
+            "description": "Number of users successfully soft-deleted",
+            "example": 3
+          }
+        },
+        "required": [
+          "deletedCount"
+        ]
+      },
+      "AuthDto": {
+        "type": "object",
+        "properties": {
+          "phoneNumber": {
+            "type": "string",
+            "example": "+213560620999",
+            "description": "The phone number of the user"
+          }
+        },
+        "required": [
+          "phoneNumber"
+        ]
+      },
+      "SendOtpDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "OTP sent to +1234567890",
+            "description": "A success message."
+          },
+          "otp": {
+            "type": "string",
+            "example": "123456",
+            "description": "The OTP code sent to the user (for testing purposes)."
+          }
+        },
+        "required": [
+          "message",
+          "otp"
+        ]
+      },
+      "OtpValidationDto": {
+        "type": "object",
+        "properties": {
+          "phoneNumber": {
+            "type": "string",
+            "example": "+213560620999",
+            "description": "The phone number of the user"
+          },
+          "otp": {
+            "type": "string",
+            "example": "123456",
+            "description": "The OTP code sent to the user"
+          }
+        },
+        "required": [
+          "phoneNumber",
+          "otp"
+        ]
+      },
+      "ValidateOtpDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "The new access token.",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicGhvbmVOdW1iZXIiOiIxMjM0NTY3ODkwIiwicm9sZSI6InVzZXIiLCJpYXQiOjE2MjU4NjQwMDAsImV4cCI6MTYyNTg2NDYwMH0.signature"
+          },
+          "refreshToken": {
+            "type": "object",
+            "description": "Refresh token, null if not registered.",
+            "example": "string",
+            "nullable": true
+          },
+          "user": {
+            "description": "User information, null if not registered.",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserDto"
+              }
+            ]
+          },
+          "isRegistered": {
+            "type": "boolean",
+            "example": true,
+            "description": "Indicates if the user is registered."
+          }
+        },
+        "required": [
+          "isRegistered"
+        ]
+      },
+      "FirebaseTokenDto": {
+        "type": "object",
+        "properties": {
+          "firebaseToken": {
+            "type": "string",
+            "example": "your_firebase_id_token_here",
+            "description": "The Firebase ID token received from the client."
+          }
+        },
+        "required": [
+          "firebaseToken"
+        ]
+      },
+      "RegisterUserDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "User's full name",
+            "example": "Zaki Rahmani"
+          },
+          "supermarketName": {
+            "type": "string",
+            "description": "Name of the supermarket or store owned by the user",
+            "example": "Super Marché El Baraka"
+          },
+          "address": {
+            "description": "Address details of the user",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CreateAddressDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "supermarketName",
+          "address"
+        ]
+      },
+      "AuthResDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "The new access token.",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicGhvbmVOdW1iZXIiOiIxMjM0NTY3ODkwIiwicm9sZSI6InVzZXIiLCJpYXQiOjE2MjU4NjQwMDAsImV4cCI6MTYyNTg2NDYwMH0.signature"
+          },
+          "refreshToken": {
+            "type": "object",
+            "description": "The new refresh token.",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInBob25lTnVtYmVyIjoiMTIzNDU2Nzg5MCIsInJvbGUiOiJ1c2VyIiwidHlwZSI6InJlZnJlc2giLCJpYXQiOjE2MjU4NjQwMDAsImV4cCI6MTYyNjQ2ODgwMH0.signature"
+          },
+          "user": {
+            "description": "The user information.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UserDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken",
+          "user"
+        ]
+      },
+      "LogoutDto": {
+        "type": "object",
+        "properties": {
+          "fcmToken": {
+            "type": "string",
+            "description": "FCM token to revoke on logout (if not provided, all tokens for user will be removed)",
+            "example": "bk3RNwTe3H0:CI2k_HHwgIpoDKCIZvvDMExUdFQ3P1..."
+          }
+        }
+      },
+      "ProductResDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "example": 1,
+            "description": "Unique identifier of the product"
+          },
+          "name": {
+            "type": "string",
+            "example": "Nike Air Zoom Pegasus 40",
+            "description": "Name of the product"
+          },
+          "price": {
+            "type": "number",
+            "example": 129.99,
+            "description": "Price of the product"
+          },
+          "brand": {
+            "type": "string",
+            "example": "Nike",
+            "description": "Brand label of the product"
+          },
+          "category": {
+            "type": "string",
+            "example": "Running Shoes",
+            "description": "Category label of the product"
+          },
+          "isLoved": {
+            "type": "boolean",
+            "example": true,
+            "description": "Whether the product is loved (favorited) by the current user"
+          },
+          "pictures": {
+            "example": "https://example.com/image.png",
+            "description": "URL of the main picture of the product",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "price",
+          "brand",
+          "category",
+          "isLoved",
+          "pictures"
+        ]
+      },
+      "PaginatedProductResDtoResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductResDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "CategoryDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "picture": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "picture"
+        ]
+      },
+      "ProductDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "object"
+          },
+          "price": {
+            "type": "number"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "brand": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/CategoryDto"
+          },
+          "pictures": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "loveCount": {
+            "type": "number"
+          },
+          "quantityPerBatch": {
+            "type": "number",
+            "example": 12,
+            "description": "quantity Per Batch of the product"
+          },
+          "specifications": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "isLoved": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "price",
+          "quantity",
+          "brand",
+          "category",
+          "pictures",
+          "loveCount",
+          "quantityPerBatch",
+          "specifications",
+          "isLoved"
+        ]
+      },
+      "CreateProductDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Product name",
+            "example": "Sample Product"
+          },
+          "description": {
+            "type": "string",
+            "description": "Product description",
+            "example": "This is a sample product description."
+          },
+          "price": {
+            "type": "number",
+            "description": "Product price in currency unit",
+            "example": 29.99,
+            "minimum": 0.01
+          },
+          "quantity": {
+            "type": "number",
+            "description": "Available quantity in stock",
+            "example": 100,
+            "minimum": 0
+          },
+          "brandId": {
+            "type": "number",
+            "description": "Brand ID reference",
+            "example": 1
+          },
+          "categoryId": {
+            "type": "number",
+            "description": "Category ID reference",
+            "example": 5
+          },
+          "quantityPerBatch": {
+            "type": "number",
+            "description": "Quantity produced per batch",
+            "example": 20
+          },
+          "specification": {
+            "description": "An array of strings for product specifications",
+            "example": [
+              "Material: Steel",
+              "Weight: 2kg"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expirationDate": {
+            "type": "string",
+            "description": "The product expiration date (ISO 8601 format: YYYY-MM-DD)",
+            "example": "2026-12-31",
+            "format": "date"
+          }
+        },
+        "required": [
+          "name",
+          "price",
+          "quantity",
+          "brandId",
+          "categoryId",
+          "quantityPerBatch",
+          "expirationDate"
+        ]
+      },
+      "BulkDeleteProductsDto": {
+        "type": "object",
+        "properties": {
+          "productIds": {
+            "description": "An array of product IDs to delete.",
+            "example": [
+              1,
+              2,
+              3
+            ],
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "required": [
+          "productIds"
+        ]
+      },
+      "WholesellerProductDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "example": 1,
+            "description": "Unique identifier of the product"
+          },
+          "name": {
+            "type": "string",
+            "example": "Nike Air Zoom Pegasus 40",
+            "description": "Name of the product"
+          },
+          "price": {
+            "type": "number",
+            "example": 129.99,
+            "description": "Price of the product"
+          },
+          "pictures": {
+            "example": [
+              "https://example.com/image.png"
+            ],
+            "description": "URL of the main picture of the product",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "brand": {
+            "type": "string",
+            "example": "Nike",
+            "description": "Brand label of the product"
+          },
+          "category": {
+            "type": "string",
+            "example": "Running Shoes",
+            "description": "Category label of the product"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2023-10-27T10:00:00.000Z",
+            "description": "Creation date of the product"
+          },
+          "quantity": {
+            "type": "number",
+            "example": 50,
+            "description": "Available quantity of the product"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "price",
+          "pictures",
+          "brand",
+          "category",
+          "createdAt",
+          "quantity"
+        ]
+      },
+      "PaginatedWholesellerProductDtoResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WholesellerProductDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "FavoriteProductDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "example": 1,
+            "description": "Unique identifier of the favorite product entry"
+          },
+          "productId": {
+            "type": "number",
+            "example": 1,
+            "description": "Unique identifier of the product"
+          },
+          "name": {
+            "type": "string",
+            "example": "Nike Air Zoom Pegasus 40",
+            "description": "Name of the product"
+          },
+          "price": {
+            "type": "number",
+            "example": 129.99,
+            "description": "Price of the product"
+          },
+          "brand": {
+            "type": "string",
+            "example": "Nike",
+            "description": "Brand label of the product"
+          },
+          "pictures": {
+            "example": [
+              "https://example.com/image.png"
+            ],
+            "description": "URL of the main picture of the product",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "category": {
+            "type": "string",
+            "example": "Running Shoes",
+            "description": "Category label of the product"
+          }
+        },
+        "required": [
+          "id",
+          "productId",
+          "name",
+          "price",
+          "brand",
+          "pictures",
+          "category"
+        ]
+      },
+      "PaginatedFavoriteProductDtoResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FavoriteProductDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "ToggleFavoriteDto": {
+        "type": "object",
+        "properties": {
+          "isLoved": {
+            "type": "boolean",
+            "example": true,
+            "description": "The new favorite status of the product"
+          }
+        },
+        "required": [
+          "isLoved"
+        ]
+      },
+      "AdminProductDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "mainPicture": {
+            "type": "string"
+          },
+          "disponibility": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "price",
+          "mainPicture",
+          "disponibility"
+        ]
+      },
+      "PaginatedAdminProductDtoResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminProductDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "CategoryResDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "example": 1,
+            "description": "Unique identifier of the category"
+          },
+          "label": {
+            "type": "string",
+            "example": "Electronics",
+            "description": "Label of the category"
+          },
+          "pictureUrl": {
+            "type": "string",
+            "example": "https://example.com/image.png",
+            "description": "URL of the picture of the category"
+          },
+          "hasChildren": {
+            "type": "boolean",
+            "example": true,
+            "description": "does the category has subcategories"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "pictureUrl"
+        ]
+      },
+      "ParentCategoryDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "pictureUrl": {
+            "type": "string"
+          },
+          "id": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "label",
+          "pictureUrl",
+          "id"
+        ]
+      },
+      "SubCategoryResDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "id": {
+            "type": "number"
+          },
+          "pictureUrl": {
+            "type": "string"
+          },
+          "parentCategory": {
+            "$ref": "#/components/schemas/ParentCategoryDto"
+          }
+        },
+        "required": [
+          "label",
+          "id",
+          "pictureUrl",
+          "parentCategory"
+        ]
+      },
+      "BrandResDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "example": 1,
+            "description": "Unique identifier of the brand"
+          },
+          "label": {
+            "type": "string",
+            "example": "Nike",
+            "description": "Label of the brand"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ]
+      },
+      "CreateBrandDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Label name",
+            "example": "Electronics"
+          }
+        },
+        "required": [
+          "label"
+        ]
+      },
+      "PartialTypeClass": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Label name",
+            "example": "Electronics"
+          }
+        }
+      },
+      "OrderItemDto": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "number",
+            "description": "ID of the product",
+            "example": 1
+          },
+          "quantity": {
+            "type": "number",
+            "description": "Quantity of the product",
+            "example": 2
+          }
+        },
+        "required": [
+          "productId",
+          "quantity"
+        ]
+      },
+      "CreateOrderDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "List of order items",
+            "example": [
+              {
+                "productId": 1,
+                "quantity": 2
+              },
+              {
+                "productId": 2,
+                "quantity": 1
+              }
+            ],
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItemDto"
+            }
+          },
+          "paymentWay": {
+            "type": "string",
+            "description": "Payment method for the order",
+            "example": "CASH",
+            "enum": [
+              "CASH",
+              "EPAYMENT"
+            ]
+          },
+          "addressId": {
+            "type": "number",
+            "description": "ID of the address to use for delivery",
+            "example": 1
+          },
+          "address": {
+            "description": "A new address to create for delivery if the user does not want to use an existing one",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CreateAddressDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "paymentWay"
+        ]
+      },
+      "CreateOrderResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "totalAmount": {
+            "type": "number"
+          },
+          "paymentWay": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "EPAYMENT"
+            ]
+          },
+          "addressId": {
+            "type": "number"
+          },
+          "buyerId": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "totalAmount",
+          "paymentWay",
+          "addressId",
+          "buyerId"
+        ]
+      },
+      "CreateOrderResDto": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "$ref": "#/components/schemas/CreateOrderResponseDto"
+          },
+          "checkoutUrl": {
+            "type": "object",
+            "nullable": true
+          }
+        },
+        "required": [
+          "order",
+          "checkoutUrl"
+        ]
+      },
+      "ProductOrderItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "picture": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "price",
+          "quantity",
+          "picture"
+        ]
+      },
+      "OrderListItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "totalAmount": {
+            "type": "number"
+          },
+          "productCount": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "CONFIRMATION",
+              "PREPARATION",
+              "ON_DELIVERING",
+              "DELIVERED",
+              "CANCELLED"
+            ]
+          },
+          "paymentWay": {
+            "type": "string",
+            "enum": [
+              "CASH",
+              "NOT_PAYED",
+              "EDAHABIA",
+              "CIB",
+              "CHARGILY_APP"
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductOrderItemDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "totalAmount",
+          "productCount",
+          "status",
+          "paymentWay",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "PaginatedOrderListItemDtoResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderListItemDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "OrderForAdminListItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "The unique identifier of the order"
+          },
+          "clientName": {
+            "type": "string",
+            "description": "The name of the client who placed the order"
+          },
+          "status": {
+            "type": "string",
+            "description": "The current status of the order delivery",
+            "enum": [
+              "CONFIRMATION",
+              "PREPARATION",
+              "ON_DELIVERING",
+              "DELIVERED",
+              "CANCELLED"
+            ]
+          },
+          "paymentWay": {
+            "type": "string",
+            "description": "The payment method of the order",
+            "enum": [
+              "CASH",
+              "NOT_PAYED",
+              "EDAHABIA",
+              "CIB",
+              "CHARGILY_APP"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "clientName",
+          "status",
+          "paymentWay"
+        ]
+      },
+      "PaginatedOrderForAdminListItemDtoResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderForAdminListItemDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "PaymentInfoDto": {
+        "type": "object",
+        "properties": {
+          "paymentWay": {
+            "type": "string",
+            "description": "The payment way of the order",
+            "enum": [
+              "CASH",
+              "NOT_PAYED",
+              "EDAHABIA",
+              "CIB",
+              "CHARGILY_APP"
+            ]
+          },
+          "totalAmount": {
+            "type": "number",
+            "description": "The total amount of the order"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "The creation date of the order"
+          },
+          "isPaid": {
+            "type": "boolean",
+            "description": "The payment status of the order"
+          },
+          "trackingStatus": {
+            "type": "string",
+            "description": "The tracking status of the order",
+            "enum": [
+              "CONFIRMATION",
+              "PREPARATION",
+              "ON_DELIVERING",
+              "DELIVERED",
+              "CANCELLED"
+            ]
+          }
+        },
+        "required": [
+          "paymentWay",
+          "totalAmount",
+          "createdAt",
+          "isPaid",
+          "trackingStatus"
+        ]
+      },
+      "CancelOrderDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Reason for cancellation",
+            "example": "Changed my mind",
+            "maxLength": 500
+          },
+          "notes": {
+            "type": "string",
+            "description": "Additional notes",
+            "example": "Found better price elsewhere",
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "CreateRefundDto": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "number",
+            "description": "Order ID to refund",
+            "example": 1
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "ORDER_CANCELLED",
+              "PRODUCT_ISSUE",
+              "DELIVERY_ISSUE",
+              "CUSTOMER_REQUEST",
+              "DUPLICATE_PAYMENT",
+              "OTHER"
+            ],
+            "description": "Reason for refund",
+            "example": "ORDER_CANCELLED"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description",
+            "example": "Customer changed their mind",
+            "maxLength": 1000
+          },
+          "amount": {
+            "type": "number",
+            "description": "Amount to refund (leave empty for full refund)",
+            "example": 150.5,
+            "minimum": 0
+          }
+        },
+        "required": [
+          "orderId",
+          "reason",
+          "description"
+        ]
+      },
+      "Refund": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Unique refund identifier"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Creation timestamp"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Last update timestamp"
+          },
+          "orderId": {
+            "type": "number",
+            "description": "Order ID"
+          },
+          "requestedBy": {
+            "type": "number",
+            "description": "User who requested refund"
+          },
+          "processedBy": {
+            "type": "number",
+            "description": "Admin who processed refund"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Amount to refund (can be partial)",
+            "example": 150.5
+          },
+          "orderTotal": {
+            "type": "number",
+            "description": "Original order total",
+            "example": 500
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "COMPLETED",
+              "FAILED",
+              "CANCELLED"
+            ],
+            "description": "Current refund status",
+            "example": "PENDING"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "ORDER_CANCELLED",
+              "PRODUCT_ISSUE",
+              "DELIVERY_ISSUE",
+              "CUSTOMER_REQUEST",
+              "DUPLICATE_PAYMENT",
+              "OTHER"
+            ],
+            "description": "Reason for refund",
+            "example": "ORDER_CANCELLED"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed reason from customer",
+            "example": "Order cancelled by customer request"
+          },
+          "adminNote": {
+            "type": "string",
+            "description": "Admin note about refund",
+            "example": "Processed via Chargily dashboard",
+            "nullable": true
+          },
+          "requestedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When refund was requested"
+          },
+          "processingStartedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When admin started processing",
+            "nullable": true
+          },
+          "completedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When refund was completed",
+            "nullable": true
+          },
+          "checkoutId": {
+            "type": "string",
+            "description": "Original checkout ID from Chargily",
+            "nullable": true
+          },
+          "paymentMethod": {
+            "type": "string",
+            "description": "Payment method used",
+            "example": "CIB"
+          },
+          "transactionReference": {
+            "type": "string",
+            "description": "Transaction reference from Chargily",
+            "nullable": true
+          },
+          "isPartial": {
+            "type": "boolean",
+            "description": "Is this a partial refund?",
+            "example": false,
+            "default": false
+          },
+          "attemptNumber": {
+            "type": "number",
+            "description": "Refund attempt number",
+            "example": 1,
+            "default": 1
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "updatedAt",
+          "orderId",
+          "requestedBy",
+          "processedBy",
+          "amount",
+          "orderTotal",
+          "status",
+          "reason",
+          "description",
+          "adminNote",
+          "requestedAt",
+          "processingStartedAt",
+          "completedAt",
+          "checkoutId",
+          "paymentMethod",
+          "transactionReference",
+          "isPartial",
+          "attemptNumber"
+        ]
+      },
+      "UpdateRefundStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "COMPLETED",
+              "FAILED",
+              "CANCELLED"
+            ],
+            "description": "New refund status",
+            "example": "COMPLETED"
+          },
+          "adminNote": {
+            "type": "string",
+            "description": "Admin note about the refund processing",
+            "example": "Refund processed via Chargily dashboard on 2025-11-14",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "SendNotificationDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Notification title",
+            "example": "Hello User"
+          },
+          "body": {
+            "type": "string",
+            "description": "Notification body",
+            "example": "This is a test notification sent via FCM"
+          },
+          "type": {
+            "type": "string",
+            "description": "Notification type",
+            "enum": [
+              "Orders",
+              "Payments",
+              "New Supermarket",
+              "Low Stock",
+              "Status Update",
+              "Expiring Soon",
+              "Admin Alerts",
+              "Test"
+            ],
+            "example": "Orders"
+          }
+        },
+        "required": [
+          "title",
+          "body",
+          "type"
+        ]
+      },
+      "SendNotificationResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Indicates if the notification job was successfully added to the queue.",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "description": "A message describing the outcome.",
+            "example": "Notification job added to queue"
+          }
+        },
+        "required": [
+          "success",
+          "message"
+        ]
+      },
+      "CreateTokenDto": {
+        "type": "object",
+        "properties": {
+          "fcmToken": {
+            "type": "string",
+            "description": "The fcm token string.",
+            "example": "dummytoken1234567890abcdef"
+          },
+          "os": {
+            "type": "string",
+            "description": "The operating system type of the device.",
+            "enum": [
+              "android",
+              "ios",
+              "web"
+            ],
+            "example": "android"
+          },
+          "lang": {
+            "type": "string",
+            "description": "The preferred language of the user.",
+            "example": "en"
+          }
+        },
+        "required": [
+          "fcmToken",
+          "os",
+          "lang"
+        ]
+      },
+      "RegisterTokenResponseDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "A message indicating the result of the token registration.",
+            "example": "Token registered successfully"
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "Notification": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Unique identifier for the entity",
+            "example": 1
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Timestamp when the entity was created",
+            "example": "2023-10-05T14:48:00.000Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Timestamp when the entity was last updated",
+            "example": "2023-10-05T14:48:00.000Z"
+          },
+          "title": {
+            "type": "string",
+            "description": "The title i18 key of the notification.",
+            "example": "New Message"
+          },
+          "type": {
+            "type": "string",
+            "description": "The type of the notification.",
+            "enum": [
+              "Orders",
+              "Payments",
+              "New Supermarket",
+              "Low Stock",
+              "Status Update",
+              "Expiring Soon",
+              "Admin Alerts",
+              "Test"
+            ],
+            "example": "Orders"
+          },
+          "body": {
+            "type": "string",
+            "description": "The i18 body key of the notification.",
+            "example": "You have a new message from John Doe."
+          },
+          "receiverId": {
+            "type": "number",
+            "description": "The ID of the user who will receive the notification.",
+            "example": 1
+          },
+          "meta": {
+            "type": "object",
+            "description": "Additional metadata for the notification.",
+            "additionalProperties": true,
+            "example": {
+              "orderId": 123
+            }
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "updatedAt",
+          "title",
+          "type",
+          "body",
+          "receiverId",
+          "meta"
+        ]
+      },
+      "UpdateReadNotificationsDto": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "example": [
+              1,
+              2,
+              3
+            ],
+            "description": "Array of notification IDs to mark as read",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "ids"
+        ]
+      },
+      "UpdateResult": {
+        "type": "object",
+        "properties": {}
+      },
+      "DeleteResult": {
+        "type": "object",
+        "properties": {}
+      },
+      "PaginationResponseDto": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": [
+          "meta"
+        ]
+      }
+    }
+  }
+}
