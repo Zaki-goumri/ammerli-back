@@ -86,10 +86,10 @@ import { ObjectStorageExceptionFilter } from './common/filters/object-storage.fi
   controllers: [AppController],
   providers: [
     AppService,
-    {
-      provide: APP_GUARD,
-      useClass: GlobalThrottlerGuard,
-    },
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: GlobalThrottlerGuard,
+    // },
     {
       provide: APP_FILTER,
       useClass: HttpExceptionFilter,

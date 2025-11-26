@@ -1,0 +1,234 @@
+{
+    "root_group": {
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {
+            "Authentication Flow": {
+                "path": "::Authentication Flow",
+                "id": "0cbd59bbf78e377b2ba9ee32504845d9",
+                "groups": {},
+                "checks": {
+                        "Send OTP - status is 201": {
+                            "name": "Send OTP - status is 201",
+                            "path": "::Authentication Flow::Send OTP - status is 201",
+                            "id": "ee33092e55a055a8d7d23c8ed13dc81f",
+                            "passes": 46,
+                            "fails": 29579
+                        },
+                        "Send OTP - response time < 2000ms": {
+                            "id": "1750aafe379b1e3d4b23eaff1ba57e29",
+                            "passes": 29625,
+                            "fails": 0,
+                            "name": "Send OTP - response time < 2000ms",
+                            "path": "::Authentication Flow::Send OTP - response time < 2000ms"
+                        },
+                        "Validate OTP - status is 200": {
+                            "name": "Validate OTP - status is 200",
+                            "path": "::Authentication Flow::Validate OTP - status is 200",
+                            "id": "359acb10796555265b6d6dc6fa82e43d",
+                            "passes": 98,
+                            "fails": 29527
+                        },
+                        "Validate OTP - response time < 2000ms": {
+                            "passes": 29625,
+                            "fails": 0,
+                            "name": "Validate OTP - response time < 2000ms",
+                            "path": "::Authentication Flow::Validate OTP - response time < 2000ms",
+                            "id": "f77835e65f8e87abd8e2a587843d3504"
+                        }
+                    },
+                "name": "Authentication Flow"
+            },
+            "Buyer Flow": {
+                "name": "Buyer Flow",
+                "path": "::Buyer Flow",
+                "id": "87e4634a05a599a9f72331961b638720",
+                "groups": {},
+                "checks": {
+                        "Get All Products - status is 200": {
+                            "name": "Get All Products - status is 200",
+                            "path": "::Buyer Flow::Get All Products - status is 200",
+                            "id": "19f11b1de2980d328b47b5f972ba9cf6",
+                            "passes": 9,
+                            "fails": 89
+                        },
+                        "Get All Products - response time < 2000ms": {
+                            "fails": 0,
+                            "name": "Get All Products - response time < 2000ms",
+                            "path": "::Buyer Flow::Get All Products - response time < 2000ms",
+                            "id": "a580ac4c12a729af3c6a1db97c8b6aa7",
+                            "passes": 98
+                        },
+                        "Get Single Product - status is 200": {
+                            "fails": 1,
+                            "name": "Get Single Product - status is 200",
+                            "path": "::Buyer Flow::Get Single Product - status is 200",
+                            "id": "eb041338a9263878f751d11f920084f9",
+                            "passes": 8
+                        },
+                        "Get Single Product - response time < 2000ms": {
+                            "path": "::Buyer Flow::Get Single Product - response time < 2000ms",
+                            "id": "78a1d335e1ce04bba615684211a516ec",
+                            "passes": 9,
+                            "fails": 0,
+                            "name": "Get Single Product - response time < 2000ms"
+                        },
+                        "Toggle Favorite Product - status is 200": {
+                            "name": "Toggle Favorite Product - status is 200",
+                            "path": "::Buyer Flow::Toggle Favorite Product - status is 200",
+                            "id": "4dd05053896a3e81012cb693ecb25299",
+                            "passes": 5,
+                            "fails": 4
+                        },
+                        "Toggle Favorite Product - response time < 2000ms": {
+                            "fails": 0,
+                            "name": "Toggle Favorite Product - response time < 2000ms",
+                            "path": "::Buyer Flow::Toggle Favorite Product - response time < 2000ms",
+                            "id": "7d5fc91a12941eb5f7ed9f51ce8411b7",
+                            "passes": 9
+                        },
+                        "Create Order with New Address - status is 201": {
+                            "name": "Create Order with New Address - status is 201",
+                            "path": "::Buyer Flow::Create Order with New Address - status is 201",
+                            "id": "8d2f19b26d0ed6a8f3a27ea6fca8a039",
+                            "passes": 7,
+                            "fails": 91
+                        },
+                        "Create Order with New Address - response time < 2000ms": {
+                            "name": "Create Order with New Address - response time < 2000ms",
+                            "path": "::Buyer Flow::Create Order with New Address - response time < 2000ms",
+                            "id": "0c8f5d8cb8664a217f922d59b4d46a9a",
+                            "passes": 98,
+                            "fails": 0
+                        }
+                    }
+            }
+        },
+        "checks": {}
+    },
+    "metrics": {
+        "data_sent": {
+            "count": 7008376,
+            "rate": 23181.28032493628
+        },
+        "http_req_connecting": {
+            "p(95)": 0,
+            "avg": 1.1071038134333384,
+            "min": 0,
+            "med": 0,
+            "max": 327.352699,
+            "p(90)": 0
+        },
+        "http_req_failed": {
+            "passes": 59291,
+            "fails": 173,
+            "thresholds": {
+                "rate<0.05": true
+            },
+            "value": 0.9970906767119602
+        },
+        "checks": {
+            "fails": 59291,
+            "passes": 59637,
+            "value": 0.5014546616440199
+        },
+        "http_req_sending": {
+            "med": 0.06435199999999999,
+            "max": 2.10533,
+            "p(90)": 0.14276420000000004,
+            "p(95)": 0.17248329999999992,
+            "avg": 0.08024237153571954,
+            "min": 0.012828
+        },
+        "data_received": {
+            "count": 10393642,
+            "rate": 34378.567702279586
+        },
+        "vus_max": {
+            "value": 500,
+            "min": 500,
+            "max": 500
+        },
+        "http_reqs": {
+            "rate": 196.68631552331254,
+            "count": 59464
+        },
+        "http_req_duration": {
+            "max": 918.139594,
+            "p(90)": 218.76352400000007,
+            "p(95)": 255.48400465,
+            "avg": 140.66137010856957,
+            "min": 55.410845,
+            "med": 128.843523,
+            "thresholds": {
+                "p(95)<1000": false
+            }
+        },
+        "http_req_tls_handshaking": {
+            "avg": 1.2373875252085285,
+            "min": 0,
+            "med": 0,
+            "max": 652.605881,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "http_req_waiting": {
+            "med": 128.6546055,
+            "max": 870.393394,
+            "p(90)": 218.5607905,
+            "p(95)": 255.25092089999998,
+            "avg": 140.43175038665424,
+            "min": 55.127848
+        },
+        "iteration_duration": {
+            "avg": 2295.704826806346,
+            "min": 2112.324507,
+            "med": 2266.795849,
+            "max": 7135.556788,
+            "p(90)": 2438.3095319999998,
+            "p(95)": 2510.6340584
+        },
+        "iterations": {
+            "count": 29625,
+            "rate": 97.98923882312212
+        },
+        "vus": {
+            "value": 12,
+            "min": 0,
+            "max": 499
+        },
+        "http_req_blocked": {
+            "p(90)": 0.000645,
+            "p(95)": 0.0007288499999999986,
+            "avg": 2.3458442347638657,
+            "min": 0.000077,
+            "med": 0.000215,
+            "max": 961.143095
+        },
+        "group_duration": {
+            "min": 2112.263698,
+            "med": 2266.453368,
+            "max": 4826.549976,
+            "p(90)": 2437.9427232,
+            "p(95)": 2510.2951763999995,
+            "avg": 2288.0365705705353
+        },
+        "http_req_duration{expected_response:true}": {
+            "p(90)": 673.0389616000001,
+            "p(95)": 692.1954766,
+            "avg": 454.4028994393064,
+            "min": 61.925396,
+            "med": 564.977008,
+            "max": 758.773049
+        },
+        "http_req_receiving": {
+            "p(90)": 0.07746170000000001,
+            "p(95)": 0.44630409999999987,
+            "avg": 0.1493773503800618,
+            "min": 0.007696,
+            "med": 0.026567,
+            "max": 715.79189
+        }
+    }
+}
