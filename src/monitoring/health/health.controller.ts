@@ -48,11 +48,11 @@ export class HealthController {
     return this.health.check([
       () => this.db.pingCheck('database'),
       () => this.redis.isHealthy('redis'),
-      () =>
-        this.disk.checkStorage('disk health', {
-          thresholdPercent: 0.9,
-          path: '/',
-        }),
+      // () =>
+      //   this.disk.checkStorage('disk health', {
+      //     thresholdPercent: 0.9,
+      //     path: '/',
+      //   }),
     ]);
   }
 }
