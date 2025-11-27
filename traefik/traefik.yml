@@ -1,188 +1,40 @@
-# ==============================================
-# GLOBAL SETTINGS
-# ==============================================
-global:
-  checkNewVersion: false
-  sendAnonymousUsage: false
+# Simplified configuration inspired by the user's previous setup.
+# NOTE: The global redirect has been intentionally omitted to prevent ACME failures.
 
-# ==============================================
-# API & DASHBOARD
-# ==============================================
 api:
   dashboard: true
-  # SECURITY: Disable insecure mode in production
-  insecure: false  # Changed from true
-  # Dashboard will be accessible via Traefik labels instead
+  insecure: true # Exposes the dashboard on port 8080
 
-# ==============================================
-# ENTRY POINTS (Optimized)
-# ==============================================
 entryPoints:
   web:
     address: ":80"
-    # Transport settings
-    transport:
-      lifeCycle:
-        requestAcceptGraceTimeout: 10s
-        graceTimeOut: 10s
-      respondingTimeouts:
-        readTimeout: 30s          # Max time to read request
-        writeTimeout: 30s         # Max time to write response
-        idleTimeout: 90s          # Keep-alive timeout
-    # Forwarded headers
-    forwardedHeaders:
-      trustedIPs:
-        - "127.0.0.1/32"
-        - "10.0.0.0/8"
-        - "172.16.0.0/12"
-        - "192.168.0.0/16"
-  
+
   websecure:
     address: ":443"
-    # Transport settings (production-optimized)
-    transport:
-      lifeCycle:
-        requestAcceptGraceTimeout: 10s
-        graceTimeOut: 10s
-      respondingTimeouts:
-        readTimeout: 60s          # Longer for HTTPS
-        writeTimeout: 60s
-        idleTimeout: 180s         # 3 minutes for persistent connections
-    # TLS configuration
     http:
       tls:
         certResolver: letsencrypt
-        options: default
-      # Middlewares applied globally
-      middlewares:
-        - compression@file
-        - security-headers@file
-    # Forwarded headers
-    forwardedHeaders:
-      trustedIPs:
-        - "127.0.0.1/32"
-        - "10.0.0.0/8"
-        - "172.16.0.0/12"
-        - "192.168.0.0/16"
 
-# ==============================================
-# PROVIDERS
-# ==============================================
 providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
     network: proxy
     watch: true
-    # Optimization: Reduce Docker API polling
-    useBindPortIP: false
-    # HTTP client timeout
-    httpClientTimeout: 30s
-  
+
   file:
     filename: /config.yml
     watch: true
 
-# ==============================================
-# LOGGING (Optimized for Production)
-# ==============================================
 log:
-  level: DEBUG
-  # filePath: /var/log/traefik.log
-  format: json
-  maxSize: 100  # MB
-  maxAge: 7     # days
-  maxBackups: 3
-  compress: true
+  level: INFO
 
-# Access logs with buffering
-accessLog:
-  # filePath: /var/log/traefik-access.log
-  format: json
-  bufferingSize: 100  # Buffer 100 log lines before writing
-  filters:
-    statusCodes:
-      - "400-599"  # Only log errors (optional: remove to log all)
-    retryAttempts: true
-    minDuration: 100ms  # Only log requests taking >100ms
-  fields:
-    defaultMode: keep
-    names:
-      ClientUsername: drop
-    headers:
-      defaultMode: drop  # Don't log all headers
-      names:
-        User-Agent: keep
-        X-Forwarded-For: keep
-        X-Real-Ip: keep
+accessLog: {} # Logs to stdout
 
-# ==============================================
-# CERTIFICATE RESOLVER
-# ==============================================
 certificatesResolvers:
   letsencrypt:
     acme:
       email: zaki@ammerli.com
       storage: /acme.json
-      # Key type for better performance
-      keyType: EC384
       httpChallenge:
         entryPoint: web
-      # Rate limiting protection
-      caServer: https://acme-v02.api.letsencrypt.org/directory
-      # For testing, use staging:
-      # caServer: https://acme-staging-v02.api.letsencrypt.org/directory
-
-# ==============================================
-# TLS OPTIONS
-# ==============================================
-tls:
-  options:
-    default:
-      minVersion: VersionTLS12
-      cipherSuites:
-        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
-        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
-        - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
-        - TLS_AES_128_GCM_SHA256
-        - TLS_AES_256_GCM_SHA384
-        - TLS_CHACHA20_POLY1305_SHA256
-      curvePreferences:
-        - CurveP521
-        - CurveP384
-      sniStrict: true
-
-# ==============================================
-# METRICS (Optional - for monitoring)
-# ==============================================
-metrics:
-  prometheus:
-    addEntryPointsLabels: true
-    addRoutersLabels: true
-    addServicesLabels: true
-    buckets:
-      - 0.1
-      - 0.3
-      - 1.0
-      - 3.0
-      - 10.0
-    entryPoint: metrics
-    manualRouting: false
-
-# Add metrics entrypoint
-# entryPoints:
-#   metrics:
-#     address: ":8082"
-
-# ==============================================
-# PILOT (Disable)
-# ==============================================
-pilot:
-  dashboard: false
-
-# ==============================================
-# EXPERIMENTAL FEATURES
-# ==============================================
-experimental:
-  # HTTP/3 support (optional - test first)
-  # http3: true
