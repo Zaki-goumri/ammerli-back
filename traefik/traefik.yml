@@ -20,13 +20,6 @@ api:
 entryPoints:
   web:
     address: ":80"
-    # HTTP to HTTPS redirect
-    http:
-      redirections:
-        entryPoint:
-          to: websecure
-          scheme: https
-          permanent: true
     # Transport settings
     transport:
       lifeCycle:
