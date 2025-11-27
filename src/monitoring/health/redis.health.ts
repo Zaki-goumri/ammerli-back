@@ -14,7 +14,7 @@ export class RedisCustomHealthIndicator extends HealthIndicator {
   //TODO: fix redis health check
   async isHealthy(key: string): Promise<HealthIndicatorResult> {
     try {
-      await this.redisService['redis'].ping();
+      await this.redisService.getClient().ping();
       return this.getStatus(key, true);
     } catch (err) {
       throw new HealthCheckError('Redis health check failed', err);
