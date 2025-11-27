@@ -424,7 +424,7 @@ services:
         compress: "true"
 
   grafana:
-    image: grafana/grafana:10.2.3-alpine
+    image: grafana/grafana:10.2.3
     container_name: grafana
     depends_on:
       - loki
