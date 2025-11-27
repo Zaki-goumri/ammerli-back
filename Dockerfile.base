@@ -10,14 +10,3 @@ RUN --mount=type=cache,target=/root/.npm \
 # Configure pnpm to use a standard bin directory
 RUN pnpm config set global-bin-dir /usr/local/bin
 
-# Install chromium for puppeteer
-RUN apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont
-
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-  PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser

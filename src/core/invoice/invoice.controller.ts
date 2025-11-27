@@ -149,14 +149,4 @@ export class InvoiceController {
     return this.invoiceService.delete(id);
   }
 
-  @Get('test/sample')
-  @Header('Content-Type', 'application/pdf')
-  @Header('Content-Disposition', 'inline; filename=sample-invoice.pdf')
-  @ApiOperation({ summary: 'Generate a sample PDF for testing' })
-  async getSamplePdf(@Res() res: Response) {
-    const sampleData = this.invoiceGeneratorService.createSampleData();
-    const pdfBuffer =
-      await this.invoiceGeneratorService.generateInvoicePDF(sampleData);
-    res.send(pdfBuffer);
-  }
 }
