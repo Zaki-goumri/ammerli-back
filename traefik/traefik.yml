@@ -194,4 +194,3 @@ pilot:
 experimental:
   # HTTP/3 support (optional - test first)
   # http3: true
-  plugins: {}
