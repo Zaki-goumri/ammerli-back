@@ -63,7 +63,7 @@ jobs:
             
             # Start new containers
             echo "Starting new containers..."
-            docker compose up -d 
+            docker compose up -d --scale server=4
             
             # Wait for containers to be ready
             echo "Waiting for containers to start..."

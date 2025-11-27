@@ -3,8 +3,8 @@ module.exports = {
     {
       name: 'ammerli-backend',
       script: './dist/main.js',
-      instances: 3,
-      exec_mode: 'cluster',
+      instances: 1,
+      exec_mode: 'fork',
       autorestart: true,
       watch: false,
       env_production: {

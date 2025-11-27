@@ -23,7 +23,8 @@ export function buyerFlow() {
 
     let productId = null;
     if (products && products.length > 0) {
-      productId = products[0].id;
+      const randomIndex = Math.floor(Math.random() * products.length);
+      productId = products[randomIndex].id;
     }
 
     if (productId) {
@@ -42,23 +43,19 @@ export function buyerFlow() {
       console.warn('No products found to view or favorite.');
     }
 
-    // 4. Get User Addresses
     let addressesRes = get('/user/address', authHeaders);
     checkResponse(addressesRes, 200, 'Get User Addresses');
     const addresses = addressesRes.status === 200 ? addressesRes.json() : [];
     sleep(1);
 
-    // 5. Create an Order
     let orderPayload;
     if (addresses && addresses.length > 0) {
-      // Use the first existing address
       orderPayload = {
         items: [{ productId: productId || 1, quantity: 1 }],
         paymentWay: 'CASH',
         addressId: addresses[0].id,
       };
     } else {
-      // Fallback to creating a new address if none exist
       orderPayload = {
         items: [{ productId: productId || 1, quantity: 1 }],
         paymentWay: 'CASH',
@@ -69,7 +66,6 @@ export function buyerFlow() {
         },
       };
     }
-
     let createOrderRes = post('/order', orderPayload, authHeaders);
     checkResponse(createOrderRes, 201, 'Create Order');
   });

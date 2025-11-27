@@ -1,0 +1,130 @@
+# ==============================================
+# DYNAMIC CONFIGURATION
+# ==============================================
+
+# ==============================================
+# HTTP MIDDLEWARES
+# ==============================================
+http:
+  middlewares:
+    # Compression middleware
+    compression:
+      compress:
+        excludedContentTypes:
+          - text/event-stream
+        minResponseBodyBytes: 1024  # Only compress >1KB
+    
+    # Security headers
+    security-headers:
+      headers:
+        frameDeny: true
+        browserXssFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
+        customFrameOptionsValue: "SAMEORIGIN"
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+    
+    # HTTPS redirect (file-based)
+    https-redirect:
+      redirectScheme:
+        scheme: https
+        permanent: true
+    
+    # Rate limiting - Global (more generous)
+    global-ratelimit:
+      rateLimit:
+        average: 1000
+        period: 1m
+        burst: 500
+        sourceCriterion:
+          requestHeaderName: X-Forwarded-For
+    
+    # Rate limiting - API specific
+    api-ratelimit-generous:
+      rateLimit:
+        average: 500
+        period: 1m
+        burst: 250
+        sourceCriterion:
+          requestHeaderName: X-Forwarded-For
+    
+    # Retry middleware
+    retry:
+      attempts: 3
+      initialInterval: 100ms
+    
+    # Circuit breaker
+    circuit-breaker:
+      expression: "NetworkErrorRatio() > 0.30"
+    
+    # Buffering for better performance
+    buffering:
+      maxRequestBodyBytes: 10485760  # 10MB
+      memRequestBodyBytes: 2097152   # 2MB
+      maxResponseBodyBytes: 10485760 # 10MB
+      memResponseBodyBytes: 2097152  # 2MB
+      retryExpression: "IsNetworkError() && Attempts() < 3"
+    
+    # In-flight requests limit
+    inflightreq:
+      amount: 1000
+      sourceCriterion:
+        requestHeaderName: X-Forwarded-For
+
+  # ==============================================
+  # ROUTERS (Examples - Optional)
+  # ==============================================
+  routers:
+    # Traefik Dashboard (Secured)
+    traefik-dashboard:
+      rule: "Host(`traefik.ammerli.com`)"
+      service: api@internal
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - security-headers
+        # Add basic auth for dashboard
+        # - dashboard-auth
+    
+    # Metrics endpoint (if enabled)
+    # metrics:
+    #   rule: "Host(`metrics.ammerli.com`)"
+    #   service: prometheus@internal
+    #   entryPoints:
+    #     - websecure
+    #   tls:
+    #     certResolver: letsencrypt
+
+  # ==============================================
+  # SERVICES
+  # ==============================================
+  services:
+    # Service defaults with health checks
+    noop:
+      loadBalancer:
+        servers:
+          - url: "http://localhost"
+        healthCheck:
+          path: /health
+          interval: 30s
+          timeout: 5s
+          scheme: http
+
+# ==============================================
+# TLS CONFIGURATION
+# ==============================================
+tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /acme.json
+        keyFile: /acme.json
+  
+  # Certificate stores
+  certificates: []

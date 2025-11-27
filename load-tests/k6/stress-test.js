@@ -1,7 +1,6 @@
 import { htmlReport } from 'https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js';
 import { buyerFlow } from './scenarios/buyer-flow.js';
 import { textSummary } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
-import { authenticate } from './scenarios/auth.js';
 
 export const options = {
   scenarios: {
@@ -10,20 +9,20 @@ export const options = {
       startVUs: 0,
       stages: [
         { duration: '1m', target: 50 },
-        { duration: '1m', target: 100 },
-        { duration: '1m', target: 700 },
+        { duration: '1m', target: 300 },
+        { duration: '1m', target: 800 },
       ],
-      gracefulRampDown: '30s',
+      gracefulRampDown: '10s',
     },
   },
   thresholds: {
     http_req_failed: ['rate<0.1'],
-    http_req_duration: ['p(95)<500'],
+    http_req_duration: ['p(95)<300'],
   },
 };
 
 export default function () {
-  authenticate();
+  buyerFlow();
 }
 
 export function handleSummary(data) {
