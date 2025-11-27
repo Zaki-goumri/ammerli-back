@@ -1,0 +1,263 @@
+{
+  "options": {
+    "summaryTrendStats": [
+      "avg",
+      "min",
+      "med",
+      "max",
+      "p(90)",
+      "p(95)"
+    ],
+    "summaryTimeUnit": "",
+    "noColor": false
+  },
+  "state": {
+    "isStdOutTTY": true,
+    "isStdErrTTY": true,
+    "testRunDurationMs": 196653.047267
+  },
+  "metrics": {
+    "http_req_duration{expected_response:true}": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "p(95)": 470.95384680000006,
+        "avg": 135.6492663236901,
+        "min": 58.352619,
+        "med": 70.7541965,
+        "max": 2675.019061,
+        "p(90)": 341.18112379999997
+      }
+    },
+    "http_req_blocked": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "med": 0.010411,
+        "max": 109.05959,
+        "p(90)": 62.462959399999995,
+        "p(95)": 67.12032275,
+        "avg": 10.355587659225527,
+        "min": 0.003093
+      }
+    },
+    "http_req_receiving": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 46.82586800000001,
+        "min": 0.03024,
+        "med": 0.13076,
+        "max": 2240.785787,
+        "p(90)": 132.160786,
+        "p(95)": 350.5301361500001
+      }
+    },
+    "http_req_waiting": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "p(95)": 179.00042075000005,
+        "avg": 88.77523864464699,
+        "min": 58.116103,
+        "med": 69.603506,
+        "max": 2155.920188,
+        "p(90)": 82.0721215
+      }
+    },
+    "data_received": {
+      "type": "counter",
+      "contains": "data",
+      "values": {
+        "count": 15747033,
+        "rate": 80075.20462482293
+      }
+    },
+    "vus_max": {
+      "type": "gauge",
+      "contains": "default",
+      "values": {
+        "value": 700,
+        "min": 700,
+        "max": 700
+      }
+    },
+    "iteration_duration": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "max": 18747.161833,
+        "p(90)": 16583.592978200002,
+        "p(95)": 16791.4157773,
+        "avg": 16294.099045533061,
+        "min": 16122.716555,
+        "med": 16198.633689
+      }
+    },
+    "checks": {
+      "type": "rate",
+      "contains": "default",
+      "values": {
+        "rate": 0.9992027334851936,
+        "passes": 8773,
+        "fails": 7
+      }
+    },
+    "data_sent": {
+      "values": {
+        "count": 871415,
+        "rate": 4431.230596782268
+      },
+      "type": "counter",
+      "contains": "data"
+    },
+    "http_req_connecting": {
+      "contains": "time",
+      "values": {
+        "min": 0,
+        "med": 0,
+        "max": 108.931033,
+        "p(90)": 62.3713182,
+        "p(95)": 66.99188310000001,
+        "avg": 10.329150449658297
+      },
+      "type": "trend"
+    },
+    "http_reqs": {
+      "contains": "default",
+      "values": {
+        "count": 4390,
+        "rate": 22.32357983265626
+      },
+      "type": "counter"
+    },
+    "http_req_tls_handshaking": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "p(95)": 0,
+        "avg": 0,
+        "min": 0,
+        "med": 0,
+        "max": 0,
+        "p(90)": 0
+      }
+    },
+    "http_req_failed": {
+      "thresholds": {
+        "rate<0.1": {
+          "ok": true
+        }
+      },
+      "type": "rate",
+      "contains": "default",
+      "values": {
+        "rate": 0,
+        "passes": 0,
+        "fails": 4390
+      }
+    },
+    "http_req_sending": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "min": 0.011482,
+        "med": 0.039446499999999995,
+        "max": 0.326608,
+        "p(90)": 0.0860595,
+        "p(95)": 0.10715055,
+        "avg": 0.04815967904328021
+      }
+    },
+    "group_duration": {
+      "contains": "time",
+      "values": {
+        "min": 16122.610314,
+        "med": 16198.567301,
+        "max": 18747.061664,
+        "p(90)": 16583.292846800003,
+        "p(95)": 16791.273398999998,
+        "avg": 16293.95145106193
+      },
+      "type": "trend"
+    },
+    "iterations": {
+      "contains": "default",
+      "values": {
+        "count": 2195,
+        "rate": 11.16178991632813
+      },
+      "type": "counter"
+    },
+    "http_req_duration": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "p(90)": 341.18112379999997,
+        "p(95)": 470.95384680000006,
+        "avg": 135.6492663236901,
+        "min": 58.352619,
+        "med": 70.7541965,
+        "max": 2675.019061
+      },
+      "thresholds": {
+        "p(95)<500": {
+          "ok": true
+        }
+      }
+    },
+    "vus": {
+      "type": "gauge",
+      "contains": "default",
+      "values": {
+        "min": 0,
+        "max": 696,
+        "value": 1
+      }
+    }
+  },
+  "root_group": {
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": [
+      {
+        "id": "0cbd59bbf78e377b2ba9ee32504845d9",
+        "groups": [],
+        "checks": [
+            {
+              "name": "Send OTP - status is 201",
+              "path": "::Authentication Flow::Send OTP - status is 201",
+              "id": "ee33092e55a055a8d7d23c8ed13dc81f",
+              "passes": 2195,
+              "fails": 0
+            },
+            {
+              "id": "1750aafe379b1e3d4b23eaff1ba57e29",
+              "passes": 2195,
+              "fails": 0,
+              "name": "Send OTP - response time < 2000ms",
+              "path": "::Authentication Flow::Send OTP - response time < 2000ms"
+            },
+            {
+              "name": "Validate OTP - status is 200",
+              "path": "::Authentication Flow::Validate OTP - status is 200",
+              "id": "359acb10796555265b6d6dc6fa82e43d",
+              "passes": 2195,
+              "fails": 0
+            },
+            {
+              "name": "Validate OTP - response time < 2000ms",
+              "path": "::Authentication Flow::Validate OTP - response time < 2000ms",
+              "id": "f77835e65f8e87abd8e2a587843d3504",
+              "passes": 2188,
+              "fails": 7
+            }
+          ],
+        "name": "Authentication Flow",
+        "path": "::Authentication Flow"
+      }
+    ],
+    "checks": []
+  }
+}

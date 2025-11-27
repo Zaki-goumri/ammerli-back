@@ -85,7 +85,10 @@ services:
     env_file:
       - .env
     logging:
-      driver: "none"
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   minio:
     image: minio/minio:latest
@@ -177,6 +180,24 @@ services:
       - .env
     volumes:
       - db-data:/var/lib/postgresql
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=2GB"
+      - "-c"
+      - "effective_cache_size=6GB"
+      - "-c"
+      - "work_mem=32MB"
+      - "-c"
+      - "maintenance_work_mem=512MB"
+      - "-c"
+      - "max_wal_size=1GB"
+      - "-c"
+      - "min_wal_size=80MB"
+      - "-c"
+      - "random_page_cost=1.1"
+      - "-c"
+      - "default_statistics_target=100"
     networks:
       - internal
     healthcheck:

@@ -104,7 +104,6 @@ export class InvoiceGeneratorService {
       doc.image(logo, 30, 30, { width: 150 });
     }
 
-    // Company info on the right
     doc
       .font('Helvetica-Bold')
       .fontSize(10)

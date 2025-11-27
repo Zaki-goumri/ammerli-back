@@ -23,7 +23,7 @@ export function authenticate() {
     // 1. Send OTP
     let sendOtpRes = post('/authentication/otp/send', { phoneNumber });
     checkResponse(sendOtpRes, 201, 'Send OTP');
-    sleep(1);
+    sleep(15);
 
     // 2. Validate OTP
     let validateOtpRes = post('/authentication/otp/validate', {
