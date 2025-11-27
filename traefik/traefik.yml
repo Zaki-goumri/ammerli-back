@@ -82,7 +82,6 @@ providers:
     network: proxy
     watch: true
     # Optimization: Reduce Docker API polling
-    swarmMode: false
     useBindPortIP: false
     # HTTP client timeout
     httpClientTimeout: 30s
