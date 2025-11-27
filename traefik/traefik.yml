@@ -87,8 +87,8 @@ providers:
 # LOGGING (Optimized for Production)
 # ==============================================
 log:
-  level: ERROR  # Changed from INFO - only log errors
-  filePath: /var/log/traefik.log
+  level: DEBUG
+  # filePath: /var/log/traefik.log
   format: json
   maxSize: 100  # MB
   maxAge: 7     # days
@@ -97,7 +97,7 @@ log:
 
 # Access logs with buffering
 accessLog:
-  filePath: /var/log/traefik-access.log
+  # filePath: /var/log/traefik-access.log
   format: json
   bufferingSize: 100  # Buffer 100 log lines before writing
   filters:
