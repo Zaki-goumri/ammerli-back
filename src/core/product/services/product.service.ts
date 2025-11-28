@@ -717,6 +717,8 @@ export class ProductService {
         'brand.label AS brand',
         'category.label AS category',
         'product.createdAt AS createdAt',
+        'product.quantity AS quantity',
+        'product.quantityPerBatch AS "quantityPerBatch"',
       ])
       .groupBy('product.id')
       .addGroupBy('brand.label')

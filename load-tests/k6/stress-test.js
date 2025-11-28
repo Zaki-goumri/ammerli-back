@@ -11,6 +11,7 @@ export const options = {
         { duration: '1m', target: 50 },
         { duration: '1m', target: 300 },
         { duration: '1m', target: 800 },
+        { duration: '1m', target: 1000 },
       ],
       gracefulRampDown: '10s',
     },
@@ -49,16 +50,8 @@ export function handleSummary(data) {
     console.error(`Error generating JSON report: ${e}`);
   }
 
-  let stdoutText = 'Error generating text summary.';
-  try {
-    stdoutText = textSummary(data, { indent: ' ', enableColors: true });
-  } catch (e) {
-    console.error(`Error generating text summary: ${e}`);
-  }
-
   return {
     'summary.html': htmlReportContent,
     'summary.json': jsonReportContent,
-    stdout: stdoutText,
   };
 }

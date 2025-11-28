@@ -52,6 +52,7 @@ import { ObjectService } from 'src/infrastructure/object-storage/object-storage.
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { I18nService } from 'nestjs-i18n';
+import { OrderStatusQuery } from '../enums/order-status-query.enum';
 
 export type PaymentStatus =
   | 'paid'
@@ -480,19 +481,64 @@ export class OrderService {
     paginationQuery: PaginationQueryDto,
     userId: number,
     withProducts: boolean,
+    status?: OrderStatusQuery,
   ): Promise<PaginationResponseDto<OrderListItemDto>> {
     const { limit, page } = paginationQuery;
 
-    const orderIdsQuery = this.orderRepo
+    const baseQuery = this.orderRepo
       .createQueryBuilder('orders')
-      .where('orders.buyerId = :userId', { userId })
+      .where('orders.buyerId = :userId', { userId });
+
+    if (status) {
+      if (status === OrderStatusQuery.CANCELED) {
+        baseQuery.andWhere('orders.isCancelled = TRUE');
+      } else {
+        const subQuery = (subQuery) =>
+          subQuery
+            .select('t1.orderId', 'orderId')
+            .addSelect('t1.status', 'latestStatus')
+            .from(Tracking, 't1')
+            .innerJoin(
+              (innerSubquery) =>
+                innerSubquery
+                  .select('MAX(t2.createdAt)', 'maxCreatedAt')
+                  .addSelect('t2.orderId', 'order_id_alias')
+                  .from(Tracking, 't2')
+                  .groupBy('t2.orderId'),
+              't_max',
+              't_max.order_id_alias = t1.orderId AND t_max."maxCreatedAt" = t1.createdAt',
+            );
+
+        baseQuery.leftJoin(subQuery, 'latest_tracking', 'latest_tracking."orderId" = orders.id');
+
+        if (status === OrderStatusQuery.DELIVERED) {
+          baseQuery.andWhere('latest_tracking."latestStatus" = :status', {
+            status: ORDER_STATUS.DELIVERED,
+          });
+        } else if (status === OrderStatusQuery.IN_PROGRESS) {
+          baseQuery.andWhere(
+            'latest_tracking."latestStatus" IN (:...statuses)',
+            {
+              statuses: [
+                ORDER_STATUS.CONFIRMATION,
+                ORDER_STATUS.PREPARATION,
+                ORDER_STATUS.ON_DELIVERING,
+              ],
+            },
+          );
+        }
+      }
+    }
+
+    const total = await baseQuery.getCount();
+
+    const orderIdsQuery = baseQuery
       .select('orders.id', 'id')
       .withDeleted()
       .orderBy('orders.createdAt', 'DESC')
       .take(limit)
       .skip((page - 1) * limit);
 
-    const total = await this.orderRepo.count({ where: { buyerId: userId } });
     const paginatedIds = await orderIdsQuery.getRawMany();
 
     if (paginatedIds.length === 0) {
@@ -580,6 +626,7 @@ export class OrderService {
           'p.price AS price',
           'op.quantity AS quantity',
           'pic.url AS picture',
+          'p.deletedAt AS "deletedAt"',
         ])
         .withDeleted()
         .getRawMany();
@@ -589,9 +636,12 @@ export class OrderService {
           if (!acc[p.orderId]) {
             acc[p.orderId] = [];
           }
-          const { orderId, ...productData } = p;
+          const { orderId, deletedAt, ...productData } = p;
           productData.price = parseFloat(productData.price);
-          acc[p.orderId].push(productData);
+          if (deletedAt) {
+            productData.picture = 'deleted_product.jpg';
+          }
+          acc[orderId].push(productData as ProductOrderItemDto);
           return acc;
         },
         {} as Record<number, ProductOrderItemDto[]>,

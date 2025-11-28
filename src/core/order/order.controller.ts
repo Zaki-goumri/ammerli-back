@@ -49,6 +49,8 @@ import { ConvertToPresignedUrls } from 'src/common/decorators/convert-to-presign
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
 import { BlacklistGuard } from '../authentication/guards/blacklist.guard';
 import { CancelOrderDto } from './dtos/cancel-order.dto';
+import { OrderStatusQuery } from './enums/order-status-query.enum';
+
 /**
  *
  * @class OrderController
@@ -133,6 +135,12 @@ export class OrderController {
   @ApiBearerAuth()
   @UseGuards(AccessTokenGuard)
   @ApiOperation({ summary: 'Get all orders for the authenticated user' })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: OrderStatusQuery,
+    description: 'Filter orders by status',
+  })
   @ApiOkResponse({
     type: PaginatedResponse(OrderListItemDto),
     description: 'A paginated list of orders',
@@ -141,9 +149,15 @@ export class OrderController {
   @ConvertToPresignedUrls(['products.picture'], BUCKET_TARGETS.PRODUCT_PICTURES)
   getAllOrders(
     @Query() { page, limit }: PaginationQueryDto,
+    @Query('status') status: OrderStatusQuery,
     @USER('id') userId: number,
   ) {
-    return this.orderService.getAllOrders({ page, limit }, userId, true);
+    return this.orderService.getAllOrders(
+      { page, limit },
+      userId,
+      true,
+      status,
+    );
   }
 
   /**
@@ -274,3 +288,4 @@ export class OrderController {
     );
   }
 }
+
