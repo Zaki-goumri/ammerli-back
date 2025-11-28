@@ -1,35 +1,7 @@
 {
-  "root_group": {
-    "name": "",
-    "path": "",
-    "id": "d41d8cd98f00b204e9800998ecf8427e",
-    "groups": [
-      {
-        "name": "Authentication Flow",
-        "path": "::Authentication Flow",
-        "id": "0cbd59bbf78e377b2ba9ee32504845d9",
-        "groups": [],
-        "checks": [
-            {
-              "name": "Send OTP - status is 201",
-              "path": "::Authentication Flow::Send OTP - status is 201",
-              "id": "ee33092e55a055a8d7d23c8ed13dc81f",
-              "passes": 0,
-              "fails": 25
-            },
-            {
-              "fails": 0,
-              "name": "Send OTP - response time < 2000ms",
-              "path": "::Authentication Flow::Send OTP - response time < 2000ms",
-              "id": "1750aafe379b1e3d4b23eaff1ba57e29",
-              "passes": 25
-            }
-          ]
-      }
-    ],
-    "checks": []
-  },
   "options": {
+    "summaryTimeUnit": "",
+    "noColor": false,
     "summaryTrendStats": [
       "avg",
       "min",
@@ -37,114 +9,45 @@
       "max",
       "p(90)",
       "p(95)"
-    ],
-    "summaryTimeUnit": "",
-    "noColor": false
+    ]
   },
   "state": {
     "isStdOutTTY": true,
     "isStdErrTTY": true,
-    "testRunDurationMs": 61106.638561
+    "testRunDurationMs": 101530.052174
   },
   "metrics": {
-    "http_req_waiting": {
+    "http_req_duration{expected_response:true}": {
       "type": "trend",
       "contains": "time",
       "values": {
-        "avg": 0,
-        "min": 0,
-        "med": 0,
-        "max": 0,
-        "p(90)": 0,
-        "p(95)": 0
+        "p(90)": 648.5551792,
+        "p(95)": 847.8154148,
+        "avg": 276.06524687361406,
+        "min": 67.505624,
+        "med": 140.6484225,
+        "max": 1261.878899
       }
-    },
-    "vus": {
-      "type": "gauge",
-      "contains": "default",
-      "values": {
-        "min": 0,
-        "max": 52,
-        "value": 52
-      }
-    },
-    "http_req_sending": {
-      "type": "trend",
-      "contains": "time",
-      "values": {
-        "med": 0,
-        "max": 0,
-        "p(90)": 0,
-        "p(95)": 0,
-        "avg": 0,
-        "min": 0
-      }
-    },
-    "http_req_receiving": {
-      "type": "trend",
-      "contains": "time",
-      "values": {
-        "med": 0,
-        "max": 0,
-        "p(90)": 0,
-        "p(95)": 0,
-        "avg": 0,
-        "min": 0
-      }
-    },
-    "data_received": {
-      "values": {
-        "count": 0,
-        "rate": 0
-      },
-      "type": "counter",
-      "contains": "data"
     },
     "http_req_tls_handshaking": {
       "type": "trend",
       "contains": "time",
       "values": {
-        "avg": 0,
+        "avg": 18.74052208179959,
         "min": 0,
         "med": 0,
-        "max": 0,
-        "p(90)": 0,
-        "p(95)": 0
-      }
-    },
-    "checks": {
-      "type": "rate",
-      "contains": "default",
-      "values": {
-        "rate": 0.5,
-        "passes": 25,
-        "fails": 25
-      }
-    },
-    "http_req_duration": {
-      "type": "trend",
-      "contains": "time",
-      "values": {
-        "avg": 0,
-        "min": 0,
-        "med": 0,
-        "max": 0,
-        "p(90)": 0,
-        "p(95)": 0
-      },
-      "thresholds": {
-        "p(95)<300": {
-          "ok": true
-        }
+        "max": 449.259886,
+        "p(90)": 101.10064360000003,
+        "p(95)": 120.06703500000003
       }
     },
     "http_req_failed": {
       "type": "rate",
       "contains": "default",
       "values": {
-        "rate": 1,
-        "passes": 25,
-        "fails": 0
+        "passes": 565,
+        "fails": 902,
+        "rate": 0.38513974096796183
       },
       "thresholds": {
         "rate<0.1": {
@@ -152,24 +55,123 @@
         }
       }
     },
-    "http_req_connecting": {
+    "vus": {
+      "type": "gauge",
+      "contains": "default",
+      "values": {
+        "value": 219,
+        "min": 0,
+        "max": 219
+      }
+    },
+    "http_req_blocked": {
+      "type": "trend",
       "contains": "time",
       "values": {
-        "avg": 0,
-        "min": 0,
+        "min": 0.000168,
+        "med": 0.000714,
+        "max": 1184.525722,
+        "p(90)": 183.88188720000008,
+        "p(95)": 209.90964680000002,
+        "avg": 32.357680649625124
+      }
+    },
+    "iterations": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 277,
+        "rate": 2.72825625584515
+      }
+    },
+    "http_req_connecting": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
         "med": 0,
-        "max": 0,
-        "p(90)": 0,
-        "p(95)": 0
+        "max": 1088.995359,
+        "p(90)": 81.41609640000001,
+        "p(95)": 86.3465057,
+        "avg": 13.584461788002718,
+        "min": 0
+      }
+    },
+    "checks": {
+      "values": {
+        "passes": 2369,
+        "fails": 565,
+        "rate": 0.8074301295160191
+      },
+      "type": "rate",
+      "contains": "default"
+    },
+    "iteration_duration": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "med": 18505.317882,
+        "max": 23734.376077,
+        "p(90)": 22563.6641796,
+        "p(95)": 22820.9047764,
+        "avg": 18912.54448059928,
+        "min": 16139.166663
+      }
+    },
+    "http_req_duration": {
+      "contains": "time",
+      "values": {
+        "p(90)": 524.3044670000005,
+        "p(95)": 712.7768416,
+        "avg": 202.54006030538525,
+        "min": 61.276647,
+        "med": 100.331531,
+        "max": 1261.878899
+      },
+      "thresholds": {
+        "p(95)<300": {
+          "ok": false
+        }
       },
       "type": "trend"
     },
     "data_sent": {
+      "contains": "data",
+      "values": {
+        "count": 588091,
+        "rate": 5792.285017170506
+      },
+      "type": "counter"
+    },
+    "http_req_sending": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "min": 0.03548,
+        "med": 0.137592,
+        "max": 0.481415,
+        "p(90)": 0.2044048,
+        "p(95)": 0.22653080000000006,
+        "avg": 0.14455483162917548
+      }
+    },
+    "http_req_waiting": {
+      "contains": "time",
+      "values": {
+        "avg": 199.38224706680313,
+        "min": 61.018156,
+        "med": 98.502059,
+        "max": 1087.228864,
+        "p(90)": 521.94375,
+        "p(95)": 711.4188569
+      },
+      "type": "trend"
+    },
+    "data_received": {
       "type": "counter",
       "contains": "data",
       "values": {
-        "count": 0,
-        "rate": 0
+        "count": 3009068,
+        "rate": 29637.21514535543
       }
     },
     "vus_max": {
@@ -185,21 +187,155 @@
       "type": "counter",
       "contains": "default",
       "values": {
-        "rate": 0.40912085149379684,
-        "count": 25
+        "count": 1467,
+        "rate": 14.448923925360416
       }
     },
-    "http_req_blocked": {
+    "group_duration": {
       "type": "trend",
       "contains": "time",
       "values": {
-        "p(90)": 0,
-        "p(95)": 0,
-        "avg": 0,
-        "min": 0,
-        "med": 0,
-        "max": 0
+        "p(95)": 17204.0784393,
+        "avg": 12369.990430913245,
+        "min": 2217.572558,
+        "med": 16225.33226,
+        "max": 17897.728395,
+        "p(90)": 17011.2583331
+      }
+    },
+    "http_req_receiving": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "p(90)": 1.3537564000000006,
+        "p(95)": 8.2610974,
+        "avg": 3.0132584069529686,
+        "min": 0.020209,
+        "med": 0.102487,
+        "max": 438.148281
       }
     }
+  },
+  "root_group": {
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": [
+      {
+        "id": "0cbd59bbf78e377b2ba9ee32504845d9",
+        "groups": [],
+        "checks": [
+            {
+              "path": "::Authentication Flow::Send OTP - status is 201",
+              "id": "ee33092e55a055a8d7d23c8ed13dc81f",
+              "passes": 272,
+              "fails": 226,
+              "name": "Send OTP - status is 201"
+            },
+            {
+              "path": "::Authentication Flow::Send OTP - response time < 2000ms",
+              "id": "1750aafe379b1e3d4b23eaff1ba57e29",
+              "passes": 498,
+              "fails": 0,
+              "name": "Send OTP - response time < 2000ms"
+            },
+            {
+              "path": "::Authentication Flow::Validate OTP - status is 200",
+              "id": "359acb10796555265b6d6dc6fa82e43d",
+              "passes": 165,
+              "fails": 138,
+              "name": "Validate OTP - status is 200"
+            },
+            {
+              "name": "Validate OTP - response time < 2000ms",
+              "path": "::Authentication Flow::Validate OTP - response time < 2000ms",
+              "id": "f77835e65f8e87abd8e2a587843d3504",
+              "passes": 303,
+              "fails": 0
+            }
+          ],
+        "name": "Authentication Flow",
+        "path": "::Authentication Flow"
+      },
+      {
+        "groups": [],
+        "checks": [
+            {
+              "path": "::Buyer Flow::Get All Products - status is 200",
+              "id": "19f11b1de2980d328b47b5f972ba9cf6",
+              "passes": 101,
+              "fails": 60,
+              "name": "Get All Products - status is 200"
+            },
+            {
+              "name": "Get All Products - response time < 2000ms",
+              "path": "::Buyer Flow::Get All Products - response time < 2000ms",
+              "id": "a580ac4c12a729af3c6a1db97c8b6aa7",
+              "passes": 161,
+              "fails": 0
+            },
+            {
+              "passes": 92,
+              "fails": 8,
+              "name": "Get Single Product - status is 200",
+              "path": "::Buyer Flow::Get Single Product - status is 200",
+              "id": "eb041338a9263878f751d11f920084f9"
+            },
+            {
+              "fails": 0,
+              "name": "Get Single Product - response time < 2000ms",
+              "path": "::Buyer Flow::Get Single Product - response time < 2000ms",
+              "id": "78a1d335e1ce04bba615684211a516ec",
+              "passes": 100
+            },
+            {
+              "path": "::Buyer Flow::Toggle Favorite Product - status is 200",
+              "id": "4dd05053896a3e81012cb693ecb25299",
+              "passes": 91,
+              "fails": 9,
+              "name": "Toggle Favorite Product - status is 200"
+            },
+            {
+              "name": "Toggle Favorite Product - response time < 2000ms",
+              "path": "::Buyer Flow::Toggle Favorite Product - response time < 2000ms",
+              "id": "7d5fc91a12941eb5f7ed9f51ce8411b7",
+              "passes": 100,
+              "fails": 0
+            },
+            {
+              "name": "Get User Addresses - status is 200",
+              "path": "::Buyer Flow::Get User Addresses - status is 200",
+              "id": "d492db22adfb6d9b46284c7ce6103b23",
+              "passes": 97,
+              "fails": 58
+            },
+            {
+              "fails": 0,
+              "name": "Get User Addresses - response time < 2000ms",
+              "path": "::Buyer Flow::Get User Addresses - response time < 2000ms",
+              "id": "ef1c24c78e223e947e2ee71c5fc9aabb",
+              "passes": 155
+            },
+            {
+              "passes": 84,
+              "fails": 66,
+              "name": "Create Order - status is 201",
+              "path": "::Buyer Flow::Create Order - status is 201",
+              "id": "823bdf1fb42ecc39a0f2005eb0231bee"
+            },
+            {
+              "fails": 0,
+              "name": "Create Order - response time < 2000ms",
+              "path": "::Buyer Flow::Create Order - response time < 2000ms",
+              "id": "3806b4715328e6c0a002f7b9b0b4d115",
+              "passes": 150
+            }
+          ],
+        "name": "Buyer Flow",
+        "path": "::Buyer Flow",
+        "id": "87e4634a05a599a9f72331961b638720"
+      }
+    ],
+    "checks": [],
+    "name": "",
+    "path": ""
   }
 }

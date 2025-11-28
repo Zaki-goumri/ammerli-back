@@ -98,7 +98,8 @@ services:
       - "traefik.http.routers.server-secure.service=server"
       - "traefik.http.routers.server-secure.tls=true"
       - "traefik.http.routers.server-secure.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.server-secure.middlewares=api-ratelimit-ip,api-ratelimit-subnet,api-compress,api-buffer,api-inflightreq,api-retry,security-headers@file"
+      # - "traefik.http.routers.server-secure.middlewares=api-ratelimit-ip,api-ratelimit-subnet,api-compress,api-buffer,api-inflightreq,api-retry,security-headers@file"
+      - "traefik.http.routers.server-secure.middlewares=api-compress,api-buffer,api-inflightreq,api-retry,security-headers@file"
       
       # ==================================
       # SERVICE DEFINITION & LOAD BALANCING
@@ -203,7 +204,7 @@ services:
       - "traefik.http.routers.minio-api.entrypoints=websecure"
       - "traefik.http.routers.minio-api.tls=true"
       - "traefik.http.routers.minio-api.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.minio-api.middlewares=storage-ratelimit-ip,storage-ratelimit-subnet"
+      # - "traefik.http.routers.minio-api.middlewares=storage-ratelimit-ip,storage-ratelimit-subnet"
       - "traefik.http.routers.minio-api.service=minio-api"
       - "traefik.http.services.minio-api.loadbalancer.server.port=9000"
 
@@ -218,7 +219,7 @@ services:
       - "traefik.http.routers.minio-console.entrypoints=websecure"
       - "traefik.http.routers.minio-console.tls=true"
       - "traefik.http.routers.minio-console.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.minio-console.middlewares=minio-console-ratelimit"
+      # - "traefik.http.routers.minio-console.middlewares=minio-console-ratelimit"
       - "traefik.http.routers.minio-console.service=minio-console"
       - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
 
@@ -451,7 +452,8 @@ services:
       - "traefik.http.routers.grafana-secure.service=grafana"
       - "traefik.http.routers.grafana-secure.tls=true"
       - "traefik.http.routers.grafana-secure.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.grafana-secure.middlewares=grafana-ratelimit,security-headers@file"
+      # - "traefik.http.routers.grafana-secure.middlewares=grafana-ratelimit,security-headers@file"
+      - "traefik.http.routers.grafana-secure.middlewares=security-headers@file"
       
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
     restart: unless-stopped
