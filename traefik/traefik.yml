@@ -19,9 +19,12 @@ providers:
     exposedByDefault: false
     network: proxy
     watch: true
+  file:
+    filename: /config.yml
+    watch: true
 
 log:
-  level: INFO
+  level: DEBUG
 
 accessLog: {} # Logs to stdout
 
@@ -32,26 +35,3 @@ certificatesResolvers:
       storage: /acme.json
       httpChallenge:
         entryPoint: web
-
-# ==============================================
-# MIDDLEWARES
-# ==============================================
-http:
-  middlewares:
-    security-headers:
-      headers:
-        frameDeny: true
-        browserXssFilter: true
-        contentTypeNosniff: true
-        forceSTSHeader: true
-        stsIncludeSubdomains: true
-        stsPreload: true
-        stsSeconds: 31536000
-        customFrameOptionsValue: "SAMEORIGIN"
-        customRequestHeaders:
-          X-Forwarded-Proto: "https"
-          
-    https-redirect:
-      redirectScheme:
-        scheme: https
-        permanent: true

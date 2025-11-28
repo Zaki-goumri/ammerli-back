@@ -12,15 +12,13 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/traefik.yml:/traefik.yml:ro
+      - ./traefik/config.yml:/config.yml:ro
       - ./traefik/acme.json:/acme.json
     networks:
       - proxy
       - internal
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
-      - "traefik.http.routers.traefik.service=api@internal"
-      - "traefik.http.routers.traefik.entrypoints=web"
     logging:
       driver: "json-file"
       options:
@@ -39,7 +37,7 @@ services:
       minio:
         condition: service_healthy
       pgbouncer:
-        condition: service_healthy
+         condition: service_healthy
     networks:
       - proxy
       - internal
@@ -90,7 +88,7 @@ services:
       - "traefik.http.routers.server.rule=Host(`api.ammerli.com`)"
       - "traefik.http.routers.server.entrypoints=web"
       - "traefik.http.routers.server.service=server"
-      - "traefik.http.routers.server.middlewares=https-redirect"
+      - "traefik.http.routers.server.middlewares=https-redirect@file"
       
       # ==================================
       # HTTPS ROUTER (with all middlewares)
@@ -100,7 +98,7 @@ services:
       - "traefik.http.routers.server-secure.service=server"
       - "traefik.http.routers.server-secure.tls=true"
       - "traefik.http.routers.server-secure.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.server-secure.middlewares=api-ratelimit-ip,api-ratelimit-subnet,api-compress,api-buffer,api-inflightreq,api-retry,security-headers"
+      - "traefik.http.routers.server-secure.middlewares=api-ratelimit-ip,api-ratelimit-subnet,api-compress,api-buffer,api-inflightreq,api-retry,security-headers@file"
       
       # ==================================
       # SERVICE DEFINITION & LOAD BALANCING
@@ -213,7 +211,7 @@ services:
       - "traefik.http.routers.minio-api-http.rule=Host(`storage.ammerli.com`)"
       - "traefik.http.routers.minio-api-http.entrypoints=web"
       - "traefik.http.routers.minio-api-http.service=minio-api"
-      - "traefik.http.routers.minio-api-http.middlewares=https-redirect"
+      - "traefik.http.routers.minio-api-http.middlewares=https-redirect@file"
       
       # MinIO Console (Secure)
       - "traefik.http.routers.minio-console.rule=Host(`minio.ammerli.com`)"
@@ -228,7 +226,7 @@ services:
       - "traefik.http.routers.minio-console-http.rule=Host(`minio.ammerli.com`)"
       - "traefik.http.routers.minio-console-http.entrypoints=web"
       - "traefik.http.routers.minio-console-http.service=minio-console"
-      - "traefik.http.routers.minio-console-http.middlewares=https-redirect"
+      - "traefik.http.routers.minio-console-http.middlewares=https-redirect@file"
 
   redis:
     image: redis:7.4-alpine
@@ -446,14 +444,14 @@ services:
       - "traefik.http.routers.grafana.rule=Host(`grafana.ammerli.com`)"
       - "traefik.http.routers.grafana.entrypoints=web"
       - "traefik.http.routers.grafana.service=grafana"
-      - "traefik.http.routers.grafana.middlewares=https-redirect"
+      - "traefik.http.routers.grafana.middlewares=https-redirect@file"
       
       - "traefik.http.routers.grafana-secure.rule=Host(`grafana.ammerli.com`)"
       - "traefik.http.routers.grafana-secure.entrypoints=websecure"
       - "traefik.http.routers.grafana-secure.service=grafana"
       - "traefik.http.routers.grafana-secure.tls=true"
       - "traefik.http.routers.grafana-secure.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.grafana-secure.middlewares=grafana-ratelimit,security-headers"
+      - "traefik.http.routers.grafana-secure.middlewares=grafana-ratelimit,security-headers@file"
       
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
     restart: unless-stopped
