@@ -1,6 +1,6 @@
 services:
   traefik:
-    image: traefik:v3.2
+    image: traefik:latest
     container_name: traefik
     restart: unless-stopped
     security_opt:
@@ -8,43 +8,28 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"
+      - "8080:8080" 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/traefik.yml:/traefik.yml:ro
-      - ./traefik/config.yml:/config.yml:ro
       - ./traefik/acme.json:/acme.json
-      - ./traefik/logs:/var/log:rw
+      - ./traefik/config.yml:/config.yml:ro
     networks:
       - proxy
       - internal
     labels:
       - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.entrypoints=web"
     logging:
       driver: "json-file"
       options:
-        max-size: "5m"
-        max-file: "3"
-        compress: "true"
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 256M
-        reservations:
-          cpus: '0.5'
-          memory: 128M
-    environment:
-      - TZ=Africa/Algiers
-    healthcheck:
-      test: ["CMD", "traefik", "healthcheck", "--ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+        max-size: "10m"
+        max-file: "5"
+
 
   server:
-    # REMOVED: container_name (required for scaling)
     image: zakigoumri/3ammerli-backend:latest
     restart: unless-stopped
     depends_on:

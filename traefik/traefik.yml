@@ -1,14 +1,16 @@
-# Simplified configuration inspired by the user's previous setup.
-# NOTE: The global redirect has been intentionally omitted to prevent ACME failures.
-
 api:
   dashboard: true
-  insecure: true # Exposes the dashboard on port 8080
+  insecure: true
 
 entryPoints:
   web:
     address: ":80"
-
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
   websecure:
     address: ":443"
     http:
@@ -20,16 +22,9 @@ providers:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
     network: proxy
-    watch: true
-
   file:
     filename: /config.yml
     watch: true
-
-log:
-  level: INFO
-
-accessLog: {} # Logs to stdout
 
 certificatesResolvers:
   letsencrypt:
@@ -38,3 +33,8 @@ certificatesResolvers:
       storage: /acme.json
       httpChallenge:
         entryPoint: web
+
+log:
+  level: INFO
+
+accessLog: {}
