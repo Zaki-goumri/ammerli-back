@@ -1,16 +1,12 @@
+# Main Traefik configuration
+
 api:
   dashboard: true
-  insecure: true
+  insecure: true # Exposes the dashboard on port 8080
 
 entryPoints:
   web:
     address: ":80"
-    http:
-      redirections:
-        entryPoint:
-          to: websecure
-          scheme: https
-          permanent: true
   websecure:
     address: ":443"
     http:
@@ -22,9 +18,12 @@ providers:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
     network: proxy
-  file:
-    filename: /config.yml
     watch: true
+
+log:
+  level: INFO
+
+accessLog: {} # Logs to stdout
 
 certificatesResolvers:
   letsencrypt:
@@ -34,7 +33,25 @@ certificatesResolvers:
       httpChallenge:
         entryPoint: web
 
-log:
-  level: INFO
-
-accessLog: {}
+# ==============================================
+# MIDDLEWARES
+# ==============================================
+http:
+  middlewares:
+    security-headers:
+      headers:
+        frameDeny: true
+        browserXssFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
+        customFrameOptionsValue: "SAMEORIGIN"
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+          
+    https-redirect:
+      redirectScheme:
+        scheme: https
+        permanent: true
