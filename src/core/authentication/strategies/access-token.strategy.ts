@@ -1,3 +1,4 @@
+import { ExtendedRequest } from '../types/extended-req.type';
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
@@ -5,7 +6,6 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { JwtPayload } from '../interfaces/access-token-payload.interface';
 import authConfig from 'src/config/auth.config';
 import { I18nService } from 'nestjs-i18n';
-import { Request } from 'express';
 
 @Injectable()
 export class AccessTokenStrategy extends PassportStrategy(
@@ -24,7 +24,7 @@ export class AccessTokenStrategy extends PassportStrategy(
     });
   }
 
-  validate(req: Request, payload: JwtPayload): JwtPayload {
+  validate(req: ExtendedRequest, payload: JwtPayload): JwtPayload {
     if (!payload) {
       throw new UnauthorizedException({
         key: 'auth.strategy.invalidTokenPayload',

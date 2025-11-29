@@ -5,7 +5,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { FastifyReply } from 'fastify';
 import { I18nService } from 'nestjs-i18n';
 import { MinioError } from 'src/infrastructure/object-storage/errors/minio.error';
 
@@ -17,7 +17,7 @@ export class ObjectStorageExceptionFilter implements ExceptionFilter {
 
   catch(exception: MinioError, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
+    const response = ctx.getResponse<FastifyReply>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = this.i18n.t('object-storage.default.message');
@@ -51,7 +51,7 @@ export class ObjectStorageExceptionFilter implements ExceptionFilter {
       exception.stack,
     );
 
-    response.status(status).json({
+    response.status(status).send({
       statusCode: status,
       message: message,
       error: error,

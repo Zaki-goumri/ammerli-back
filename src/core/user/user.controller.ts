@@ -36,8 +36,10 @@ import { UserService } from './user.service';
 import { USER } from '../authentication/decorators/user.decorartor';
 import { AccessTokenGuard } from '../authentication/guards/access-token.guard';
 import { UpdateUserDto } from './dtos/update-user.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { memoryStorage } from 'multer';
+import { FileInterceptor } from '@nest-lab/fastify-multer';
+import { memoryStorage } from 'fastify-multer';
+import FastifyMulter from 'fastify-multer';
+
 import { CreateAddressDto } from './dtos/create-address.dto';
 import { GetMeDto } from './dtos/response/get-me.dto';
 import { UserDto } from './dtos/response/user.dto';
@@ -137,7 +139,7 @@ export class UserController {
    * @method updateProfilePicture
    * @description Uploads and sets a new profile picture for the current user.
    * @param {number} userId - The ID of the authenticated user.
-   * @param {Express.Multer.File} file - The new profile picture file.
+   * @param {Multer.File} file - The new profile picture file.
    * @returns {Promise<ProfilePictureDto>} The URL of the updated profile picture.
    */
   @Patch('/me/picture')
@@ -179,7 +181,7 @@ export class UserController {
         fileIsRequired: true,
       }),
     )
-    file: Express.Multer.File,
+    file: Express.Multer.File, // Changed from Express.Multer.File
   ): Promise<ProfilePictureDto> {
     this.logger.log(`Updating profile picture for user ID: ${userId}`);
     return this.userService.updateUserProfilePic(userId, file);

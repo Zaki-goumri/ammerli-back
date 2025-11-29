@@ -36,8 +36,10 @@ import { AccessTokenGuard } from '../authentication/guards/access-token.guard';
 import { Roles } from 'src/core/authentication/decorators/role.decorator';
 import { USER_ROLES } from 'src/common/enums/user-role.enum';
 import { RoleGuard } from '../authentication/guards/role.guard';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { memoryStorage } from 'multer';
+import { FileInterceptor } from '@nest-lab/fastify-multer';
+import { memoryStorage } from 'fastify-multer';
+
+
 import { PresignedUrlInterceptor } from 'src/common/interceptors/presigned-url.interceptor';
 import { ConvertToPresignedUrls } from 'src/common/decorators/convert-to-presigned-urls.decorator';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';

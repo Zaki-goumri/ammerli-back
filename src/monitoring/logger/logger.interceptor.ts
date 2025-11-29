@@ -4,7 +4,7 @@ import {
   Logger,
   NestInterceptor,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { Observable, tap } from 'rxjs';
 
 export class LoggerInterceptor implements NestInterceptor {
@@ -15,22 +15,22 @@ export class LoggerInterceptor implements NestInterceptor {
     next: CallHandler<any>,
   ): Observable<any> {
     const startTime = Date.now();
-    const request = context.switchToHttp().getRequest<Request>();
-    const response = context.switchToHttp().getResponse<Response>();
+    const request = context.switchToHttp().getRequest<FastifyRequest>();
+    const response = context.switchToHttp().getResponse<FastifyReply>();
 
-    const { method, originalUrl, ip } = request;
-    const userAgent = request.get('user-agent') || '';
+    const { method, url, ip } = request; // Use url directly for Fastify
+    const userAgent = request.headers['user-agent'] || ''; // Changed for Fastify
     const traceId =
       (request.headers['x-request-id'] as string) ||
       `trace-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
     // Log Request
     this.logger.log({
-      message: `Incoming Request: ${method} ${originalUrl}`,
+      message: `Incoming Request: ${method} ${url}`, // Use url for Fastify
       context: 'HTTP',
       traceId,
       method,
-      url: originalUrl,
+      url,
       ip,
       userAgent,
     });
@@ -43,11 +43,11 @@ export class LoggerInterceptor implements NestInterceptor {
           const statusCode = response.statusCode;
 
           this.logger.log({
-            message: `Request Completed: ${method} ${originalUrl} ${statusCode}`,
+            message: `Request Completed: ${method} ${url} ${statusCode}`, // Use url for Fastify
             context: 'HTTP',
             traceId,
             method,
-            url: originalUrl,
+            url,
             statusCode,
             duration_ms: duration,
           });
@@ -57,11 +57,11 @@ export class LoggerInterceptor implements NestInterceptor {
           const duration = endTime - startTime;
 
           this.logger.error({
-            message: `Request Failed: ${method} ${originalUrl}`,
+            message: `Request Failed: ${method} ${url}`, // Use url for Fastify
             context: 'HTTP',
             traceId,
             method,
-            url: originalUrl,
+            url,
             duration_ms: duration,
             error: error.message,
             stack: error.stack,
