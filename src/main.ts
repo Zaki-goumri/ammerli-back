@@ -166,7 +166,7 @@ async function bootstrap() {
 
   //RUNNING THE APPLICATION
   const port = process.env.PORT || 3000;
-  await app.listen(port, '0.0.0.0');
+  await app.listen(port);
 }
 
 const cluserizeApp = process.env.NUM_CPUS;
