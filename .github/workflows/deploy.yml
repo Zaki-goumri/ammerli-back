@@ -66,7 +66,7 @@ jobs:
             docker compose down --timeout 30
             
             echo "Starting new containers with latest image..."
-            if ! docker compose up -d --scale server=4; then
+            if ! docker compose up -d --scale server=2; then
               echo "Failed to start new containers, rolling back..."
               
               sed -i "s|image: $IMAGE_NAME:latest|image: $IMAGE_NAME:backup|g" compose.yaml
