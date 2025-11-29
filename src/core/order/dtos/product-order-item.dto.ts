@@ -15,4 +15,7 @@ export class ProductOrderItemDto {
 
   @ApiProperty()
   picture: string;
+
+  @ApiProperty({ required: false })
+  isDeleted?: boolean;
 }
