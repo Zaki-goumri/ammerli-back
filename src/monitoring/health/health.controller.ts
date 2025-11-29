@@ -11,7 +11,7 @@ import { RedisCustomHealthIndicator } from './redis.health';
 import { ApiExcludeController } from '@nestjs/swagger';
 
 @Controller('health')
-@ApiExcludeController()
+//@ApiExcludeController()
 export class HealthController {
   constructor(
     private health: HealthCheckService,
@@ -47,12 +47,12 @@ export class HealthController {
   check() {
     return this.health.check([
       () => this.db.pingCheck('database'),
-      //      () => this.redis.isHealthy('redis'),
-      // () =>
-      //   this.disk.checkStorage('disk health', {
-      //     thresholdPercent: 0.9,
-      //     path: '/',
-      //   }),
+      //() => this.redis.isHealthy('redis'),
+      () =>
+        this.disk.checkStorage('disk health', {
+          thresholdPercent: 0.9,
+          path: '/',
+        }),
     ]);
   }
 }
