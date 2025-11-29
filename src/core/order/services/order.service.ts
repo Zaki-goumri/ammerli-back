@@ -640,7 +640,7 @@ export class OrderService {
               price: op.product.price,
               quantity: op.quantity,
               picture: op.product.pictures?.find((p) => p.isMain)?.url || '',
-              isDeleted: !!op.product.deletedAt,
+              //              isDeleted: !!op.product.deletedAt,
             };
             acc[op.orderId].push(productOrderItem);
           }
