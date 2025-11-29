@@ -618,38 +618,37 @@ export class OrderService {
 
     if (withProducts && orders.length > 0) {
       const orderIds = orders.map((o) => o.id);
-      const products = await this.orderProductRepo
-        .createQueryBuilder('op')
-        .leftJoin('op.product', 'p')
-        .leftJoin('p.pictures', 'pic', 'pic.isMain = :isMain', { isMain: true })
-        .where('op.orderId IN (:...orderIds)', { orderIds })
-        .select([
-          'op.orderId AS "orderId"',
-          'p.id AS id',
-          'p.name AS name',
-          'p.price AS price',
-          'op.quantity AS quantity',
-          'pic.url AS picture',
-          'p.deletedAt AS "deletedAt"',
-        ])
-        .withDeleted()
-        .getRawMany();
 
-      const productsByOrderId = products.reduce(
-        (acc, p) => {
-          if (!acc[p.orderId]) {
-            acc[p.orderId] = [];
+      const orderProducts = await this.orderProductRepo
+        .createQueryBuilder('op')
+        .leftJoinAndSelect('op.product', 'p')
+        .withDeleted()
+        .leftJoinAndSelect('p.pictures', 'pic')
+        .where('op.orderId IN (:...orderIds)', { orderIds })
+        .andWhere('(pic.isMain = :isMain OR pic.id IS NULL)', { isMain: true })
+        .getMany();
+
+      const productsByOrderId = orderProducts.reduce(
+        (acc, op) => {
+          if (!acc[op.orderId]) {
+            acc[op.orderId] = [];
           }
-          const { orderId, deletedAt, ...productData } = p;
-          productData.price = parseFloat(productData.price);
-          if (deletedAt) {
-            productData.picture = 'deleted_product.jpg';
+          if (op.product) {
+            const productOrderItem: ProductOrderItemDto = {
+              id: op.product.id,
+              name: op.product.name,
+              price: op.product.price,
+              quantity: op.quantity,
+              picture: op.product.pictures?.find((p) => p.isMain)?.url || '',
+              isDeleted: !!op.product.deletedAt,
+            };
+            acc[op.orderId].push(productOrderItem);
           }
-          acc[orderId].push(productData as ProductOrderItemDto);
           return acc;
         },
         {} as Record<number, ProductOrderItemDto[]>,
       );
+
       for (const order of orders) {
         order.products = productsByOrderId[order.id] || [];
       }
@@ -1100,4 +1099,3 @@ export class OrderService {
     );
   }
 }
-
