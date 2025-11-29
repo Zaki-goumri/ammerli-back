@@ -5,7 +5,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { QueryFailedError, EntityNotFoundError } from 'typeorm';
 import { PostgresErrorCode, isPostgresError } from '../constants/db-code';
 import { I18nService } from 'nestjs-i18n';
@@ -40,8 +40,8 @@ export class DatabaseExceptionFilter implements ExceptionFilter {
     }
 */
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const response = ctx.getResponse<FastifyReply>();
+    const request = ctx.getRequest<FastifyRequest>();
 
     const errorResult = this.handleException(exception);
 
@@ -54,7 +54,7 @@ export class DatabaseExceptionFilter implements ExceptionFilter {
       message: errorResult.message,
     };
 
-    response.status(errorResult.status).json(errorResponse);
+    response.status(errorResult.status).send(errorResponse); // Use send for Fastify
   }
 
   private handleException(
@@ -158,7 +158,7 @@ export class DatabaseExceptionFilter implements ExceptionFilter {
 
   private logError(
     exception: QueryFailedError | EntityNotFoundError,
-    request: Request,
+    request: FastifyRequest,
     statusCode: number,
   ): void {
     const { method, url } = request;

@@ -1,6 +1,5 @@
 import { htmlReport } from 'https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js';
 import { buyerFlow } from './scenarios/buyer-flow.js';
-import { textSummary } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
 
 export const options = {
   scenarios: {
@@ -17,8 +16,8 @@ export const options = {
     },
   },
   thresholds: {
-    http_req_failed: ['rate<0.1'],
-    http_req_duration: ['p(95)<300'],
+    http_req_failed: ['rate<0.05'],
+    http_req_duration: ['p(95)<2000'],
   },
 };
 

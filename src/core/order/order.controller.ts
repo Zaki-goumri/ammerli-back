@@ -24,7 +24,7 @@ import { OrderListItemDto } from './dtos/order-list-item.dto';
 import { PaginatedResponse } from 'src/common/dtos/pagination.dto';
 import { CreateOrderResDto } from './dtos/create-order.res.dto';
 import { CreateOrderDto } from './dtos/create-order.dto';
-import { Response } from 'express';
+import { FastifyReply } from 'fastify';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -94,8 +94,7 @@ export class OrderController {
    * @description Handle the webhook from Chargili for payment status updates.
    * @param {CheckoutDataDto} data - The data from the webhook.
    * @param {Record<string, string>} headers - The headers of the request.
-   * @param {Request} req - The Express request object.
-   * @param {Response} res - The Express response object.
+   * @param {FastifyReply} res - The Fastify reply object.
    */
   @ApiExcludeEndpoint()
   @Post('webhook/chargili')
@@ -103,7 +102,7 @@ export class OrderController {
   async handleChargiliWebhook(
     @Body('data') data: CheckoutDataDto,
     @Headers() headers: Record<string, string>,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     this.logger.log('Received Chargili webhook');
     try {
@@ -194,7 +193,7 @@ export class OrderController {
   @HttpCode(HttpStatus.FOUND)
   async handlePaymentRedirectTest(
     @Param('orderId') orderId: string,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     const redirectUrl = await this.orderService.getPaymentRedirectUrl(orderId);
     return res.redirect(redirectUrl);
@@ -288,4 +287,5 @@ export class OrderController {
     );
   }
 }
+
 

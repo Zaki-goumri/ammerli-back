@@ -6,7 +6,7 @@ import {
   Logger,
   Inject,
 } from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { ConfigType } from '@nestjs/config';
 import * as crypto from 'crypto';
 import chargiliConfig from 'src/config/chargili.config';
@@ -20,8 +20,8 @@ export class ChargilyWebhookMiddleware implements NestMiddleware {
     private readonly chargiliConf: ConfigType<typeof chargiliConfig>,
   ) {}
 
-  use(req: Request, res: Response, next: NextFunction) {
-    const signature = req.get('signature');
+  use(req: FastifyRequest, res: FastifyReply, next: () => void) {
+    const signature = req.headers['signature'] as string;
 
     if (!signature) {
       this.logger.warn('Webhook received without signature');

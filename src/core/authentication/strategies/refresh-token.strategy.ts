@@ -1,3 +1,4 @@
+import { ExtendedRequest } from '../types/extended-req.type';
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
@@ -6,7 +7,6 @@ import { RefreshTokenPayload } from '../interfaces/refresh-token.dto';
 import { UserService } from 'src/core/user/user.service';
 import authConfig from 'src/config/auth.config';
 import { I18nService } from 'nestjs-i18n';
-import { Request } from 'express';
 
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(
@@ -27,7 +27,7 @@ export class RefreshTokenStrategy extends PassportStrategy(
   }
 
   async validate(
-    req: Request,
+    req: ExtendedRequest,
     payload: RefreshTokenPayload,
   ): Promise<RefreshTokenPayload> {
     if (!payload?.id || !payload?.phoneNumber) {

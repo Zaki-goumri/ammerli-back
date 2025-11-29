@@ -21,7 +21,7 @@ import {
   ApiResponseProperty,
   ApiOkResponse,
 } from '@nestjs/swagger';
-import { Response } from 'express';
+import { FastifyReply } from 'fastify';
 import { USER_ROLES } from 'src/common/enums/user-role.enum';
 import { Roles } from 'src/core/authentication/decorators/role.decorator';
 import { AccessTokenGuard } from 'src/core/authentication/guards/access-token.guard';
@@ -111,11 +111,11 @@ export class InvoiceController {
   // Use passThrough option in guard to allow unauthenticated access with limited rate
   @Get(':id/download')
   @ApiOperation({ summary: 'Download the invoice as a PDF file' })
-  async download(@Param('id', ParseIntPipe) id: number, @Res() res: Response) {
+  async download(@Param('id', ParseIntPipe) id: number, @Res() res: FastifyReply) {
     const pdfBuffer = await this.invoiceService.getInvoicePDF(id);
     const invoice = await this.invoiceService.findOne(id);
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader(
+    res.header('Content-Type', 'application/pdf');
+    res.header(
       'Content-Disposition',
       `attachment; filename=invoice-${invoice.invoiceNumber}.pdf`,
     );
@@ -124,10 +124,10 @@ export class InvoiceController {
 
   @Get(':id/preview')
   @ApiOperation({ summary: 'Preview the invoice in the browser' })
-  async preview(@Param('id', ParseIntPipe) id: number, @Res() res: Response) {
+  async preview(@Param('id', ParseIntPipe) id: number, @Res() res: FastifyReply) {
     const pdfBuffer = await this.invoiceService.getInvoicePDF(id);
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'inline; filename=invoice.pdf');
+    res.header('Content-Type', 'application/pdf');
+    res.header('Content-Disposition', 'inline; filename=invoice.pdf');
     res.send(pdfBuffer);
   }
 

@@ -3,45 +3,47 @@ import {
   ValidationPipe,
   VersioningType,
 } from '@nestjs/common';
-import { NestApplication, NestFactory, Reflector } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { apiReference } from '@scalar/nestjs-api-reference';
+
 import { AppModule } from './app.module';
 import { LoggerInterceptor } from './monitoring/logger/logger.interceptor';
 import { DatabaseExceptionFilter } from './common/filters/db.filter';
 import { LoggerBuilder } from './monitoring/logger/logger.builder';
-import helmet from 'helmet';
-import BasicAuth = require('express-basic-auth');
-import * as http from 'http';
 import { HttpExceptionFilter } from './common/filters/httpException.filter';
 import { I18nService } from 'nestjs-i18n';
-import { NestExpressApplication } from '@nestjs/platform-express';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
+import helmet from '@fastify/helmet';
+import multipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
+import { join } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    bufferLogs: true,
-    logger:
-      process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'prod'
-        ? new LoggerBuilder()
-            .setJobName('core')
-            .setEnvironment(process.env.NODE_ENV)
-            .build()
-        : ['log', 'error', 'warn', 'debug', 'verbose'],
-  });
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    new FastifyAdapter({
+      trustProxy: true,
+    }),
+    {
+      bufferLogs: true,
+      logger:
+        process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'prod'
+          ? new LoggerBuilder()
+              .setJobName('core')
+              .setEnvironment(process.env.NODE_ENV)
+              .build()
+          : ['log', 'error', 'warn', 'debug', 'verbose'],
+    },
+  );
 
-  //Get real ip  behind proxies
-  app.set('trust proxy', 1);
-
-  //eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const server: http.Server = app.getHttpServer();
-
-  const KEEPALIVE_TIMEOUT_MS = 30000; // 30 seconds
-  server.keepAliveTimeout = KEEPALIVE_TIMEOUT_MS;
-  // headersTimeout must be slightly greater than keepAliveTimeout
-  server.headersTimeout = KEEPALIVE_TIMEOUT_MS + 1000;
-  // 2. Disable Nagle's algorithm on every new connection
-  server.on('connection', (socket) => {
-    socket.setNoDelay(true);
+  await app.register(multipart);
+  await app.register(fastifyStatic, {
+    root: join(__dirname, '..', 'public'), // Assuming 'public' folder in project root
+    prefix: '/public/', // Optional: prefix for static files URLs
   });
 
   app.enableVersioning({
@@ -51,38 +53,36 @@ async function bootstrap() {
   });
 
   //SECURITY
-  app.use(
-    helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          scriptSrc: [
-            "'self'",
-            "'unsafe-inline'",
-            "'unsafe-eval'",
-            'https://cdn.jsdelivr.net',
-            'https://unpkg.com',
-          ],
-          styleSrc: [
-            "'self'",
-            "'unsafe-inline'",
-            'https://cdn.jsdelivr.net',
-            'https://fonts.googleapis.com',
-          ],
-          fontSrc: [
-            "'self'",
-            'https://cdn.jsdelivr.net',
-            'https://fonts.gstatic.com',
-          ],
-          imgSrc: ["'self'", 'data:', 'https:'],
-          connectSrc: ["'self'"],
-          workerSrc: ["'self'", 'blob:'],
-          childSrc: ["'self'", 'blob:'],
-        },
+  await app.register(helmet, {
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "'unsafe-eval'",
+          'https://cdn.jsdelivr.net',
+          'https://unpkg.com',
+        ],
+        styleSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          'https://cdn.jsdelivr.net',
+          'https://fonts.googleapis.com',
+        ],
+        fontSrc: [
+          "'self'",
+          'https://cdn.jsdelivr.net',
+          'https://fonts.gstatic.com',
+        ],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'"],
+        workerSrc: ["'self'", 'blob:'],
+        childSrc: ["'self'", 'blob:'],
       },
-      crossOriginEmbedderPolicy: false,
-    }),
-  );
+    },
+    crossOriginEmbedderPolicy: false,
+  });
   //INTERCEPTORS
   app.useGlobalInterceptors(
     new LoggerInterceptor(),
@@ -142,20 +142,6 @@ async function bootstrap() {
   const swaggerPassword = process.env.SWAGGER_PASSWORD || 'admin';
 
   if (swaggerEnabled) {
-    app.use(
-      '/api-docs',
-      BasicAuth({
-        challenge: true,
-        users: {
-          [swaggerUser]: swaggerPassword,
-        },
-        unauthorizedResponse: (req) => {
-          return 'Unauthorized - Invalid credentials for API documentation';
-        },
-      }),
-    );
-
-    // Build Swagger document
     const config = new DocumentBuilder()
       .setTitle('Core Api Documentation')
       .setDescription('The Api Documentation')
@@ -165,17 +151,14 @@ async function bootstrap() {
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
-
-    // Setup Scalar API Reference with the document
     app.use(
       '/api-docs',
       apiReference({
-        theme: 'solarized',
-        spec: {
-          content: document,
-        },
+        content: document,
+        withFastify: true,
       }),
     );
+
     console.log('Swagger documentation enabled at /api-docs');
   } else {
     console.log('Swagger documentation disabled');
@@ -183,7 +166,7 @@ async function bootstrap() {
 
   //RUNNING THE APPLICATION
   const port = process.env.PORT || 3000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 }
 
 const cluserizeApp = process.env.NUM_CPUS;

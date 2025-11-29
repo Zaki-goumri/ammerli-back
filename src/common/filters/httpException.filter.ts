@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ThrottlerException } from '@nestjs/throttler';
-import { Response } from 'express';
+import { FastifyReply } from 'fastify';
 import { I18nContext, I18nService } from 'nestjs-i18n';
 
 @Catch(HttpException, ThrottlerException)
@@ -20,7 +20,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     host: ArgumentsHost,
   ) {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
+    const response = ctx.getResponse<FastifyReply>();
     const status = exception.getStatus();
     const i18nContext = I18nContext.current(host);
 
@@ -74,7 +74,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       this.logger.error(exception.cause);
     }
 
-    response.status(status).json({
+    response.status(status).send({ // Use send for Fastify
       statusCode: status,
       message: message,
       success: false,
