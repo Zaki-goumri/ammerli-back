@@ -26,7 +26,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
-      trustProxy: true,
+      trustProxy: '172.20.0.0/16',
     }),
     {
       bufferLogs: true,
