@@ -42,7 +42,7 @@ services:
       - proxy
       - internal
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/v1/health"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/v1/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -469,10 +469,29 @@ networks:
   proxy:
     name: proxy
     driver: bridge
-  
+    driver_opts:
+      com.docker.network.driver.mtu: "1500"
+      com.docker.network.bridge.name: "docker-proxy"
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+      com.docker.network.bridge.enable_icc: "true"
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
   internal:
     name: internal
     driver: bridge
+    internal: true
+    driver_opts:
+      com.docker.network.driver.mtu: "1500"
+      com.docker.network.bridge.name: "docker-internal"
+      com.docker.network.bridge.enable_icc: "true"
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.21.0.0/16
+          gateway: 172.21.0.1
 
 volumes:
   minio-data:

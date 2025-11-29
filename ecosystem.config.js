@@ -18,6 +18,8 @@ module.exports = {
       min_uptime: '10s',
       max_restarts: 10,
       kill_timeout: 5000,
+      wait_ready: true,
+      listen_timeout: 10000,
     },
   ],
 };
