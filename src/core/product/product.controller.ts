@@ -471,8 +471,6 @@ export class ProductController {
    * @description Get all favorite products for the current user with pagination, search, and filters.
    * @param {FilterProductDto} query - The query parameters for filtering and pagination.
    * @param {number} userId - The ID of the current user.
-   * @param {number} categoryIds - The ID of the category to filter by.
-   * @param {string} search - The search term to filter by.
    * @returns {Promise<PaginatedResponse<FavProductDtoRes>>} A paginated list of favorite products.
    */
   @HttpCode(HttpStatus.OK)

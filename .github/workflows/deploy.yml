@@ -1,5 +1,4 @@
 name: Deploy to VPS
-
 on:
   workflow_run:
     workflows: ["Build & Push to Docker Hub"]
@@ -8,10 +7,8 @@ on:
     branches:
       - main
   workflow_dispatch:
-
 env:
   DOCKERHUB_REPO: ${{ secrets.DOCKERHUB_USERNAME }}/3ammerli-backend
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -34,49 +31,67 @@ jobs:
           script: |
             set -e
             
-            echo "🚀 Starting deployment..."
+            echo "Starting deployment..."
             
-            # Navigate to project directory
             cd /root/ammerli || { echo "Project directory not found"; exit 1; }
             
-            # Login to Docker Hub
+            # Save current image tag for rollback
+            CURRENT_IMAGE=$(docker compose images -q server | head -n 1)
+            echo "Current image: $CURRENT_IMAGE"
+            
+            # Tag current image as backup
+            if [ ! -z "$CURRENT_IMAGE" ]; then
+              docker tag $CURRENT_IMAGE $IMAGE_NAME:backup
+              echo "Backup created: $IMAGE_NAME:backup"
+            fi
+            
             echo "Authenticating with Docker Hub..."
             echo $DOCKERHUB_TOKEN | docker login -u $DOCKERHUB_USERNAME --password-stdin
             
-            # Build base image first
             echo "Building base image..."
             docker build -t 3ammerli-base:latest -f Dockerfile.base .
             
-            # Pull latest images
-            echo "Pulling latest images..."
-            docker pull $IMAGE_NAME:latest
-            
-            # Health check before stopping
-            echo "Running pre-deployment health check..."
-            if ! curl -f http://localhost/api/v1/health/status 2>/dev/null; then
-              echo " Warning: Health check failed, but continuing..."
+            echo "⬇️ Pulling latest images..."
+            if ! docker pull $IMAGE_NAME:latest; then
+              echo "Failed to pull latest image"
+              exit 1
             fi
             
-            # Stop old containers gracefully
+            echo "🔍 Running pre-deployment health check..."
+            if ! curl -f https://api.ammerli.com/api/v1/health/status 2>/dev/null; then
+              echo "Warning: Pre-deployment health check failed, but continuing..."
+            fi
+            
             echo "Stopping old containers..."
             docker compose down --timeout 30
             
-            # Start new containers
-            echo "Starting new containers..."
-            docker compose up -d --scale server=4
+            echo "Starting new containers with latest image..."
+            if ! docker compose up -d --scale server=4; then
+              echo "Failed to start new containers, rolling back..."
+              
+              sed -i "s|image: $IMAGE_NAME:latest|image: $IMAGE_NAME:backup|g" compose.yaml
+              
+              docker compose up -d --scale server=4
+              echo "🔄 Rolled back to previous version"
+              
+              sed -i "s|image: $IMAGE_NAME:backup|image: $IMAGE_NAME:latest|g" compose.yaml
+              
+              exit 1
+            fi
             
-            # Wait for containers to be ready
-            echo "Waiting for containers to start..."
+            echo "⏳ Waiting for containers to start..."
             sleep 15
             
             # Health check after deployment
-            echo "Running post-deployment health check..."
+            echo "🏥 Running post-deployment health check..."
             RETRY_COUNT=0
             MAX_RETRIES=12
+            HEALTH_CHECK_PASSED=false
             
             while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-              if curl -f http://localhost/api/v1/health/status 2>/dev/null; then
+              if curl -f http://api.ammerli.com/api/v1/health/status 2>/dev/null; then
                 echo "Health check passed!"
+                HEALTH_CHECK_PASSED=true
                 break
               fi
               RETRY_COUNT=$((RETRY_COUNT + 1))
@@ -84,28 +99,49 @@ jobs:
               sleep 5
             done
             
-            if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+            if [ "$HEALTH_CHECK_PASSED" = false ]; then
               echo "Health check failed after deployment!"
               echo "Container logs:"
               docker compose logs --tail=50 server
+              
+              echo "Rolling back to previous version..."
+              docker compose down --timeout 30
+              
+              # Update compose to use backup image
+              sed -i "s|image: $IMAGE_NAME:latest|image: $IMAGE_NAME:backup|g" compose.yaml
+              
+              docker compose up -d --scale server=4
+              
+              # Restore original compose
+              sed -i "s|image: $IMAGE_NAME:backup|image: $IMAGE_NAME:latest|g" compose.yaml
+              
+              echo "Waiting for rollback to complete..."
+              sleep 15
+              
+              # Verify rollback
+              if curl -f http://api.ammerli.com/api/v1/health/status 2>/dev/null; then
+                echo "Rollback successful!"
+              else
+                echo "Rollback health check failed!"
+              fi
+              
               exit 1
             fi
             
-            # Clean up old images
-            echo "Cleaning up old images..."
+            echo "🧹 Cleaning up old images..."
             docker image prune -f
             
             echo "Deployment completed successfully!"
-
+            
       - name: Deployment notification
         if: always()
         run: |
           if [ "${{ job.status }}" == "success" ]; then
-            echo "## ✅ Deployment Successful" >> $GITHUB_STEP_SUMMARY
+            echo "## Deployment Successful" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "🎉 Application deployed to production!" >> $GITHUB_STEP_SUMMARY
+            echo "Application deployed to production!" >> $GITHUB_STEP_SUMMARY
           else
-            echo "## ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+            echo "## Deployment Failed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "⚠️  Deployment failed. Check logs above." >> $GITHUB_STEP_SUMMARY
+            echo "Deployment failed and rolled back to previous version. Check logs above." >> $GITHUB_STEP_SUMMARY
           fi

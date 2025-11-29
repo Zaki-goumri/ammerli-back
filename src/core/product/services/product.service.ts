@@ -735,6 +735,8 @@ export class ProductService {
       brand: p?.brand,
       pictures: p?.pictures ?? [],
       category: p?.category,
+      quantityPerBatch: p?.quantityPerBatch,
+      quantity: p?.quantity,
     }));
 
     return {

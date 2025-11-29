@@ -509,7 +509,11 @@ export class OrderService {
               't_max.order_id_alias = t1.orderId AND t_max."maxCreatedAt" = t1.createdAt',
             );
 
-        baseQuery.leftJoin(subQuery, 'latest_tracking', 'latest_tracking."orderId" = orders.id');
+        baseQuery.leftJoin(
+          subQuery,
+          'latest_tracking',
+          'latest_tracking."orderId" = orders.id',
+        );
 
         if (status === OrderStatusQuery.DELIVERED) {
           baseQuery.andWhere('latest_tracking."latestStatus" = :status', {
@@ -1096,3 +1100,4 @@ export class OrderService {
     );
   }
 }
+
