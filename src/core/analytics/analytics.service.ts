@@ -231,6 +231,7 @@ export class AnalyticsService {
 
   async getTopSellingProducts(take: number = 5): Promise<any> {
     const dateSixMonthsAgo = new Date();
+    dateSixMonthsAgo.setMonth(dateSixMonthsAgo.getMonth() - 6);
     const topProducts = await this.orderProductRepo
       .createQueryBuilder('op')
       .select('op.productId', 'productId')
