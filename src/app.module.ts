@@ -10,7 +10,6 @@ import { MonitoringModule } from './monitoring/monitoring.module';
 import { SecurityModule } from './security/security.module';
 import { CommonModule } from './common/modules/common.module';
 import { CoreModule } from './core/core.module';
-import elasticSearchConfig from './config/elastic-search.config';
 import dbConfig from './config/db.config';
 import chargiliConfig from './config/chargili.config';
 import minioConfig from './config/minio.config';
@@ -38,7 +37,6 @@ import { ObjectStorageExceptionFilter } from './common/filters/object-storage.fi
         redisConfig,
         authConfig,
         appConfig,
-        elasticSearchConfig,
         dbConfig,
         chargiliConfig,
         smsConfig,

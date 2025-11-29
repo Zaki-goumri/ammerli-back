@@ -230,6 +230,7 @@ export class AnalyticsService {
   }
 
   async getTopSellingProducts(take: number = 5): Promise<any> {
+    const dateSixMonthsAgo = new Date();
     const topProducts = await this.orderProductRepo
       .createQueryBuilder('op')
       .select('op.productId', 'productId')
@@ -245,6 +246,7 @@ export class AnalyticsService {
       .where('order.isCancelled = :isCancelled', { isCancelled: false })
       .andWhere('order.deletedAt IS NULL')
       .andWhere('product.deletedAt IS NULL')
+      .andWhere('order.createdAt >= :dateSixMonthsAgo', { dateSixMonthsAgo })
       .groupBy('op.productId')
       .addGroupBy('pp.url')
       .orderBy('total_quantity', 'DESC')

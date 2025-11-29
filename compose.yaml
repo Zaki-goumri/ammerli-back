@@ -127,8 +127,6 @@ services:
     env_file:
       - .env
     environment:
-      - REDIS_HOST=redis
-      # Node.js Optimizations
       - NODE_OPTIONS=--max-old-space-size=768 --max-http-header-size=16384
       - UV_THREADPOOL_SIZE=128
     logging:
