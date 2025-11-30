@@ -51,13 +51,13 @@ jobs:
             echo "Building base image..."
             docker build -t 3ammerli-base:latest -f Dockerfile.base .
             
-            echo "⬇️ Pulling latest images..."
+            echo "Pulling latest images..."
             if ! docker pull $IMAGE_NAME:latest; then
               echo "Failed to pull latest image"
               exit 1
             fi
             
-            echo "🔍 Running pre-deployment health check..."
+            echo "Running pre-deployment health check..."
             if ! curl -f https://api.ammerli.com/api/v1/health/status 2>/dev/null; then
               echo "Warning: Pre-deployment health check failed, but continuing..."
             fi
@@ -71,19 +71,19 @@ jobs:
               
               sed -i "s|image: $IMAGE_NAME:latest|image: $IMAGE_NAME:backup|g" compose.yaml
               
-              docker compose up -d --scale server=4
-              echo "🔄 Rolled back to previous version"
+              docker compose up -d --scale server=2
+              echo "Rolled back to previous version"
               
               sed -i "s|image: $IMAGE_NAME:backup|image: $IMAGE_NAME:latest|g" compose.yaml
               
               exit 1
             fi
             
-            echo "⏳ Waiting for containers to start..."
+            echo "Waiting for containers to start..."
             sleep 15
             
             # Health check after deployment
-            echo "🏥 Running post-deployment health check..."
+            echo "Running post-deployment health check..."
             RETRY_COUNT=0
             MAX_RETRIES=12
             HEALTH_CHECK_PASSED=false
@@ -128,7 +128,7 @@ jobs:
               exit 1
             fi
             
-            echo "🧹 Cleaning up old images..."
+            echo "Cleaning up old images..."
             docker image prune -f
             
             echo "Deployment completed successfully!"
