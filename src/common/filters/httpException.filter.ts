@@ -4,16 +4,23 @@ import {
   ExceptionFilter,
   HttpException,
   Logger,
+  HttpStatus,
+  Inject,
 } from '@nestjs/common';
 import { ThrottlerException } from '@nestjs/throttler';
 import { FastifyReply } from 'fastify';
 import { I18nContext, I18nService } from 'nestjs-i18n';
+import { AlertingService } from 'src/monitoring/alerting/interfaces/alerting.interface';
 
 @Catch(HttpException, ThrottlerException)
 export class HttpExceptionFilter implements ExceptionFilter {
   logger = new Logger(HttpExceptionFilter.name);
 
-  constructor(private readonly i18n: I18nService) {}
+  constructor(
+    private readonly i18n: I18nService,
+    @Inject('AlertingService')
+    private readonly alertingService: AlertingService,
+  ) {}
 
   async catch(
     exception: HttpException | ThrottlerException,
@@ -72,6 +79,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
     );
     if (exception.cause) {
       this.logger.error(exception.cause);
+    }
+
+    if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
+        this.alertingService.sendAlert(`HTTP 500 Error: ${logMessage}`);
     }
 
     response.status(status).send({ // Use send for Fastify

@@ -5,4 +5,5 @@ export interface AppConfig {
     blockDuration: number;
     ignoreUserAgents: RegExp[];
   };
+  slackWebhookUrl: string;
 }

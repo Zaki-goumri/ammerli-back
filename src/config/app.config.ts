@@ -10,5 +10,6 @@ export default registerAs(
       blockDuration: parseInt(process.env.THROTTLER_BLOCK_DURATION!, 10) || 10,
       ignoreUserAgents: [/^curl\//i],
     },
+    slackWebhookUrl: process.env.SLACK_WEBHOOK_URL || '',
   }),
 );

@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, InternalServerErrorException } from '@nestjs/common';
 import {
   DiskHealthIndicator,
   HealthCheck,
@@ -11,7 +11,7 @@ import { RedisCustomHealthIndicator } from './redis.health';
 import { ApiExcludeController } from '@nestjs/swagger';
 
 @Controller('health')
-@ApiExcludeController()
+//@ApiExcludeController()
 export class HealthController {
   constructor(
     private health: HealthCheckService,
@@ -42,12 +42,18 @@ export class HealthController {
     };
   }
 
+  @Get('test-slack')
+  async testSlackAlert() {
+    throw new InternalServerErrorException(
+      'This is a test error for Slack alerting',
+    );
+  }
+
   @Get()
   @HealthCheck()
   check() {
     return this.health.check([
       () => this.db.pingCheck('database'),
-      //() => this.redis.isHealthy('redis'),
       () =>
         this.disk.checkStorage('disk health', {
           thresholdPercent: 0.9,

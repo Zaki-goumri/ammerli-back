@@ -4,11 +4,13 @@ import {
   ArgumentsHost,
   HttpStatus,
   Logger,
+  Inject,
 } from '@nestjs/common';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { QueryFailedError, EntityNotFoundError } from 'typeorm';
 import { PostgresErrorCode, isPostgresError } from '../constants/db-code';
 import { I18nService } from 'nestjs-i18n';
+import { AlertingService } from 'src/monitoring/alerting/interfaces/alerting.interface';
 
 interface PostgresDriverError {
   code?: string;
@@ -27,7 +29,11 @@ interface DatabaseErrorResult {
 export class DatabaseExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(DatabaseExceptionFilter.name);
 
-  constructor(private readonly i18n: I18nService) {}
+  constructor(
+    private readonly i18n: I18nService,
+    @Inject('AlertingService')
+    private readonly alertingService: AlertingService,
+  ) {}
 
   catch(
     exception: QueryFailedError | EntityNotFoundError,
@@ -46,6 +52,12 @@ export class DatabaseExceptionFilter implements ExceptionFilter {
     const errorResult = this.handleException(exception);
 
     this.logError(exception, request, errorResult.status);
+
+    if (errorResult.status === HttpStatus.INTERNAL_SERVER_ERROR) {
+      this.alertingService.sendAlert(
+        `Database Error: ${errorResult.error} - ${errorResult.message}`,
+      );
+    }
 
     const errorResponse = {
       statusCode: errorResult.status,

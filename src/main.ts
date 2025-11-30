@@ -98,16 +98,6 @@ async function bootstrap() {
     }),
   );
 
-  //FILTERS
-  //TODO: change it to app module level
-  const i18nService =
-    app.get<I18nService<Record<string, unknown>>>(I18nService);
-  app.useGlobalFilters(
-    new DatabaseExceptionFilter(i18nService),
-    new HttpExceptionFilter(i18nService),
-    //   new ObjectStorageExceptionFilter(i18nService),
-  );
-
   app.enableShutdownHooks();
   //Those to are for handling the shutdown of the server
   process.on('SIGINT', () => {

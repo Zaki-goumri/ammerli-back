@@ -25,6 +25,8 @@ import path from 'path';
 import { HttpExceptionFilter } from './common/filters/httpException.filter';
 import { DatabaseExceptionFilter } from './common/filters/db.filter';
 import { ObjectStorageExceptionFilter } from './common/filters/object-storage.filter';
+import { AlertingModule } from './monitoring/alerting/alerting.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -69,6 +71,7 @@ import { ObjectStorageExceptionFilter } from './common/filters/object-storage.fi
     SecurityModule,
     CommonModule,
     CoreModule,
+    AlertingModule,
     I18nModule.forRoot({
       fallbackLanguage: 'fr',
       loaderOptions: {
