@@ -484,20 +484,22 @@ export class OrderService {
     status?: OrderStatusQuery,
   ): Promise<PaginationResponseDto<OrderListItemDto>> {
     const { limit, page } = paginationQuery;
-
     const baseQuery = this.orderRepo
       .createQueryBuilder('orders')
       .where('orders.buyerId = :userId', { userId });
-
     if (status) {
       if (status === OrderStatusQuery.CANCELED) {
         baseQuery.andWhere('orders.isCancelled = TRUE');
       } else {
         const subQuery = (subQuery) =>
           subQuery
+
             .select('t1.orderId', 'orderId')
+
             .addSelect('t1.status', 'latestStatus')
+
             .from(Tracking, 't1')
+
             .innerJoin(
               (innerSubquery) =>
                 innerSubquery
@@ -508,13 +510,11 @@ export class OrderService {
               't_max',
               't_max.order_id_alias = t1.orderId AND t_max."maxCreatedAt" = t1.createdAt',
             );
-
         baseQuery.leftJoin(
           subQuery,
           'latest_tracking',
           'latest_tracking."orderId" = orders.id',
         );
-
         if (status === OrderStatusQuery.DELIVERED) {
           baseQuery.andWhere('latest_tracking."latestStatus" = :status', {
             status: ORDER_STATUS.DELIVERED,
@@ -533,18 +533,13 @@ export class OrderService {
         }
       }
     }
-
     const total = await baseQuery.getCount();
-
     const orderIdsQuery = baseQuery
       .select('orders.id', 'id')
-      .withDeleted()
       .orderBy('orders.createdAt', 'DESC')
       .take(limit)
       .skip((page - 1) * limit);
-
     const paginatedIds = await orderIdsQuery.getRawMany();
-
     if (paginatedIds.length === 0) {
       return {
         data: [],
@@ -557,9 +552,7 @@ export class OrderService {
         },
       };
     }
-
     const orderIds = paginatedIds.map((o) => o.id);
-
     const queryBuilder = this.orderRepo
       .createQueryBuilder('orders')
       .where('orders.id IN (:...orderIds)', { orderIds })
@@ -600,9 +593,7 @@ export class OrderService {
       .addGroupBy('checkout.paymentWay')
       .withDeleted()
       .orderBy('orders.createdAt', 'DESC');
-
     const data = await queryBuilder.getRawMany();
-
     const orders: OrderListItemDto[] = data.map((d) => ({
       id: d.id,
       totalAmount: parseFloat(d.totalamount),
@@ -618,37 +609,37 @@ export class OrderService {
 
     if (withProducts && orders.length > 0) {
       const orderIds = orders.map((o) => o.id);
-
-      const orderProducts = await this.orderProductRepo
+      const products = await this.orderProductRepo
         .createQueryBuilder('op')
-        .leftJoinAndSelect('op.product', 'p')
-        .withDeleted()
-        .leftJoinAndSelect('p.pictures', 'pic')
+        .leftJoin('op.product', 'p')
+        .leftJoin('p.pictures', 'pic', 'pic.isMain = :isMain', { isMain: true })
         .where('op.orderId IN (:...orderIds)', { orderIds })
-        .andWhere('(pic.isMain = :isMain OR pic.id IS NULL)', { isMain: true })
-        .getMany();
-
-      const productsByOrderId = orderProducts.reduce(
-        (acc, op) => {
-          if (!acc[op.orderId]) {
-            acc[op.orderId] = [];
+        .select([
+          'op.orderId AS "orderId"',
+          'p.id AS id',
+          'p.name AS name',
+          'p.price AS price',
+          'op.quantity AS quantity',
+          'pic.url AS picture',
+          'p.deletedAt AS "deletedAt"',
+        ])
+        .withDeleted()
+        .getRawMany();
+      const productsByOrderId = products.reduce(
+        (acc, p) => {
+          if (!acc[p.orderId]) {
+            acc[p.orderId] = [];
           }
-          if (op.product) {
-            const productOrderItem: ProductOrderItemDto = {
-              id: op.product.id,
-              name: op.product.name,
-              price: op.product.price,
-              quantity: op.quantity,
-              picture: op.product.pictures?.find((p) => p.isMain)?.url || '',
-              //              isDeleted: !!op.product.deletedAt,
-            };
-            acc[op.orderId].push(productOrderItem);
+          const { orderId, deletedAt, ...productData } = p;
+          productData.price = parseFloat(productData.price);
+          if (deletedAt) {
+            productData.picture = 'deleted_product.jpg';
           }
+          acc[orderId].push(productData as ProductOrderItemDto);
           return acc;
         },
         {} as Record<number, ProductOrderItemDto[]>,
       );
-
       for (const order of orders) {
         order.products = productsByOrderId[order.id] || [];
       }
