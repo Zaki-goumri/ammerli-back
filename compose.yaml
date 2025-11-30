@@ -8,7 +8,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080" 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/traefik.yml:/traefik.yml:ro
@@ -51,9 +50,7 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
       
-      # ==================================
-      # RATE LIMITING (Optimized)
-      # ==================================
+      # RATE LIMITING
       - "traefik.http.middlewares.api-ratelimit-ip.ratelimit.average=500"
       - "traefik.http.middlewares.api-ratelimit-ip.ratelimit.period=1m"
       - "traefik.http.middlewares.api-ratelimit-ip.ratelimit.burst=250"
@@ -64,46 +61,32 @@ services:
       - "traefik.http.middlewares.api-ratelimit-subnet.ratelimit.burst=400"
       - "traefik.http.middlewares.api-ratelimit-subnet.ratelimit.sourceCriterion.ipStrategy.depth=1"
       
-      # ==================================
       # PERFORMANCE MIDDLEWARES
-      # ==================================
       - "traefik.http.middlewares.api-compress.compress=true"
       
       - "traefik.http.middlewares.api-buffer.buffering.maxRequestBodyBytes=10485760"
       - "traefik.http.middlewares.api-buffer.buffering.memRequestBodyBytes=2097152"
       - "traefik.http.middlewares.api-buffer.buffering.maxResponseBodyBytes=10485760"
       - "traefik.http.middlewares.api-buffer.buffering.memResponseBodyBytes=2097152"
-      
       - "traefik.http.middlewares.api-inflightreq.inflightreq.amount=500"
       - "traefik.http.middlewares.api-inflightreq.inflightreq.sourceCriterion.requestHeaderName=X-Forwarded-For"
-      
       - "traefik.http.middlewares.api-circuitbreaker.circuitbreaker.expression=NetworkErrorRatio() > 0.30"
-      
       - "traefik.http.middlewares.api-retry.retry.attempts=3"
       - "traefik.http.middlewares.api-retry.retry.initialinterval=100ms"
-      
-      # ==================================
-      # HTTP ROUTER (redirect to HTTPS)
-      # ==================================
+      # HTTP ROUTER 
       - "traefik.http.routers.server.rule=Host(`api.ammerli.com`)"
       - "traefik.http.routers.server.entrypoints=web"
       - "traefik.http.routers.server.service=server"
       - "traefik.http.routers.server.middlewares=https-redirect@file"
-      
-      # ==================================
-      # HTTPS ROUTER (with all middlewares)
-      # ==================================
+      # HTTPS ROUTER
       - "traefik.http.routers.server-secure.rule=Host(`api.ammerli.com`)"
       - "traefik.http.routers.server-secure.entrypoints=websecure"
       - "traefik.http.routers.server-secure.service=server"
       - "traefik.http.routers.server-secure.tls=true"
       - "traefik.http.routers.server-secure.tls.certresolver=letsencrypt"
-      # - "traefik.http.routers.server-secure.middlewares=api-ratelimit-ip,api-ratelimit-subnet,api-compress,api-buffer,api-inflightreq,api-retry,security-headers@file"
+      - "traefik.http.routers.server-secure.middlewares=api-ratelimit-ip,api-ratelimit-subnet,api-compress,api-buffer,api-inflightreq,api-retry,security-headers@file"
       - "traefik.http.routers.server-secure.middlewares=api-compress,api-buffer,api-inflightreq,api-retry,security-headers@file"
-      
-      # ==================================
       # SERVICE DEFINITION & LOAD BALANCING
-      # ==================================
       - "traefik.http.services.server.loadbalancer.server.port=3000"
       
       # Load Balancing Algorithm
@@ -129,12 +112,12 @@ services:
     environment:
       - NODE_OPTIONS=--max-old-space-size=768 --max-http-header-size=16384
       - UV_THREADPOOL_SIZE=128
-    # logging:
-    #   driver: "json-file"
-    #   options:
-    #     max-size: "5m"
-    #     max-file: "3"
-    #     compress: "true"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+        compress: "true"
     deploy:
       resources:
         limits:
@@ -202,7 +185,7 @@ services:
       - "traefik.http.routers.minio-api.entrypoints=websecure"
       - "traefik.http.routers.minio-api.tls=true"
       - "traefik.http.routers.minio-api.tls.certresolver=letsencrypt"
-      # - "traefik.http.routers.minio-api.middlewares=storage-ratelimit-ip,storage-ratelimit-subnet"
+      - "traefik.http.routers.minio-api.middlewares=storage-ratelimit-ip,storage-ratelimit-subnet"
       - "traefik.http.routers.minio-api.service=minio-api"
       - "traefik.http.services.minio-api.loadbalancer.server.port=9000"
 
@@ -217,7 +200,7 @@ services:
       - "traefik.http.routers.minio-console.entrypoints=websecure"
       - "traefik.http.routers.minio-console.tls=true"
       - "traefik.http.routers.minio-console.tls.certresolver=letsencrypt"
-      # - "traefik.http.routers.minio-console.middlewares=minio-console-ratelimit"
+      - "traefik.http.routers.minio-console.middlewares=minio-console-ratelimit"
       - "traefik.http.routers.minio-console.service=minio-console"
       - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
 
@@ -450,7 +433,7 @@ services:
       - "traefik.http.routers.grafana-secure.service=grafana"
       - "traefik.http.routers.grafana-secure.tls=true"
       - "traefik.http.routers.grafana-secure.tls.certresolver=letsencrypt"
-      # - "traefik.http.routers.grafana-secure.middlewares=grafana-ratelimit,security-headers@file"
+      - "traefik.http.routers.grafana-secure.middlewares=grafana-ratelimit,security-headers@file"
       - "traefik.http.routers.grafana-secure.middlewares=security-headers@file"
       
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
@@ -462,9 +445,7 @@ services:
         max-file: "3"
         compress: "true"
 
-# ==============================================
-# NETWORK CONFIGURATION (Optimized)
-# ==============================================
+# NETWORK CONFIGURATION
 networks:
   proxy:
     name: proxy
