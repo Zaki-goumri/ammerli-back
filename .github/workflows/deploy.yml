@@ -33,7 +33,7 @@ jobs:
             
             echo "Starting deployment..."
             
-            cd /root/ammerli || { echo "Project directory not found"; exit 1; }
+            cd /home/ammerli/ammerli || { echo "Project directory not found"; exit 1; }
             
             # Save current image tag for rollback
             CURRENT_IMAGE=$(docker compose images -q server | head -n 1)
