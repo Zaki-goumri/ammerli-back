@@ -493,13 +493,9 @@ export class OrderService {
       } else {
         const subQuery = (subQuery) =>
           subQuery
-
             .select('t1.orderId', 'orderId')
-
             .addSelect('t1.status', 'latestStatus')
-
             .from(Tracking, 't1')
-
             .innerJoin(
               (innerSubquery) =>
                 innerSubquery
@@ -536,6 +532,7 @@ export class OrderService {
     const total = await baseQuery.getCount();
     const orderIdsQuery = baseQuery
       .select('orders.id', 'id')
+      .withDeleted()
       .orderBy('orders.createdAt', 'DESC')
       .take(limit)
       .skip((page - 1) * limit);
@@ -591,8 +588,8 @@ export class OrderService {
       .groupBy('orders.id')
       .addGroupBy('latest_tracking."latestStatus"')
       .addGroupBy('checkout.paymentWay')
-      .withDeleted()
       .orderBy('orders.createdAt', 'DESC');
+
     const data = await queryBuilder.getRawMany();
     const orders: OrderListItemDto[] = data.map((d) => ({
       id: d.id,
@@ -606,11 +603,11 @@ export class OrderService {
       createdAt: d.createdAt,
       updatedAt: d.updatedAt,
     })) as OrderListItemDto[];
-
     if (withProducts && orders.length > 0) {
       const orderIds = orders.map((o) => o.id);
       const products = await this.orderProductRepo
         .createQueryBuilder('op')
+        .setFindOptions({ withDeleted: true })
         .leftJoin('op.product', 'p')
         .leftJoin('p.pictures', 'pic', 'pic.isMain = :isMain', { isMain: true })
         .where('op.orderId IN (:...orderIds)', { orderIds })
@@ -623,8 +620,8 @@ export class OrderService {
           'pic.url AS picture',
           'p.deletedAt AS "deletedAt"',
         ])
-        .withDeleted()
         .getRawMany();
+
       const productsByOrderId = products.reduce(
         (acc, p) => {
           if (!acc[p.orderId]) {
@@ -634,6 +631,7 @@ export class OrderService {
           productData.price = parseFloat(productData.price);
           if (deletedAt) {
             productData.picture = 'deleted_product.jpg';
+            (productData as OrderListItemDto).isDeleted = true;
           }
           acc[orderId].push(productData as ProductOrderItemDto);
           return acc;

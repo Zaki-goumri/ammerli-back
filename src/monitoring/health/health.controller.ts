@@ -11,7 +11,7 @@ import { RedisCustomHealthIndicator } from './redis.health';
 import { ApiExcludeController } from '@nestjs/swagger';
 
 @Controller('health')
-//@ApiExcludeController()
+@ApiExcludeController()
 export class HealthController {
   constructor(
     private health: HealthCheckService,

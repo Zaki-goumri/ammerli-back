@@ -27,4 +27,7 @@ export class OrderListItemDto {
 
   @ApiProperty({ type: [ProductOrderItemDto], required: false })
   products?: ProductOrderItemDto[];
+
+  @ApiProperty({})
+  isDeleted?: boolean;
 }
