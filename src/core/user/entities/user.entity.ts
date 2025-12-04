@@ -23,7 +23,6 @@ import { Token } from 'src/core/notifications/entities/token.entity';
   unique: true,
   where: '"deletedAt" IS NULL',
 })
-//TODO: remove optional fields if not needed
 export class User extends BaseEntity {
   @ApiProperty({
     description: 'User phone number',
@@ -32,14 +31,14 @@ export class User extends BaseEntity {
   @Column()
   phoneNumber: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Full name of the user',
     example: 'John Doe',
   })
-  @Column({ nullable: true })
-  name?: string;
+  @Column()
+  name: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Linked addresses of the user',
     type: () => [Address],
   })
@@ -47,14 +46,14 @@ export class User extends BaseEntity {
     cascade: true,
     onDelete: 'CASCADE',
   })
-  addresses?: Address[];
+  addresses: Address[];
 
   @ApiProperty({
     description: 'Name of the supermarket (for sellers)',
     example: 'Market El Baraka',
   })
-  @Column({ nullable: true })
-  supermarketName?: string;
+  @Column()
+  supermarketName: string;
 
   @ApiPropertyOptional({
     description: 'Profile picture object name in object storage.',

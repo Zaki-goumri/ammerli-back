@@ -57,37 +57,7 @@ export class NotificationsController {
    * Sends an FCM notification to a specific user.
    * @param sendNotificationDto - The DTO containing notification details.
    * @param userId - The ID of the user sending the notification.
-   * @returns A promise that resolves to a response indicating the notification job was added to the queue.
-   */
-  sendFcmNotification(
-    @Body() sendNotificationDto: SendNotificationDto,
-    @USER('id') userId: number,
-  ): Promise<SendNotificationResponseDto> {
-    const { title, body, type } = sendNotificationDto;
-    this.logger.log({
-      message: 'Sending FCM notification',
-      userId,
-      title,
-      type,
-      context: 'Notifications',
-    });
-    //TODO: remove empty meta object once meta is handled
-    return this.notificationsService.sendNotification(
-      title,
-      body,
-      userId,
-      type,
-      {},
-    );
-  }
-
-  @Post('register-fcm-token')
-  @ApiOperation({ summary: 'Register an FCM token for the current user' })
-  @ApiBody({ type: CreateTokenDto })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Token registered successfully',
-    type: RegisterTokenResponseDto, // Added response type
+   * @returns A promise that resolves to a response indicating the notification job was  // Added response type
   })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad Request' })
   /**
@@ -111,7 +81,7 @@ export class NotificationsController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Notifications retrieved successfully',
-    type: [Notification], // Added response type for array of Notification
+    type: [Notification],
   })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })

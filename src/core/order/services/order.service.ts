@@ -101,7 +101,7 @@ export class OrderService {
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async clearOldUnpaidCheckouts() {
     const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDay() - 1);
+    cutoffDate.setDate(cutoffDate.getDate() - 1);
 
     this.logger.log(
       `Clearing unpaid checkouts created before ${cutoffDate.toISOString()}`,
@@ -109,6 +109,7 @@ export class OrderService {
     const ordersToDelete = await this.orderRepo
       .createQueryBuilder('order')
       .leftJoin('order.checkouts', 'checkout')
+      .leftJoinAndSelect('order.orderProducts', 'orderProducts')
       .where('order.createdAt < :cutoffDate', { cutoffDate })
       .andWhere('order.paymentWay = :paymentWay', {
         paymentWay: ORDER_PAYMENT_METHOD.EPAYMENT,
@@ -117,8 +118,19 @@ export class OrderService {
       .getMany();
 
     if (ordersToDelete.length > 0) {
-      await this.orderRepo.remove(ordersToDelete);
-      this.logger.log(`Removed ${ordersToDelete.length} expired unpaid orders`);
+      await this.entityManager.transaction(async (em) => {
+        const productRepo = em.getRepository(Product);
+
+        for (const order of ordersToDelete) {
+          await this.restoreInventory(order.orderProducts, productRepo);
+        }
+
+        await em.getRepository(Order).remove(ordersToDelete);
+      });
+
+      this.logger.log(
+        `Removed ${ordersToDelete.length} expired unpaid orders and restored stock`,
+      );
     } else {
       this.logger.log('No expired unpaid orders to remove');
     }
@@ -207,6 +219,8 @@ export class OrderService {
         NOTIFICATION_TYPE.ORDERS,
         { checkoutId },
       );
+
+      await this.releaseStockForFailedPayment(orderId);
     }
 
     await this.redisService.set<PaymentClientData>(
@@ -344,8 +358,6 @@ export class OrderService {
     return this.orderProductRepo.count({ where: { order: { id: orderId } } });
   }
 
-  //TODO: handle stock release on payment failure or order cancellation
-  //handle blacklist users
   async createOrderProductWithPayement(
     dto: CreateOrderDto,
     buyerId: number,
@@ -416,7 +428,7 @@ export class OrderService {
       await this.invoiceQueue.add(INVOICE_JOBS.GENERATE_INVOICE, {
         orderId: order.id,
       });
-      return { order: orderResponse, checkoutUrl: null };
+      return { order: orderResponse };
     }
     const { checkoutId, checkoutUrl } = await this.createChargilyCheckout(
       order.totalAmount,
@@ -456,8 +468,6 @@ export class OrderService {
       const checkout = await this.chargilyService.createCheckout({
         amount: totalAmount,
         currency: 'dzd',
-        //NOTE: Update URLs to actual frontend pages in production
-        //TODO: Update URLs to actual frontend pages in production
         success_url: `${backendApiUrl}/order/redirect/${orderId}`,
         webhook_endpoint: `${backendApiUrl}/order/webhook/chargili`,
         failure_url: `${backendApiUrl}/order/redirect/${orderId}`,
@@ -1052,6 +1062,32 @@ export class OrderService {
         `Restored ${op.quantity} units to product #${op.productId}`,
       );
     }
+  }
+
+  /**
+   * Releases stock when payment fails or is cancelled
+   */
+  private async releaseStockForFailedPayment(orderId: number): Promise<void> {
+    await this.entityManager.transaction(async (em) => {
+      const order = await em.getRepository(Order).findOne({
+        where: { id: orderId },
+        relations: ['orderProducts'],
+      });
+
+      if (!order) {
+        this.logger.warn(`Order #${orderId} not found for stock release`);
+        return;
+      }
+
+      const productRepo = em.getRepository(Product);
+      await this.restoreInventory(order.orderProducts, productRepo);
+
+      await em.getRepository(Order).remove(order);
+
+      this.logger.log(
+        `Released stock and removed order #${orderId} after payment failure`,
+      );
+    });
   }
 
   /**

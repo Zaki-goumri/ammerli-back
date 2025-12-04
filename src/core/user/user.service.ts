@@ -434,7 +434,6 @@ export class UserService {
    * @returns {Promise<{ message: string }>} A success message.
    * @throws {NotFoundException} If the user with the provided ID is not found.
    */
-  //TODO: use one query
   async deleteUser(id: number): Promise<{ message: string }> {
     await this.redisService.del(UserService.getCacheKey(id, 'id'));
     await this.redisService.del(UserService.getCacheKey(id, 'admin-details'));
@@ -449,7 +448,6 @@ export class UserService {
         });
       }
 
-      // Prevent deletion of admin accounts
       if (u.role === USER_ROLES.ADMIN) {
         throw new ForbiddenException({
           key: 'user.delete.adminDeletionForbidden',

@@ -27,4 +27,11 @@ export class SendNotificationDto {
     example: NOTIFICATION_TYPE.ORDERS,
   })
   type: NotificationType;
+
+  @ApiProperty({
+    description: 'Additional data for the notification',
+    example: { orderId: 12345 },
+    required: false,
+  })
+  metaData?: Record<string, any>;
 }

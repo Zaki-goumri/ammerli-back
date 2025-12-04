@@ -14,6 +14,12 @@ import { Tracking } from '../order/entities/tracking.entity';
 import { ORDER_STATUS } from '../order/enums/delivery.enum';
 import { OrderProduct } from '../order/entities/product-order.entity';
 import { ObjectService } from 'src/infrastructure/object-storage/object-storage.service';
+import { DailyStatsDto } from './dto/daily-stats.dto';
+import { DayAnalyticsDto } from './dto/day-analytics.dto';
+import { TurnoverDto } from './dto/turnover.dto';
+import { ActiveSupermarketsDto } from './dto/active-supermarkets.dto';
+import { MonthlyTurnoverItemDto, MonthlyTurnoverRawResult } from './dto/monthly-turnover.dto';
+import { TopSellingProductDto, TopSellingProductRawResult } from './dto/top-selling-product.dto';
 
 @Injectable()
 export class AnalyticsService {
@@ -29,7 +35,7 @@ export class AnalyticsService {
     private readonly objectStorageService: ObjectService,
   ) {}
 
-  async getAnalytics() {
+  async getAnalytics(): Promise<DailyStatsDto> {
     const [dayAnalytics, turnover, activeSuperMarkets, deliveredCount] =
       await Promise.all([
         this.getDayAnalytics(),
@@ -46,11 +52,7 @@ export class AnalyticsService {
     };
   }
 
-  //TODO: add dto for response
-  private async getDayAnalytics(): Promise<{
-    count: number;
-    percentageChange: number;
-  }> {
+  private async getDayAnalytics(): Promise<DayAnalyticsDto> {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date();
@@ -90,7 +92,7 @@ export class AnalyticsService {
     };
   }
 
-  private async getTurnover(): Promise<{ turnover: number }> {
+  private async getTurnover(): Promise<TurnoverDto> {
     const orders = await this.orderRepo.find({
       where: { isCancelled: false },
       select: ['totalAmount'],
@@ -102,10 +104,7 @@ export class AnalyticsService {
     return { turnover };
   }
 
-  private async getActiveSuperMarketCount(): Promise<{
-    todayActiveSuperMarkets: number;
-    percentageChange: number;
-  }> {
+  private async getActiveSuperMarketCount(): Promise<ActiveSupermarketsDto> {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date();
@@ -141,10 +140,7 @@ export class AnalyticsService {
     return { todayActiveSuperMarkets, percentageChange };
   }
 
-  private async getDeliveredOrdersCount(): Promise<{
-    count: number;
-    percentageChange: number;
-  }> {
+  private async getDeliveredOrdersCount(): Promise<DayAnalyticsDto> {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date();
@@ -184,7 +180,7 @@ export class AnalyticsService {
     };
   }
 
-  async getMontlyTurnover(): Promise<any> {
+  async getMontlyTurnover(): Promise<MonthlyTurnoverItemDto[]> {
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
     sixMonthsAgo.setDate(1);
@@ -216,8 +212,7 @@ export class AnalyticsService {
       .addGroupBy('month_number')
       .orderBy('year', 'ASC')
       .addOrderBy('month_number', 'ASC')
-      //TODO: add type for raw result
-      .getRawMany<{ year: string; month_number: string; turnover: string }>();
+      .getRawMany<MonthlyTurnoverRawResult>();
 
     const formattedMonthlyTurnover = monthlyTurnover.map((data) => {
       return {
@@ -229,7 +224,7 @@ export class AnalyticsService {
     return formattedMonthlyTurnover;
   }
 
-  async getTopSellingProducts(take: number = 5): Promise<any> {
+  async getTopSellingProducts(take: number = 5): Promise<TopSellingProductDto[]> {
     const dateSixMonthsAgo = new Date();
     dateSixMonthsAgo.setMonth(dateSixMonthsAgo.getMonth() - 6);
     const topProducts = await this.orderProductRepo
@@ -252,12 +247,7 @@ export class AnalyticsService {
       .addGroupBy('pp.url')
       .orderBy('total_quantity', 'DESC')
       .limit(take)
-      //TODO: add type for raw result
-      .getRawMany<{
-        productId: number;
-        total_quantity: string;
-        product_image: string;
-      }>();
+      .getRawMany<TopSellingProductRawResult>();
 
     const formattedRaws = await Promise.all(
       topProducts.map(async (item) => ({

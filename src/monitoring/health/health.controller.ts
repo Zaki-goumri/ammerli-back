@@ -3,8 +3,6 @@ import {
   DiskHealthIndicator,
   HealthCheck,
   HealthCheckService,
-  HttpHealthIndicator,
-  MemoryHealthIndicator,
   TypeOrmHealthIndicator,
 } from '@nestjs/terminus';
 import { RedisCustomHealthIndicator } from './redis.health';
@@ -15,9 +13,7 @@ import { ApiExcludeController } from '@nestjs/swagger';
 export class HealthController {
   constructor(
     private health: HealthCheckService,
-    private http: HttpHealthIndicator,
     private disk: DiskHealthIndicator,
-    private memory: MemoryHealthIndicator,
     private db: TypeOrmHealthIndicator,
     private redis: RedisCustomHealthIndicator,
   ) {}
@@ -54,6 +50,7 @@ export class HealthController {
   check() {
     return this.health.check([
       () => this.db.pingCheck('database'),
+      () => this.redis.isHealthy('redis'),
       () =>
         this.disk.checkStorage('disk health', {
           thresholdPercent: 0.9,

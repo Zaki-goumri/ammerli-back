@@ -20,6 +20,7 @@ import {
   ApiQuery,
   ApiResponseProperty,
   ApiOkResponse,
+  ApiTooManyRequestsResponse,
 } from '@nestjs/swagger';
 import { FastifyReply } from 'fastify';
 import { USER_ROLES } from 'src/common/enums/user-role.enum';
@@ -37,6 +38,7 @@ import {
 } from 'src/common/dtos/pagination.dto';
 import { Invoice } from './entities/invoice.entity';
 import { SendInvoiceDto } from './dto/send-invoice.dto';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('invoices')
 @Controller('invoices')
@@ -103,11 +105,20 @@ export class InvoiceController {
     return this.invoiceService.findByOrderId(orderId);
   }
 
-  //TODO: Add rate limiting to download and preview endpoints
-  // to Preview
-  // Use passThrough option in guard to allow unauthenticated access with limited rate
+  @Throttle({
+    ip: {
+      limit: 10,
+      ttl: 60000,
+    },
+  })
   @Get(':id/download')
-  @ApiOperation({ summary: 'Download the invoice as a PDF file' })
+  @ApiOperation({
+    summary: 'Download the invoice as a PDF file',
+    description: 'Rate limited to 10 requests per minute per IP',
+  })
+  @ApiTooManyRequestsResponse({
+    description: 'Too many requests. Please wait before downloading again.',
+  })
   async download(
     @Param('id', ParseIntPipe) id: number,
     @Res() res: FastifyReply,
@@ -122,8 +133,20 @@ export class InvoiceController {
     res.send(pdfBuffer);
   }
 
+  @Throttle({
+    ip: {
+      limit: 15,
+      ttl: 60000,
+    },
+  })
   @Get(':id/preview')
-  @ApiOperation({ summary: 'Preview the invoice in the browser' })
+  @ApiOperation({
+    summary: 'Preview the invoice in the browser',
+    description: 'Rate limited to 15 requests per minute per IP',
+  })
+  @ApiTooManyRequestsResponse({
+    description: 'Too many requests. Please wait before previewing again.',
+  })
   async preview(
     @Param('id', ParseIntPipe) id: number,
     @Res() res: FastifyReply,

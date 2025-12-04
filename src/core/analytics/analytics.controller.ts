@@ -12,6 +12,9 @@ import {
   ApiForbiddenResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { DailyStatsDto } from './dto/daily-stats.dto';
+import { MonthlyTurnoverItemDto } from './dto/monthly-turnover.dto';
+import { TopSellingProductDto } from './dto/top-selling-product.dto';
 
 @ApiTags('Analytics')
 @Controller('analytics')
@@ -34,15 +37,7 @@ export class AnalyticsController {
   })
   @ApiOkResponse({
     description: 'Daily analytics statistics retrieved successfully',
-    schema: {
-      example: {
-        totalOrders: 150,
-        totalRevenue: 25000,
-        newUsers: 12,
-        completedOrders: 140,
-        cancelledOrders: 10,
-      },
-    },
+    type: DailyStatsDto,
   })
   async getAnalytics() {
     return this.analyticsService.getAnalytics();
@@ -57,13 +52,7 @@ export class AnalyticsController {
   })
   @ApiOkResponse({
     description: 'Monthly turnover data retrieved successfully',
-    schema: {
-      example: [
-        { month: 'January', turnover: 50000 },
-        { month: 'February', turnover: 55000 },
-        { month: 'March', turnover: 60000 },
-      ],
-    },
+    type: [MonthlyTurnoverItemDto],
   })
   async getTurnover() {
     return this.analyticsService.getMontlyTurnover();
@@ -78,20 +67,7 @@ export class AnalyticsController {
   })
   @ApiOkResponse({
     description: 'Top selling products retrieved successfully',
-    schema: {
-      example: [
-        {
-          productId: 1,
-          totalQuantity: 250,
-          productImage: 'http://example.com/product1.jpg',
-        },
-        {
-          productId: 2,
-          totalQuantity: 180,
-          productImage: 'http://example.com/product2.jpg',
-        },
-      ],
-    },
+    type: [TopSellingProductDto],
   })
   async getTopProducts() {
     return this.analyticsService.getTopSellingProducts();

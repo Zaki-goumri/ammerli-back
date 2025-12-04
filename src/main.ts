@@ -19,8 +19,10 @@ async function bootstrap() {
     AppModule,
     new FastifyAdapter({
       trustProxy: '172.20.0.0/16',
-      ignoreDuplicateSlashes: true,
-      ignoreTrailingSlash: true,
+      routerOptions: {
+        ignoreDuplicateSlashes: true,
+        ignoreTrailingSlash: true,
+      },
     }),
     {
       bufferLogs: true,

@@ -285,20 +285,7 @@ export class NotificationsService {
     });
     return { title, body };
   }
-  //TODO: remove it
-  async sendOtpViaNotification(token: string, otp: string): Promise<void> {
-    const title = this.i18nService.translate('notifications.otp.title');
-    const body = this.i18nService.translate('notifications.otp.body', {
-      args: { otp },
-    });
-    await this.notificationQueue.add(NOTIFICATION_JOBS.SEND_TEST_NOTIFICATION, {
-      title,
-      body,
-      token,
-    });
-  }
 
-  //TODO: need to test it
   async updateLanguage(
     userId: number,
     fcmToken: string,
