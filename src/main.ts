@@ -1,18 +1,10 @@
-import {
-  INestApplication,
-  ValidationPipe,
-  VersioningType,
-} from '@nestjs/common';
-import { NestFactory, Reflector } from '@nestjs/core';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { apiReference } from '@scalar/nestjs-api-reference';
-
 import { AppModule } from './app.module';
 import { LoggerInterceptor } from './monitoring/logger/logger.interceptor';
-import { DatabaseExceptionFilter } from './common/filters/db.filter';
 import { LoggerBuilder } from './monitoring/logger/logger.builder';
-import { HttpExceptionFilter } from './common/filters/httpException.filter';
-import { I18nService } from 'nestjs-i18n';
 import {
   FastifyAdapter,
   NestFastifyApplication,
@@ -27,6 +19,8 @@ async function bootstrap() {
     AppModule,
     new FastifyAdapter({
       trustProxy: '172.20.0.0/16',
+      ignoreDuplicateSlashes: true,
+      ignoreTrailingSlash: true,
     }),
     {
       bufferLogs: true,
@@ -42,8 +36,8 @@ async function bootstrap() {
 
   await app.register(multipart);
   await app.register(fastifyStatic, {
-    root: join(__dirname, '..', 'public'), // Assuming 'public' folder in project root
-    prefix: '/public/', // Optional: prefix for static files URLs
+    root: join(__dirname, '..', 'public'),
+    prefix: '/public/',
   });
 
   app.enableVersioning({

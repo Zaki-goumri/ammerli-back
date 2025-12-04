@@ -16,6 +16,7 @@ export default registerAs(
     logging: process.env.NODE_ENV !== 'prod',
     migrationsRun: true,
     extra: {
+      timezone: 'Africa/Algiers',
       max: parseInt(process.env.DATABASE_CONNECTION_POOL_MAX || '50', 10),
       min: parseInt(process.env.DATABASE_CONNECTION_POOL_MIN || '10', 10),
       idleTimeoutMillis: parseInt(

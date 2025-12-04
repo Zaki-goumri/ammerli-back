@@ -4,7 +4,7 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { EntityManager, IsNull, LessThan } from 'typeorm';
+import { EntityManager } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ChargiliService } from 'src/core/chargili/chargili.service';
@@ -212,7 +212,7 @@ export class OrderService {
     await this.redisService.set<PaymentClientData>(
       `payment:result:${orderId}`,
       finalDataForClient,
-      300, // Store for 5 minutes
+      300,
     );
   }
 

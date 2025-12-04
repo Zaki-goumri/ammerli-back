@@ -110,7 +110,6 @@ export class OrderController {
       return res.send({ received: true });
     } catch (error) {
       this.logger.error('Error processing webhook:', error);
-      // Depending on the error type, you might want to send a different status code
       return res.status(400).send({ error: error.message });
     }
   }
@@ -287,5 +286,3 @@ export class OrderController {
     );
   }
 }
-
-

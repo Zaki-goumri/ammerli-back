@@ -118,14 +118,6 @@ services:
         max-size: "5m"
         max-file: "3"
         compress: "true"
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 768M
-        reservations:
-          cpus: '0.5'
-          memory: 512M
 
   minio:
     image: minio/minio:latest

@@ -20,13 +20,13 @@ export abstract class BaseEntity extends TypeOrmBaseEntity {
     description: 'Timestamp when the entity was created',
     example: '2023-10-05T14:48:00.000Z',
   })
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamp with time zone' })
   createdAt: Date;
 
   @ApiProperty({
     description: 'Timestamp when the entity was last updated',
     example: '2023-10-05T14:48:00.000Z',
   })
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamp with time zone' })
   updatedAt?: Date;
 }

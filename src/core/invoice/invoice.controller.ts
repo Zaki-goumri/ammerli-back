@@ -44,10 +44,7 @@ import { SendInvoiceDto } from './dto/send-invoice.dto';
 export class InvoiceController {
   private readonly logger = new Logger(InvoiceController.name);
 
-  constructor(
-    private readonly invoiceService: InvoiceService,
-    private readonly invoiceGeneratorService: InvoiceGeneratorService,
-  ) {}
+  constructor(private readonly invoiceService: InvoiceService) {}
 
   @Post('generate/:orderId')
   @UseGuards(AccessTokenGuard, RoleGuard)
@@ -111,7 +108,10 @@ export class InvoiceController {
   // Use passThrough option in guard to allow unauthenticated access with limited rate
   @Get(':id/download')
   @ApiOperation({ summary: 'Download the invoice as a PDF file' })
-  async download(@Param('id', ParseIntPipe) id: number, @Res() res: FastifyReply) {
+  async download(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: FastifyReply,
+  ) {
     const pdfBuffer = await this.invoiceService.getInvoicePDF(id);
     const invoice = await this.invoiceService.findOne(id);
     res.header('Content-Type', 'application/pdf');
@@ -124,7 +124,10 @@ export class InvoiceController {
 
   @Get(':id/preview')
   @ApiOperation({ summary: 'Preview the invoice in the browser' })
-  async preview(@Param('id', ParseIntPipe) id: number, @Res() res: FastifyReply) {
+  async preview(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: FastifyReply,
+  ) {
     const pdfBuffer = await this.invoiceService.getInvoicePDF(id);
     res.header('Content-Type', 'application/pdf');
     res.header('Content-Disposition', 'inline; filename=invoice.pdf');
@@ -148,5 +151,4 @@ export class InvoiceController {
     this.logger.log(`Deleting invoice ID: ${id}`);
     return this.invoiceService.delete(id);
   }
-
 }

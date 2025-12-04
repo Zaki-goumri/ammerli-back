@@ -7,17 +7,19 @@ export const options = {
       executor: 'ramping-vus',
       startVUs: 0,
       stages: [
-        { duration: '1m', target: 50 },
-        { duration: '1m', target: 300 },
-        { duration: '1m', target: 800 },
-        { duration: '1m', target: 1000 },
+        { duration: '2m', target: 100 },
+        { duration: '3m', target: 300 },
+        { duration: '3m', target: 600 },
+        { duration: '2m', target: 300 },
+        { duration: '1m', target: 0 },
       ],
-      gracefulRampDown: '10s',
+      gracefulRampDown: '30s',
     },
   },
   thresholds: {
     http_req_failed: ['rate<0.05'],
-    http_req_duration: ['p(95)<2000'],
+    http_req_duration: ['p(95)<2000', 'p(99)<3000'],
+    http_req_waiting: ['p(95)<1500'],
   },
 };
 
