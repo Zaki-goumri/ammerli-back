@@ -5,7 +5,6 @@ import { resolve } from 'path';
 
 config();
 
-// Register tsconfig paths for TypeORM CLI
 register({
   baseUrl: resolve(__dirname, '..'),
   paths: {
