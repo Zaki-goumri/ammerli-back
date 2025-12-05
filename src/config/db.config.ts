@@ -12,9 +12,9 @@ export default registerAs(
     database: process.env.DB_NAME || '3ammerli',
     entities: [__dirname + '/../**/*.entity{.ts,.js}'],
     migrations: [__dirname + '/../migrations/*{.ts,.js}'],
-    synchronize: process.env.NODE_ENV !== 'prod',
+    synchronize: false,
     logging: process.env.NODE_ENV !== 'prod',
-    migrationsRun: true,
+    migrationsRun: false,
     extra: {
       timezone: 'Africa/Algiers',
       max: parseInt(process.env.DATABASE_CONNECTION_POOL_MAX || '50', 10),

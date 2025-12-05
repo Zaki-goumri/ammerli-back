@@ -27,11 +27,11 @@
     "k6-stress-test": "./load-tests/run-k6-tests.sh stress-test",
     "push:config": "./push-configs.sh",
     "typeorm": "typeorm-ts-node-commonjs",
-    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/data-source.ts",
-    "migration:create": "typeorm-ts-node-commonjs migration:create",
-    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/data-source.ts",
-    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/data-source.ts",
-    "migration:show": "typeorm-ts-node-commonjs migration:show -d src/data-source.ts"
+    "migration:generate": "docker exec -it server pnpm typeorm-ts-node-commonjs migration:generate src/migrations/Migration -d src/data-source.ts",
+    "migration:create": "docker exec -it server pnpm typeorm-ts-node-commonjs migration:create src/migrations/Migration",
+    "migration:run": "docker exec -it server pnpm typeorm-ts-node-commonjs migration:run -d src/data-source.ts",
+    "migration:revert": "docker exec -it server pnpm typeorm-ts-node-commonjs migration:revert -d src/data-source.ts",
+    "migration:show": "docker exec -it server pnpm typeorm-ts-node-commonjs migration:show -d src/data-source.ts"
   },
   "dependencies": {
     "@fastify/basic-auth": "^6.2.0",

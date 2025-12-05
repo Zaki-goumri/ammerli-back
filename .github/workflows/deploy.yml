@@ -65,6 +65,20 @@ jobs:
             echo "Stopping old containers..."
             docker compose down --timeout 30
             
+            echo "Running database migrations..."
+            if ! docker compose run --rm server pnpm typeorm-ts-node-commonjs migration:run -d src/data-source.ts; then
+              echo "Migration failed! Rolling back..."
+              
+              # Restart old containers
+              sed -i "s|image: $IMAGE_NAME:latest|image: $IMAGE_NAME:backup|g" compose.yaml
+              docker compose up -d --scale server=2
+              sed -i "s|image: $IMAGE_NAME:backup|image: $IMAGE_NAME:latest|g" compose.yaml
+              
+              echo "Rolled back due to migration failure"
+              exit 1
+            fi
+            echo "Migrations completed successfully!"
+            
             echo "Starting new containers with latest image..."
             if ! docker compose up -d --scale server=2; then
               echo "Failed to start new containers, rolling back..."
