@@ -12,6 +12,7 @@ import {
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
+import fastifyBasicAuth from '@fastify/basic-auth';
 import { join } from 'path';
 
 async function bootstrap() {
@@ -128,6 +129,16 @@ async function bootstrap() {
   const swaggerPassword = process.env.SWAGGER_PASSWORD || 'admin';
 
   if (swaggerEnabled) {
+    // Register basic auth plugin
+    await app.register(fastifyBasicAuth, {
+      validate: async (username: string, password: string) => {
+        if (username !== swaggerUser || password !== swaggerPassword) {
+          throw new Error('Invalid credentials');
+        }
+      },
+      authenticate: { realm: 'Swagger Documentation' },
+    });
+
     const config = new DocumentBuilder()
       .setTitle('Core Api Documentation')
       .setDescription('The Api Documentation')
@@ -137,6 +148,19 @@ async function bootstrap() {
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
+
+    // Apply basic auth middleware to /api-docs route
+    const fastifyInstance = app.getHttpAdapter().getInstance();
+    fastifyInstance.addHook('onRequest', async (request: any, reply: any) => {
+      if (request.url.startsWith('/api-docs')) {
+        try {
+          await fastifyInstance.basicAuth(request, reply, () => {});
+        } catch (err) {
+          reply.code(401).send({ error: 'Unauthorized' });
+        }
+      }
+    });
+
     app.use(
       '/api-docs',
       apiReference({
@@ -146,6 +170,7 @@ async function bootstrap() {
     );
 
     console.log('Swagger documentation enabled at /api-docs');
+    console.log(`Swagger credentials - User: ${swaggerUser}`);
   } else {
     console.log('Swagger documentation disabled');
   }
@@ -154,8 +179,6 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port, '0.0.0.0');
 }
-
-const cluserizeApp = process.env.NUM_CPUS;
 
 bootstrap()
   .then(() => {
