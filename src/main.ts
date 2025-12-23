@@ -138,7 +138,6 @@ async function bootstrap() {
 
     const document = SwaggerModule.createDocument(app, config);
 
-    // Simple basic auth middleware
     const fastifyInstance = app.getHttpAdapter().getInstance();
     fastifyInstance.addHook('onRequest', async (request: any, reply: any) => {
       if (request.url.startsWith('/api-docs')) {
@@ -146,17 +145,25 @@ async function bootstrap() {
 
         if (!authHeader || !authHeader.startsWith('Basic ')) {
           reply.code(401);
-          reply.header('WWW-Authenticate', 'Basic realm="Swagger Documentation"');
+          reply.header(
+            'WWW-Authenticate',
+            'Basic realm="Swagger Documentation"',
+          );
           return reply.send('Authentication required');
         }
 
         const base64Credentials = authHeader.split(' ')[1];
-        const credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
+        const credentials = Buffer.from(base64Credentials, 'base64').toString(
+          'utf-8',
+        );
         const [username, password] = credentials.split(':');
 
         if (username !== swaggerUser || password !== swaggerPassword) {
           reply.code(401);
-          reply.header('WWW-Authenticate', 'Basic realm="Swagger Documentation"');
+          reply.header(
+            'WWW-Authenticate',
+            'Basic realm="Swagger Documentation"',
+          );
           return reply.send('Invalid credentials');
         }
       }
