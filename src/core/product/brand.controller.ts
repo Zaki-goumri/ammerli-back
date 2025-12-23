@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   ParseIntPipe,
   HttpCode,
   HttpStatus,
@@ -30,6 +31,10 @@ import { AccessTokenGuard } from '../authentication/guards/access-token.guard';
 import { Roles } from 'src/core/authentication/decorators/role.decorator';
 import { USER_ROLES } from 'src/common/enums/user-role.enum';
 import { RoleGuard } from '../authentication/guards/role.guard';
+import {
+  PaginatedResponse,
+  PaginationQueryDto,
+} from 'src/common/dtos/pagination.dto';
 
 @ApiTags('brands')
 @ApiBearerAuth()
@@ -40,13 +45,13 @@ export class BrandController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get all brands' })
+  @ApiOperation({ summary: 'Get all brands with pagination' })
   @ApiOkResponse({
-    description: 'Returns all brands',
-    type: [BrandResDto],
+    description: 'Returns paginated brands',
+    type: PaginatedResponse(BrandResDto),
   })
-  getAllBrands() {
-    return this.brandService.getAll();
+  getAllBrands(@Query() query: PaginationQueryDto) {
+    return this.brandService.getAll(query);
   }
 
   @Post()

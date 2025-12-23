@@ -1,0 +1,79 @@
+=====================================================
+GEMINI IMAGE GENERATION PROMPTS FOR 3AMMERLI
+=====================================================
+
+IMPORTANT: You are working on generating PICTURES/IMAGES for an e-commerce platform.
+These are visual assets (JPG/PNG files) that will be used as default placeholders.
+
+Generate these 7 images for the e-commerce platform:
+
+---
+1. DEFAULT PRODUCT IMAGE
+Filename: default-product.jpg
+
+Prompt:
+"Generate a picture/image: A clean, professional placeholder image for a wholesale e-commerce product. Simple white or light gray background with a minimalist icon of a cardboard box or generic product package in the center. Flat design style, modern and professional. The icon should be in a neutral color like gray or light blue. Image should be square (1:1 ratio), suitable for product thumbnails. No text, just the icon centered on a clean background."
+
+---
+2. ALIMENTATION CATEGORY
+Filename: default-alimentation.jpg
+
+Prompt:
+"Generate a picture/image: A clean, modern category icon for 'Alimentation' (Food products). Minimalist flat design showing various food items like bread, vegetables, fruits, or grocery items arranged aesthetically. Warm colors (orange, yellow, green). Square format, professional e-commerce style, light background. Icon-style illustration, not photorealistic. Suitable for a B2B wholesale platform."
+
+---
+3. BOISSONS CATEGORY
+Filename: default-boissons.jpg
+
+Prompt:
+"Generate a picture/image: A clean, modern category icon for 'Boissons' (Beverages/Drinks). Minimalist flat design showing bottles, cans, or glass of beverages. Cool colors (blue, light blue, turquoise). Square format, professional e-commerce style, light background. Icon-style illustration, not photorealistic. Suitable for a B2B wholesale platform."
+
+---
+4. PRODUITS MÉNAGERS CATEGORY
+Filename: default-produits-ménagers.jpg
+
+Prompt:
+"Generate a picture/image: A clean, modern category icon for 'Produits Ménagers' (Household cleaning products). Minimalist flat design showing cleaning supplies like spray bottles, sponges, or cleaning tools. Fresh colors (green, blue, white). Square format, professional e-commerce style, light background. Icon-style illustration, not photorealistic. Suitable for a B2B wholesale platform."
+
+---
+5. PRODUITS D'HYGIÈNE CATEGORY
+Filename: default-produits-d-hygiène.jpg
+
+Prompt:
+"Generate a picture/image: A clean, modern category icon for 'Produits d'Hygiène' (Hygiene products). Minimalist flat design showing personal care items like soap, toothbrush, or hygiene products. Clean colors (light blue, white, mint green). Square format, professional e-commerce style, light background. Icon-style illustration, not photorealistic. Suitable for a B2B wholesale platform."
+
+---
+6. EMBALLAGE CATEGORY
+Filename: default-emballage.jpg
+
+Prompt:
+"Generate a picture/image: A clean, modern category icon for 'Emballage' (Packaging materials). Minimalist flat design showing boxes, bags, wrapping materials, or packaging supplies. Neutral colors (brown, beige, gray). Square format, professional e-commerce style, light background. Icon-style illustration, not photorealistic. Suitable for a B2B wholesale platform."
+
+---
+7. AUTRE CATEGORY
+Filename: default-autre.jpg
+
+Prompt:
+"Generate a picture/image: A clean, modern category icon for 'Autre' (Other/Miscellaneous products). Minimalist flat design showing a question mark, dots pattern, or abstract mixed items icon. Neutral colors (gray, light purple, or multi-color pastels). Square format, professional e-commerce style, light background. Icon-style illustration, not photorealistic. Suitable for a B2B wholesale platform."
+
+=====================================================
+TECHNICAL SPECIFICATIONS:
+=====================================================
+- Format: Square (1:1 ratio), minimum 500x500px, recommended 1000x1000px
+- Style: Flat design, minimalist, icon-style
+- Background: Light (white or very light gray)
+- File format: JPG or PNG
+- No text or labels on images
+- Professional B2B e-commerce aesthetic
+- Consistent style across all images
+
+=====================================================
+GENERATION INSTRUCTIONS:
+=====================================================
+1. Use Gemini's Imagen 3 model for image generation
+2. Generate each image separately using the prompts above
+3. Ensure consistent style across all 7 images
+4. Download and rename files according to the filenames listed
+5. Upload to your MinIO storage bucket
+
+=====================================================

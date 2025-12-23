@@ -9,6 +9,10 @@ import { Brand } from '../entities/brand.entity';
 import { BrandResDto } from '../dtos/brand/brand.res.dto';
 import { Product } from '../entities/product.entity';
 import { I18nService } from 'nestjs-i18n';
+import {
+  PaginationQueryDto,
+  PaginationResponseDto,
+} from 'src/common/dtos/pagination.dto';
 
 @Injectable()
 export class BrandService {
@@ -20,9 +24,30 @@ export class BrandService {
     private readonly i18nService: I18nService,
   ) {}
 
-  async getAll(): Promise<BrandResDto[]> {
-    const brands = await this.brandRepo.find();
-    return brands.map((brand) => ({ id: brand.id, label: brand.label }));
+  async getAll(
+    paginationQuery: PaginationQueryDto,
+  ): Promise<PaginationResponseDto<BrandResDto>> {
+    const { page = 1, limit = 10 } = paginationQuery;
+    const offset = (page - 1) * limit;
+
+    const [brands, total] = await this.brandRepo.findAndCount({
+      order: { label: 'ASC' },
+      skip: offset,
+      take: limit,
+    });
+
+    const data = brands.map((brand) => ({ id: brand.id, label: brand.label }));
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+      },
+    };
   }
 
   async create(label: string): Promise<BrandResDto> {
