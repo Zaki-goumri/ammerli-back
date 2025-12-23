@@ -12,7 +12,6 @@ import {
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
-import fastifyBasicAuth from '@fastify/basic-auth';
 import { join } from 'path';
 
 async function bootstrap() {
@@ -129,16 +128,6 @@ async function bootstrap() {
   const swaggerPassword = process.env.SWAGGER_PASSWORD || 'admin';
 
   if (swaggerEnabled) {
-    // Register basic auth plugin
-    await app.register(fastifyBasicAuth, {
-      validate: async (username: string, password: string) => {
-        if (username !== swaggerUser || password !== swaggerPassword) {
-          throw new Error('Invalid credentials');
-        }
-      },
-      authenticate: { realm: 'Swagger Documentation' },
-    });
-
     const config = new DocumentBuilder()
       .setTitle('Core Api Documentation')
       .setDescription('The Api Documentation')
@@ -149,14 +138,26 @@ async function bootstrap() {
 
     const document = SwaggerModule.createDocument(app, config);
 
-    // Apply basic auth middleware to /api-docs route
+    // Simple basic auth middleware
     const fastifyInstance = app.getHttpAdapter().getInstance();
     fastifyInstance.addHook('onRequest', async (request: any, reply: any) => {
       if (request.url.startsWith('/api-docs')) {
-        try {
-          await fastifyInstance.basicAuth(request, reply, () => {});
-        } catch (err) {
-          reply.code(401).send({ error: 'Unauthorized' });
+        const authHeader = request.headers.authorization;
+
+        if (!authHeader || !authHeader.startsWith('Basic ')) {
+          reply.code(401);
+          reply.header('WWW-Authenticate', 'Basic realm="Swagger Documentation"');
+          return reply.send('Authentication required');
+        }
+
+        const base64Credentials = authHeader.split(' ')[1];
+        const credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
+        const [username, password] = credentials.split(':');
+
+        if (username !== swaggerUser || password !== swaggerPassword) {
+          reply.code(401);
+          reply.header('WWW-Authenticate', 'Basic realm="Swagger Documentation"');
+          return reply.send('Invalid credentials');
         }
       }
     });
