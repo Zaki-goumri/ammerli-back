@@ -215,6 +215,9 @@ export class AppService {
             </ul>
         </div>
 
+        <div class="logo">
+            <img src="/public/assets/logo.png" alt="Ammerli Logo">
+        </div>
 
         <h3>6.4 الفواتير</h3>
         <ul>
@@ -315,16 +318,24 @@ export class AppService {
             <h2>18. معلومات الاتصال</h2>
             <p>للأسئلة أو الاستفسارات حول هذه الشروط، يرجى التواصل معنا:</p>
             <ul>
-                <li><strong>البريد الإلكتروني:</strong> support@Ammerli.com</li>
-                <li><strong>الهاتف:</strong> +213 793048125</li>
-                <li><strong>العنوان:</strong> الجزائر</li>
+                <li><strong>البريد الإلكتروني:</strong> contact@amerli.dz</li>
+                <li><strong>الهاتف:</strong> +213 550 123 456</li>
+                <li><strong>العنوان:</strong> 12 Rue des Frères Boukhalfa، Hydra، Alger، Algérie</li>
             </ul>
+        </div>
+
+        <div class="logo">
+            <img src="/public/assets/logo.png" alt="Ammerli Logo">
         </div>
 
         <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #7f8c8d;">
             © ${new Date().getFullYear()} Ammerli. جميع الحقوق محفوظة.
         </p>
     </div>
+
+        <div class="logo">
+            <img src="/public/assets/logo.png" alt="Ammerli Logo">
+        </div>
 </body>
 </html>
     `;
@@ -529,6 +540,10 @@ export class AppService {
             </ul>
         </div>
 
+        <div class="logo">
+            <img src="/public/assets/logo.png" alt="Ammerli Logo">
+        </div>
+
         <h3>6.4 Invoices</h3>
         <ul>
             <li>A PDF invoice is automatically generated for each completed order.</li>
@@ -628,16 +643,24 @@ export class AppService {
             <h2>18. Contact Information</h2>
             <p>For questions or inquiries about these terms, please contact us:</p>
             <ul>
-                <li><strong>Email:</strong> support@Ammerli.com</li>
-                <li><strong>Phone:</strong> +213 793048125</li>
-                <li><strong>Address:</strong> Algeria</li>
+                <li><strong>Email:</strong> contact@amerli.dz</li>
+                <li><strong>Phone:</strong> +213 550 123 456</li>
+                <li><strong>Address:</strong> 12 Rue des Frères Boukhalfa, Hydra, Alger, Algérie</li>
             </ul>
+        </div>
+
+        <div class="logo">
+            <img src="/public/assets/logo.png" alt="Ammerli Logo">
         </div>
 
         <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #7f8c8d;">
             © ${new Date().getFullYear()} Ammerli. All Rights Reserved.
         </p>
     </div>
+
+        <div class="logo">
+            <img src="/public/assets/logo.png" alt="Ammerli Logo">
+        </div>
 </body>
 </html>
     `;
@@ -842,6 +865,10 @@ export class AppService {
             </ul>
         </div>
 
+        <div class="logo">
+            <img src="/public/assets/logo.png" alt="Ammerli Logo">
+        </div>
+
         <h3>6.4 Factures</h3>
         <ul>
             <li>Une facture PDF est automatiquement générée pour chaque commande complétée.</li>
@@ -941,10 +968,14 @@ export class AppService {
             <h2>18. Informations de Contact</h2>
             <p>Pour toute question ou demande concernant ces conditions, veuillez nous contacter :</p>
             <ul>
-                <li><strong>E-mail :</strong> support@Ammerli.com</li>
-                <li><strong>Téléphone :</strong> +213 793048125</li>
-                <li><strong>Adresse :</strong> Algérie</li>
+                <li><strong>E-mail :</strong> contact@amerli.dz</li>
+                <li><strong>Téléphone :</strong> +213 550 123 456</li>
+                <li><strong>Adresse :</strong> 12 Rue des Frères Boukhalfa, Hydra, Alger, Algérie</li>
             </ul>
+        </div>
+
+        <div class="logo">
+            <img src="/public/assets/logo.png" alt="Ammerli Logo">
         </div>
 
         <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #7f8c8d;">
@@ -952,6 +983,9 @@ export class AppService {
         </p>
     </div>
 
+        <div class="logo">
+            <img src="/public/assets/logo.png" alt="Ammerli Logo">
+        </div>
 </body>
 </html>
     `;
@@ -1178,6 +1212,10 @@ export class AppService {
             </ul>
         </div>
 
+        <div class="logo">
+            <img src="/public/assets/logo.png" alt="Ammerli Logo">
+        </div>
+
         <h2>5. معالجة الدفع عبر Chargily</h2>
         <p>عند استخدام خدمة الدفع الإلكتروني:</p>
         <ul>
@@ -1227,7 +1265,7 @@ export class AppService {
             <li><strong>الاعتراض:</strong> الاعتراض على معالجة بياناتك لأغراض معينة.</li>
             <li><strong>النقل:</strong> الحصول على بياناتك بتنسيق قابل للنقل.</li>
         </ul>
-        <p>لممارسة هذه الحقوق، يرجى التواصل معنا على: support@Ammerli.com</p>
+        <p>لممارسة هذه الحقوق، يرجى التواصل معنا على: contact@amerli.dz</p>
 
         <h2>10. ملفات تعريف الارتباط (Cookies)</h2>
         <ul>
@@ -1271,17 +1309,25 @@ export class AppService {
             <h2>16. التواصل معنا</h2>
             <p>إذا كانت لديك أسئلة أو مخاوف بشأن خصوصيتك أو هذه السياسة، يرجى التواصل معنا:</p>
             <ul>
-                <li><strong>البريد الإلكتروني:</strong> support@Ammerli.com</li>
-                <li><strong>الهاتف:</strong> +213 793048125</li>
-                <li><strong>العنوان:</strong> الجزائر</li>
+                <li><strong>البريد الإلكتروني:</strong> contact@amerli.dz</li>
+                <li><strong>الهاتف:</strong> +213 550 123 456</li>
+                <li><strong>العنوان:</strong> 12 Rue des Frères Boukhalfa، Hydra، Alger، Algérie</li>
             </ul>
             <p><strong>مسؤول حماية البيانات:</strong> privacy@Ammerli.com</p>
+        </div>
+
+        <div class="logo">
+            <img src="/public/assets/logo.png" alt="Ammerli Logo">
         </div>
 
         <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #7f8c8d;">
             © ${new Date().getFullYear()} Ammerli. جميع الحقوق محفوظة.
         </p>
     </div>
+
+        <div class="logo">
+            <img src="/public/assets/logo.png" alt="Ammerli Logo">
+        </div>
 </body>
 </html>
     `;
@@ -1436,6 +1482,10 @@ export class AppService {
             </ul>
         </div>
 
+        <div class="logo">
+            <img src="/public/assets/logo.png" alt="Ammerli Logo">
+        </div>
+
         <h2>4. Firebase Cloud Messaging (FCM)</h2>
         <p>We use FCM to send push notifications:</p>
         <ul>
@@ -1479,7 +1529,7 @@ export class AppService {
             <li><strong>Objection:</strong> Object to processing of your data for specific purposes.</li>
             <li><strong>Portability:</strong> Obtain your data in a portable format.</li>
         </ul>
-        <p>To exercise these rights, please contact us at: support@Ammerli.com</p>
+        <p>To exercise these rights, please contact us at: contact@amerli.dz</p>
 
         <h2>8. Google Play Console Compliance</h2>
         <p>Ammerli platform complies with all Google Play Console privacy requirements:</p>
@@ -1509,18 +1559,25 @@ export class AppService {
             <h2>11. Contact Us</h2>
             <p>If you have questions or concerns about your privacy or this policy, please contact us:</p>
             <ul>
-                <li><strong>Email:</strong> support@Ammerli.com</li>
-                <li><strong>Phone:</strong> +213 793048125</li>
-                <li><strong>Address:</strong> Algeria</li>
+                <li><strong>Email:</strong> contact@amerli.dz</li>
+                <li><strong>Phone:</strong> +213 550 123 456</li>
+                <li><strong>Address:</strong> 12 Rue des Frères Boukhalfa, Hydra, Alger, Algérie</li>
             </ul>
             <p><strong>Data Protection Officer:</strong> privacy@Ammerli.com</p>
         </div>
 
+        <div class="logo">
+            <img src="/public/assets/logo.png" alt="Ammerli Logo">
+        </div>
 
         <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #7f8c8d;">
             © ${new Date().getFullYear()} Ammerli. All Rights Reserved.
         </p>
     </div>
+
+        <div class="logo">
+            <img src="/public/assets/logo.png" alt="Ammerli Logo">
+        </div>
 </body>
 </html>
     `;
@@ -1675,6 +1732,12 @@ export class AppService {
             </ul>
         </div>
 
+        <div class="logo">
+            <img src="/public/assets/logo.png" alt="Ammerli Logo">
+        </div>
+
+        <h2>4. Firebase Cloud Messaging (FCM)</h2>
+        <p>Nous utilisons FCM pour envoyer des notifications push :</p>
         <ul>
             <li>Nous collectons des tokens FCM pour les appareils enregistrés.</li>
             <li>Nous envoyons des notifications sur l'état des commandes et des paiements.</li>
@@ -1716,7 +1779,7 @@ export class AppService {
             <li><strong>Opposition :</strong> S'opposer au traitement de vos données à des fins spécifiques.</li>
             <li><strong>Portabilité :</strong> Obtenir vos données dans un format portable.</li>
         </ul>
-        <p>Pour exercer ces droits, veuillez nous contacter à : support@Ammerli.com</p>
+        <p>Pour exercer ces droits, veuillez nous contacter à : contact@amerli.dz</p>
 
         <h2>8. Conformité avec Google Play Console</h2>
         <p>La plateforme Ammerli est conforme à toutes les exigences de confidentialité de Google Play Console :</p>
@@ -1746,11 +1809,15 @@ export class AppService {
             <h2>11. Nous Contacter</h2>
             <p>Si vous avez des questions ou des préoccupations concernant votre vie privée ou cette politique, veuillez nous contacter :</p>
             <ul>
-                <li><strong>E-mail :</strong> support@Ammerli.com</li>
-                <li><strong>Téléphone :</strong> +213 793048125</li>
-                <li><strong>Adresse :</strong> Algérie</li>
+                <li><strong>E-mail :</strong> contact@amerli.dz</li>
+                <li><strong>Téléphone :</strong> +213 550 123 456</li>
+                <li><strong>Adresse :</strong> 12 Rue des Frères Boukhalfa, Hydra, Alger, Algérie</li>
             </ul>
             <p><strong>Délégué à la Protection des Données :</strong> privacy@Ammerli.com</p>
+        </div>
+
+        <div class="logo">
+            <img src="/public/assets/logo.png" alt="Ammerli Logo">
         </div>
 
         <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #7f8c8d;">
