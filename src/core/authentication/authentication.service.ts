@@ -211,12 +211,10 @@ export class AuthenticationService {
       phoneNumber,
       context: 'Authentication',
     });
-    const otp = await this.redisService.get<string>(`otp:${phoneNumber}`);
     return {
       message: this.i18nService.t('auth.otp.sent', {
         args: { phoneNumber },
       }),
-      otp: otp ? otp : undefined,
     };
   }
 
