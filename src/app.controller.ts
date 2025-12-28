@@ -2,6 +2,8 @@ import { Controller, Get, Res, VERSION_NEUTRAL } from '@nestjs/common';
 import { AppService } from './app.service';
 import { ApiExcludeController } from '@nestjs/swagger';
 import { FastifyReply } from 'fastify';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 @ApiExcludeController()
 @Controller({ version: VERSION_NEUTRAL })
@@ -46,6 +48,15 @@ export class AppController {
   @Get('privacy-policy/fr')
   getPrivacyPolicyFr(@Res() res: FastifyReply) {
     const html = this.appService.getPrivacyPolicy('fr');
+    res.type('text/html').send(html);
+  }
+
+  @Get('delete-account')
+  getDeleteAccount(@Res() res: FastifyReply) {
+    const html = readFileSync(
+      join(__dirname, '..', 'public', 'delete-account.html'),
+      'utf8',
+    );
     res.type('text/html').send(html);
   }
 }

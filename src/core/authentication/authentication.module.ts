@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthenticationService } from './authentication.service';
 import { AuthenticationController } from './authentication.controller';
+import { AccountDeletionController } from './account-deletion.controller';
 import { AccessTokenStrategy } from './strategies/access-token.strategy';
 import { AccessTokenGuard } from './guards/access-token.guard';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
@@ -24,7 +25,7 @@ import { BlackListModule } from '../user/black-list/black-list.module';
     QueueModule,
     BlackListModule,
   ],
-  controllers: [AuthenticationController],
+  controllers: [AuthenticationController, AccountDeletionController],
   providers: [
     AuthenticationService,
     AccessTokenStrategy,
@@ -49,6 +50,6 @@ import { BlackListModule } from '../user/black-list/black-list.module';
       inject: [ConfigService, DefaultOtpStrategy, SmsSakOtpStrategy],
     },
   ],
-  exports: [AccessTokenGuard],
+  exports: [AccessTokenGuard, OtpStrategy],
 })
 export class AuthenticationModule {}
