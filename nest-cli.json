@@ -7,7 +7,7 @@
     "assets": [
       "**/templates/**/*",
       "i18n/**/*.json",
-      { "glob": "**/*", "input": "public", "output": "public" }
+      { "glob": "../public/**/*", "outDir": "public" }
     ]
   }
 }
