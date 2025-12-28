@@ -6,11 +6,7 @@
     "deleteOutDir": true,
     "assets": [
       "**/templates/**/*",
-      "i18n/**/*.json",
-      {
-        "include": "public/**/*",
-        "outDir": "dist"
-      }
+      "i18n/**/*.json"
     ]
   }
 }

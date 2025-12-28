@@ -39,6 +39,7 @@ COPY --chown=node:node --from=build /usr/src/app/dist ./dist
 COPY --chown=node:node --from=build /usr/src/app/src/core/invoice/templates ./src/core/invoice/templates
 COPY --chown=node:node --from=build /usr/src/app/src/data-source.ts ./src/data-source.ts
 COPY --chown=node:node --from=build /usr/src/app/tsconfig.json ./tsconfig.json
+COPY --chown=node:node --from=build /usr/src/app/public ./public
 COPY --chown=node:node firebase.config.json ./
 COPY --chown=node:node ecosystem.config.js ./
 
