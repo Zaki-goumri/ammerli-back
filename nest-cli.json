@@ -8,9 +8,8 @@
       "**/templates/**/*",
       "i18n/**/*.json",
       {
-        "glob": "**/*",
-        "input": "public/",
-        "outDir": "dist/public/"
+        "include": "public/**/*",
+        "outDir": "dist"
       }
     ]
   }
