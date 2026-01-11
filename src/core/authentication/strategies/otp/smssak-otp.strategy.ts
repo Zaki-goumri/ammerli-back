@@ -101,10 +101,6 @@ export class SmsSakOtpStrategy extends OtpStrategy {
 
   async verify(phoneNumber: string, otp: string): Promise<boolean> {
     //TODO: Remove master code in production
-    if (otp == '0000') {
-      this.logger.log(`OTP verified via master code for ${phoneNumber}`);
-      return true;
-    }
     if (this.type === 'sms') {
       try {
         const response = await verifyOtp(
