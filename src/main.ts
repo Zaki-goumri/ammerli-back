@@ -13,6 +13,7 @@ import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
 import { join } from 'path';
+import { ClsService } from 'nestjs-cls';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -24,16 +25,17 @@ async function bootstrap() {
         ignoreTrailingSlash: true,
       },
     }),
-    {
-      bufferLogs: true,
-      logger:
-        process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'prod'
-          ? new LoggerBuilder()
-              .setJobName('core')
-              .setEnvironment(process.env.NODE_ENV)
-              .build()
-          : ['log', 'error', 'warn', 'debug', 'verbose'],
-    },
+  );
+
+  const clsService = app.get(ClsService);
+
+  app.useLogger(
+    process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'prod'
+      ? new LoggerBuilder(clsService)
+          .setJobName('core')
+          .setEnvironment(process.env.NODE_ENV)
+          .build()
+      : ['log', 'error', 'warn', 'debug', 'verbose'],
   );
 
   await app.register(multipart);
@@ -80,10 +82,7 @@ async function bootstrap() {
     crossOriginEmbedderPolicy: false,
   });
   //INTERCEPTORS
-  app.useGlobalInterceptors(
-    new LoggerInterceptor(),
-    //new ResponseFormatterInterceptor(),
-  );
+  app.useGlobalInterceptors(new LoggerInterceptor(clsService));
   // //PIPES
   app.useGlobalPipes(
     new ValidationPipe({

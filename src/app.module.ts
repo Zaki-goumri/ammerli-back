@@ -26,9 +26,20 @@ import { HttpExceptionFilter } from './common/filters/httpException.filter';
 import { DatabaseExceptionFilter } from './common/filters/db.filter';
 import { ObjectStorageExceptionFilter } from './common/filters/object-storage.filter';
 import { AlertingModule } from './monitoring/alerting/alerting.module';
-
+import { ClsModule } from 'nestjs-cls';
+import * as crypto from 'crypto';
 @Module({
   imports: [
+    ClsModule.forRoot({
+      middleware: {
+        mount: true,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        setup: (cls, req) => {
+          const uuid = crypto.randomUUID();
+          cls.set('requestId', uuid);
+        },
+      },
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: null,

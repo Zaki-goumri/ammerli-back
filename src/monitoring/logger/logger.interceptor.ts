@@ -3,11 +3,16 @@ import {
   ExecutionContext,
   Logger,
   NestInterceptor,
+  Injectable,
 } from '@nestjs/common';
 import { FastifyRequest, FastifyReply } from 'fastify';
+import { ClsService } from 'nestjs-cls';
 import { Observable, tap } from 'rxjs';
 
+@Injectable()
 export class LoggerInterceptor implements NestInterceptor {
+  constructor(private readonly clsService: ClsService) {}
+
   private readonly logger = new Logger(LoggerInterceptor.name);
 
   intercept(
@@ -18,16 +23,14 @@ export class LoggerInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest<FastifyRequest>();
     const response = context.switchToHttp().getResponse<FastifyReply>();
 
-    const { method, url, ip } = request; // Use url directly for Fastify
-    const userAgent = request.headers['user-agent'] || ''; // Changed for Fastify
-    const traceId =
-      (request.headers['x-request-id'] as string) ||
-      `trace-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const { method, url, ip, body } = request;
+    const userAgent = request.headers['user-agent'] || '';
+    const traceId = this.clsService.get<string>('requestId');
 
-    // Log Request
     this.logger.log({
-      message: `Incoming Request: ${method} ${url}`, // Use url for Fastify
+      message: `Incoming Request: ${method} ${url}`,
       context: 'HTTP',
+      body,
       traceId,
       method,
       url,
@@ -43,7 +46,7 @@ export class LoggerInterceptor implements NestInterceptor {
           const statusCode = response.statusCode;
 
           this.logger.log({
-            message: `Request Completed: ${method} ${url} ${statusCode}`, // Use url for Fastify
+            message: `Request Completed: ${method} ${url} ${statusCode}`,
             context: 'HTTP',
             traceId,
             method,
@@ -57,7 +60,7 @@ export class LoggerInterceptor implements NestInterceptor {
           const duration = endTime - startTime;
 
           this.logger.error({
-            message: `Request Failed: ${method} ${url}`, // Use url for Fastify
+            message: `Request Failed: ${method} ${url}`,
             context: 'HTTP',
             traceId,
             method,

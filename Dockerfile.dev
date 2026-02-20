@@ -1,15 +1,20 @@
 # syntax=docker/dockerfile:1
 
-ARG BASE_IMAGE=3ammerli-base:latest
-FROM ${BASE_IMAGE}
+ARG NODE_VERSION=22.15.1
+ARG PNPM_VERSION=10.10.0
+
+FROM node:${NODE_VERSION}-alpine
+
+RUN --mount=type=cache,target=/root/.npm \
+  npm install -g pnpm@${PNPM_VERSION} pm2
+
+RUN pnpm config set global-bin-dir /usr/local/bin
 
 WORKDIR /usr/src/app
 
 RUN pnpm add -g @nestjs/cli
 
 COPY package.json pnpm-lock.yaml ./
-
-
 COPY /src/core/invoice/templates ./src/core/invoice/templates
 
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
@@ -18,5 +23,4 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
 COPY . .
 
 EXPOSE 3000
-
 CMD ["pnpm", "run", "start:dev"]

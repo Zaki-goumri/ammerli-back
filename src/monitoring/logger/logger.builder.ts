@@ -1,9 +1,13 @@
-import { LoggerService } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+import { LoggerService, Injectable } from '@nestjs/common';
 import { WinstonModule } from 'nest-winston';
+import { ClsService } from 'nestjs-cls';
 import * as winston from 'winston';
 import LokiTransport from 'winston-loki';
 
+@Injectable()
 export class LoggerBuilder {
+  constructor(private readonly clsService: ClsService) {}
   private jobName: string = 'ammerli-backend';
   private environment: string = 'development';
 
@@ -18,28 +22,37 @@ export class LoggerBuilder {
   }
 
   build(): LoggerService {
+    const requestIdFormat = winston.format((info) => {
+      const requestId = this.clsService.get<string>('requestId');
+      if (requestId) {
+        info.traceId = requestId;
+      }
+      return info;
+    });
+
     const consoleFormat = winston.format.combine(
+      requestIdFormat(),
       winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
       winston.format.colorize(),
       winston.format.errors({ stack: true }),
-      winston.format.printf(({ timestamp, level, message, context, trace }) => {
-        const contextStr = context ? `[${context}] ` : '';
-        const traceStr = trace ? `\n${trace}` : '';
-        return `${timestamp} ${contextStr}${level}: ${message}${traceStr}`;
-      }),
+      winston.format.printf(
+        ({ timestamp, level, message, context, trace, traceId }) => {
+          const contextStr = context ? `[${context}] ` : '';
+          const traceStr = trace ? `\n${trace}` : '';
+          const traceIdStr = traceId ? `[${traceId}] ` : ''; // ← appears in console
+          return `${timestamp} ${traceIdStr}${contextStr}${level}: ${message}${traceStr}`;
+        },
+      ),
     );
 
     const lokiFormat = winston.format.combine(
+      requestIdFormat(),
       winston.format.timestamp(),
       winston.format.errors({ stack: true }),
       winston.format.json(),
       winston.format((info) => {
-        if (info.context) {
-          info.context = info.context;
-        }
-        if (info.trace) {
-          info.trace = info.trace;
-        }
+        if (info.context) info.context = info.context;
+        if (info.trace) info.trace = info.trace;
         return info;
       })(),
     );

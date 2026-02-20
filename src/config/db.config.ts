@@ -1,20 +1,27 @@
 import { registerAs } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
+const isProd = process.env.NODE_ENV === 'prod';
+const isDev = process.env.NODE_ENV === 'dev';
+
 export default registerAs(
   'database',
   (): TypeOrmModuleOptions => ({
     type: 'postgres',
-    host: process.env.DB_PGBOUNCER_HOST || 'localhost',
-    port: parseInt(process.env.DB_PGBOUNCER_PORT || '6432', 10),
+    host: isProd
+      ? process.env.DB_PGBOUNCER_HOST
+      : process.env.DB_HOST || 'localhost',
+    port: isDev
+      ? parseInt(process.env.DB_PORT || '5432', 10)
+      : parseInt(process.env.DB_PGBOUNCER_PORT || '6432', 10),
     username: process.env.DB_USERNAME || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
     database: process.env.DB_NAME || '3ammerli',
     entities: [__dirname + '/../**/*.entity{.ts,.js}'],
     migrations: [__dirname + '/../migrations/*{.ts,.js}'],
-    synchronize: false,
-    logging: process.env.NODE_ENV !== 'prod',
-    migrationsRun: false,
+    synchronize: isDev,
+    logging: isProd,
+    migrationsRun: true,
     extra: {
       timezone: 'Africa/Algiers',
       max: parseInt(process.env.DATABASE_CONNECTION_POOL_MAX || '50', 10),
