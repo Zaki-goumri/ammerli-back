@@ -10,83 +10,69 @@ import {
   IsDateString,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import { parseStringArrayQueryParam } from 'src/common/utils';
 
+const toFloat = ({ value }: { value: any }) => {
+  if (typeof value === 'number') return value;
+  const normalized = String(value).replace(',', '.');
+  const num = parseFloat(normalized);
+  return isNaN(num) ? value : num;
+};
+
+const toInt = ({ value }: { value: any }) => {
+  if (typeof value === 'number') return value;
+  const num = parseInt(String(value), 10);
+  return isNaN(num) ? value : num;
+};
+
 export class CreateProductDto {
-  @ApiProperty({
-    description: 'Product name',
-    example: 'Sample Product',
-  })
+  @ApiProperty({ example: 'Sample Product' })
   @IsString()
   @IsNotEmpty()
   name!: string;
 
-  @ApiPropertyOptional({
-    description: 'Product description',
-    example: 'This is a sample product description.',
-  })
+  @ApiPropertyOptional({ example: 'This is a sample product description.' })
   @IsString()
   @IsOptional()
   description?: string;
 
-  @ApiProperty({
-    description: 'Product price in currency unit',
-    example: 29.99,
-    minimum: 0.01,
-  })
+  @ApiProperty({ example: 99.99, minimum: 50 })
+  @Transform(toFloat)
   @IsNumber(
     { maxDecimalPlaces: 2 },
     { message: 'Price must have at most 2 decimal places' },
   )
   @IsPositive({ message: 'Price must be a positive number' })
-  @Transform(({ value }) => {
-    const num = Number(value);
-    return isNaN(num) ? value : num;
-  })
   @Min(50, { message: 'Price must be at least 50' })
   price!: number;
 
-  @ApiProperty({
-    description: 'Available quantity in stock',
-    example: 100,
-    minimum: 0,
-  })
+  @ApiProperty({ example: 100, minimum: 0 })
+  @Transform(toInt)
   @IsInt({ message: 'Quantity must be an integer' })
   @Min(0, { message: 'Quantity cannot be negative' })
-  @Type(() => Number)
   quantity!: number;
 
-  @ApiProperty({
-    description: 'Brand ID reference',
-    example: 1,
-  })
+  @ApiProperty({ example: 1 })
+  @Transform(toInt)
   @IsInt({ message: 'Brand ID must be an integer' })
-  @IsPositive({ message: 'Brand ID must be a positive number' })
-  @Type(() => Number)
-  brandId: number;
+  @Min(0, { message: 'Brand ID must be positive' })
+  brandId!: number;
 
-  @ApiProperty({
-    description: 'Category ID reference',
-    example: 5,
-  })
-  @Type(() => Number)
+  @ApiProperty({ example: 5 })
+  @Transform(toInt)
   @IsInt({ message: 'Category ID must be an integer' })
-  @IsPositive({ message: 'Category ID must be a positive number' })
-  categoryId: number;
+  @Min(0, { message: 'Category ID must be positive' })
+  categoryId!: number;
 
-  @ApiProperty({
-    description: 'Quantity produced per batch',
-    example: 20,
-  })
-  @Type(() => Number)
+  @ApiProperty({ example: 20 })
+  @Transform(toInt)
+  @IsInt({ message: 'Quantity per batch must be an integer' })
+  @IsPositive({ message: 'Quantity per batch must be a positive number' })
   @IsNotEmpty()
-  @IsInt({ message: 'Quantity per batch ID must be an integer' })
-  @IsPositive({ message: 'Quantity per batch ID must be a positive number' })
-  quantityPerBatch: number;
+  quantityPerBatch!: number;
 
   @ApiPropertyOptional({
-    description: 'An array of strings for product specifications',
     example: ['Material: Steel', 'Weight: 2kg'],
     type: [String],
   })
@@ -96,11 +82,7 @@ export class CreateProductDto {
   @IsString({ each: true })
   specification?: string[];
 
-  @ApiProperty({
-    description: 'The product expiration date (ISO 8601 format: YYYY-MM-DD)',
-    example: '2026-12-31',
-    format: 'date',
-  })
+  @ApiPropertyOptional({ example: '2026-12-31', format: 'date' })
   @IsOptional()
   @IsDateString(
     { strict: true },

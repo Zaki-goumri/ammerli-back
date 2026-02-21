@@ -23,8 +23,9 @@ export class LoggerInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest<FastifyRequest>();
     const response = context.switchToHttp().getResponse<FastifyReply>();
 
-    const { method, url, ip, body } = request;
+    const { method, url, ip } = request;
     const userAgent = request.headers['user-agent'] || '';
+    const body = this.extractBody(request);
     const traceId = this.clsService.get<string>('requestId');
 
     this.logger.log({
@@ -72,5 +73,44 @@ export class LoggerInterceptor implements NestInterceptor {
         },
       }),
     );
+  }
+
+  private extractBody(request: FastifyRequest): Record<string, any> | string {
+    const contentType = request.headers['content-type'] || '';
+
+    // Regular JSON body
+    if (contentType.includes('application/json')) {
+      return request.body as Record<string, any>;
+    }
+
+    // Form data / multipart
+    if (
+      contentType.includes('multipart/form-data') ||
+      contentType.includes('application/x-www-form-urlencoded')
+    ) {
+      const body = request.body as Record<string, any>;
+      if (!body) return {};
+
+      // Iterate fields, replace file buffers with metadata
+      return Object.entries(body).reduce(
+        (acc, [key, value]) => {
+          if (value && typeof value === 'object' && 'filename' in value) {
+            // It's a file field — log metadata only, never the buffer
+            acc[key] = {
+              filename: (value as any).filename,
+              mimetype: (value as any).mimetype,
+              encoding: (value as any).encoding,
+              size: (value as any)?.data?.length ?? 'unknown',
+            };
+          } else {
+            acc[key] = value;
+          }
+          return acc;
+        },
+        {} as Record<string, any>,
+      );
+    }
+
+    return '[unsupported content-type]';
   }
 }
