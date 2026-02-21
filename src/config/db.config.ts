@@ -20,7 +20,7 @@ export default registerAs(
     entities: [__dirname + '/../**/*.entity{.ts,.js}'],
     migrations: [__dirname + '/../migrations/*{.ts,.js}'],
     synchronize: isDev,
-    logging: isProd,
+    logging: !isProd,
     migrationsRun: true,
     extra: {
       timezone: 'Africa/Algiers',

@@ -23,6 +23,9 @@ export class LoggerBuilder {
 
   build(): LoggerService {
     const requestIdFormat = winston.format((info) => {
+      if (info.body) info.body = info.body;
+      if (info.context) info.context = info.context;
+      if (info.trace) info.trace = info.trace;
       const requestId = this.clsService.get<string>('requestId');
       if (requestId) {
         info.traceId = requestId;
@@ -39,18 +42,25 @@ export class LoggerBuilder {
         ({ timestamp, level, message, context, trace, traceId }) => {
           const contextStr = context ? `[${context}] ` : '';
           const traceStr = trace ? `\n${trace}` : '';
-          const traceIdStr = traceId ? `[${traceId}] ` : ''; // ← appears in console
+          const traceIdStr = traceId ? `[${traceId}] ` : '';
           return `${timestamp} ${traceIdStr}${contextStr}${level}: ${message}${traceStr}`;
         },
       ),
     );
 
     const lokiFormat = winston.format.combine(
+      winston.format((info) => {
+        if (info.body) info.body = JSON.stringify(info.body);
+        return info;
+      })(),
       requestIdFormat(),
       winston.format.timestamp(),
       winston.format.errors({ stack: true }),
       winston.format.json(),
       winston.format((info) => {
+        if (info.body) info.body = info.body;
+        if (info.context) info.context = info.context;
+        if (info.trace) info.trace = info.trace;
         if (info.context) info.context = info.context;
         if (info.trace) info.trace = info.trace;
         return info;
