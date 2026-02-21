@@ -374,10 +374,11 @@ export class ProductService {
     sellerId: number,
     files: Array<Express.Multer.File>,
     uploadOptions: UploadingOptions,
+    isAdmin = true,
   ): Promise<{ message: string }> {
     const { picturesToDelete, ...updateData } = dto;
     const product = await this.productRepo.findOne({
-      where: { id, sellerId },
+      where: { id, ...(isAdmin ? {} : { sellerId }) },
     });
 
     if (!product) {
