@@ -1,11 +1,5 @@
-import {
-  IsOptional,
-  IsInt,
-  IsPositive,
-  IsString,
-  IsArray,
-} from 'class-validator';
-import { Transform, Type } from 'class-transformer';
+import { IsOptional, IsInt, IsString, Min } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationQueryDto } from 'src/common/dtos/pagination.dto';
 import { parseIntArrayQueryParam } from 'src/common/utils';
@@ -28,7 +22,7 @@ export class FilterProductDto extends PaginationQueryDto {
   @IsOptional()
   @Transform(({ value }) => parseIntArrayQueryParam(value))
   @IsInt({ each: true })
-  @IsPositive({ each: true })
+  @Min(0, { each: true, message: 'categoryIds must be all positive' })
   categoryIds?: number[];
 
   @ApiPropertyOptional({
@@ -39,6 +33,6 @@ export class FilterProductDto extends PaginationQueryDto {
   @IsOptional()
   @Transform(({ value }) => parseIntArrayQueryParam(value))
   @IsInt({ each: true })
-  @IsPositive({ each: true })
+  @Min(0, { each: true, message: 'brand ids must be positive' })
   brandIds?: number[];
 }
