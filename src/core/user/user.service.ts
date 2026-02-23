@@ -931,4 +931,13 @@ export class UserService {
       isRegistered: true,
     } as AccessTokenPayload;
   }
+
+  async addAdmin(phoneNumber: string) {
+    try {
+      await this.userRepo.update({ phoneNumber }, { role: USER_ROLES.ADMIN });
+      return { message: 'user added' };
+    } catch (e) {
+      throw new BadRequestException('user not found');
+    }
+  }
 }

@@ -7,7 +7,6 @@ import {
   Put,
   UseGuards,
   Logger,
-  Ip,
 } from '@nestjs/common';
 import { AuthenticationService } from './authentication.service';
 import { USER } from './decorators/user.decorartor';
@@ -24,13 +23,11 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
-import { User } from '../user/entities/user.entity';
 import { AuthDto } from './dtos/requests/auth.dto';
 import { OtpValidationDto } from './dtos/requests/otp-validation.dto';
 import { AccessTokenGuard } from './guards/access-token.guard';
 import { RegisterUserDto } from './dtos/requests/register-user.dto';
 import { SkipRegistrationCheck } from './decorators/skip-registration-check.decorator';
-import { Throttle } from '@nestjs/throttler';
 import { SendOtpDto } from './dtos/response/send-otp.dto';
 import { ValidateOtpDto } from './dtos/response/validate-otp.dto';
 import { AuthResDto } from './dtos/response/refresh-token.dto';
@@ -38,6 +35,7 @@ import { FirebaseTokenDto } from './dtos/requests/firebase-token.dto';
 import { LogoutDto } from './dtos/requests/logout.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { MessageDto } from '../user/dtos/response/message.dto';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Authentication')
 @Controller('authentication')
@@ -62,12 +60,12 @@ export class AuthenticationController {
    * @returns {Promise<SendOtpDto>} A message indicating that the OTP has been sent.
    */
 
-  // @Throttle({
-  //   ip: {
-  //     limit: 1,
-  //     ttl: 30000,
-  //   },
-  // })
+  @Throttle({
+    ip: {
+      limit: 1,
+      ttl: 30000,
+    },
+  })
   @Post('otp/send')
   @ApiOperation({
     summary: 'send OTP',

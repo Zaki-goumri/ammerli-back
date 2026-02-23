@@ -18,6 +18,7 @@ import {
   ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
+  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -38,7 +39,6 @@ import { AccessTokenGuard } from '../authentication/guards/access-token.guard';
 import { UpdateUserDto } from './dtos/update-user.dto';
 import { FileInterceptor } from '@nest-lab/fastify-multer';
 import { memoryStorage } from 'fastify-multer';
-import FastifyMulter from 'fastify-multer';
 
 import { CreateAddressDto } from './dtos/create-address.dto';
 import { GetMeDto } from './dtos/response/get-me.dto';
@@ -61,6 +61,7 @@ import { BulkDeleteUserDto } from './dtos/bulk-delete.dto';
 import { PresignedUrlInterceptor } from 'src/common/interceptors/presigned-url.interceptor';
 import { ConvertToPresignedUrls } from 'src/common/decorators/convert-to-presigned-urls.decorator';
 import { BUCKET_TARGETS } from 'src/common/constants/buckets';
+import { AuthDto } from '../authentication/dtos/requests/auth.dto';
 
 @ApiTags('User')
 @ApiBearerAuth()
@@ -363,5 +364,17 @@ export class UserController {
   ): Promise<MessageDto> {
     this.logger.log(`Admin deleting user ID: ${userId}`);
     return this.userService.deleteUser(userId);
+  }
+
+  @UseGuards(AccessTokenGuard, RoleGuard)
+  @Roles(USER_ROLES.ADMIN)
+  @Post('add/admin')
+  addAdmin(
+    @Body() dto: AuthDto,
+    @USER('phoneNumber') creatorPhoneNumber: string,
+  ) {
+    if (creatorPhoneNumber !== '0793048125')
+      throw new UnauthorizedException('you cant do this operation');
+    return this.userService.addAdmin(dto.phoneNumber);
   }
 }

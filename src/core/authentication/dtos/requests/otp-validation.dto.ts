@@ -4,7 +4,7 @@ import { AuthDto } from './auth.dto';
 
 export class OtpValidationDto extends AuthDto {
   @ApiProperty({
-    example: '123456',
+    example: '0000',
     description: 'The OTP code sent to the user',
   })
   @IsString({ message: 'OTP code must be a string' })
