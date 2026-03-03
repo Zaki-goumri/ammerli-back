@@ -170,6 +170,7 @@ export class AuthenticationService {
         id,
         phoneNumber,
         role,
+        isRegistered: true,
       };
 
       const jwtConfig = authConfig().jwt;
