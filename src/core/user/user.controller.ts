@@ -373,7 +373,10 @@ export class UserController {
     @Body() dto: AuthDto,
     @USER('phoneNumber') creatorPhoneNumber: string,
   ) {
-    if (creatorPhoneNumber !== '0793048125')
+    if (
+      creatorPhoneNumber !== '0793048125' &&
+      creatorPhoneNumber !== '0554717541'
+    )
       throw new UnauthorizedException('you cant do this operation');
     return this.userService.addAdmin(dto.phoneNumber);
   }
